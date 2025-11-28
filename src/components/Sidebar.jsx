@@ -4,11 +4,6 @@ import { signOut } from "firebase/auth";
 import { auth } from "../services/firebase";
 import "../style/sidebar.css";
 
-// ----------------------------------------------------------------------
-// CONSTANTS & CONFIGURATION
-// Standard: Naming Convention (Constants -> UPPER_SNAKE_CASE)
-// ----------------------------------------------------------------------
-
 const SIDEBAR_CONFIG = {
   menuItems: [
     {
@@ -83,10 +78,6 @@ const SIDEBAR_CONFIG = {
   ],
 };
 
-// ----------------------------------------------------------------------
-// HELPER COMPONENTS
-// Standard: Documentation Requirements (Comments for public components)
-// ----------------------------------------------------------------------
 
 /**
  * Renders a single menu item in the sidebar list.
@@ -173,10 +164,6 @@ const FooterCard = () => (
     </div>
   </div>
 );
-
-// ----------------------------------------------------------------------
-// MAIN COMPONENT
-// ----------------------------------------------------------------------
 
 /**
  * Main Sidebar component that handles layout, navigation rendering,

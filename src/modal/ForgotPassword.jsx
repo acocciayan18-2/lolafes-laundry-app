@@ -1,13 +1,9 @@
 import React from "react";
 
-// ----------------------------------------------------------------------
-// CONSTANTS & HELPERS
-// Standard: Naming Convention (Constants -> UPPER_SNAKE_CASE)
-// Standard: DRY Principle (Reusable logic/assets)
-// ----------------------------------------------------------------------
-
+// Regex for email validation
 const EMAIL_VALIDATION_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Icons used in the UI
 const UI_ICONS = {
   close: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -27,29 +23,6 @@ const UI_ICONS = {
   ),
 };
 
-/**
- * Validates if the provided string is a valid email format.
- * Standard: Security Practices (Validate inputs)
- */
-const isValidEmail = (email) => {
-  return EMAIL_VALIDATION_REGEX.test(email);
-};
-
-// ----------------------------------------------------------------------
-// COMPONENT
-// Standard: Documentation Requirements
-// ----------------------------------------------------------------------
-
-/**
- * ForgotPassword Component
- * Displays a modal popup allowing the user to request a password reset link.
- *
- * @param {string} resetEmail - The current value of the email input.
- * @param {function} setResetEmail - State setter for the email input.
- * @param {boolean} resetLoading - Loading state during the API call.
- * @param {function} handleForgotPassword - Function to trigger the reset password action.
- * @param {function} setShowForgotPopup - Function to toggle the visibility of this modal.
- */
 export default function ForgotPassword({
   resetEmail,
   setResetEmail,
@@ -58,14 +31,11 @@ export default function ForgotPassword({
   setShowForgotPopup,
 }) {
   
-  // Derived state for button validation
+  // Validation Logic
+  const isValidEmail = (email) => EMAIL_VALIDATION_REGEX.test(email);
   const isInputValid = isValidEmail(resetEmail);
   const isButtonDisabled = resetLoading || !isInputValid;
 
-  /**
-   * Closes the modal and clears the email state.
-   * Standard: Descriptive Naming
-   */
   const handleClose = () => {
     setShowForgotPopup(false);
     setResetEmail("");
@@ -74,6 +44,7 @@ export default function ForgotPassword({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full relative">
+        
         {/* Close Button */}
         <button
           onClick={handleClose}
@@ -125,6 +96,7 @@ export default function ForgotPassword({
             {resetLoading ? "Sending..." : "Send Reset Link"}
           </button>
         </div>
+
       </div>
     </div>
   );

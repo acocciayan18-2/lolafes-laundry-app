@@ -311,7 +311,7 @@ export default function SignUp() {
           {/* OTP Field (Conditionally Rendered) */}
           {isOtpSent && (
             <div className="mb-2 animate-fade-in">
-              <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">Enter OTP sent to Admin Email</label>
+              <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">Enter the OTP sent to the registered admin email.</label>
               <input
                 type="text"
                 id="otp"

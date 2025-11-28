@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from "react";
 import "../style/modal-style/LoginPopup.css";
 
-// ----------------------------------------------------------------------
-// CONSTANTS & CONFIGURATION
-// Standard: Naming Convention (Constants -> UPPER_SNAKE_CASE)
-// ----------------------------------------------------------------------
-
+// Configuration Constants
 const PROGRESS_INTERVAL_MS = 50;
 const PROGRESS_DECREMENT_STEP = 2.5;
 
+// Icons
 const POPUP_ICONS = {
   success: (color) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill={color} className="me-2" viewBox="0 0 16 16">
@@ -29,34 +26,24 @@ const POPUP_ICONS = {
   ),
 };
 
-// ----------------------------------------------------------------------
-// COMPONENT
-// Standard: Documentation Requirements
-// ----------------------------------------------------------------------
-
-/**
- * LoginPopup (Notification Toast)
- * Displays a temporary notification message with a progress bar timer.
- * * @param {string} message - The text to display in the popup.
- * @param {string} type - 'success' or 'info' (defaults to info/error red).
- * @param {function} onClose - Callback function to clear the message.
- */
 export function LoginPopup({ message, type = "info", onClose }) {
   const [progress, setProgress] = useState(100);
 
-  // Determine theme color based on type
+  // Set colors: Green for success, Red for everything else
   const themeColor = type === "success" ? "green" : "red";
 
   useEffect(() => {
     if (!message) return;
 
+    // Reset progress bar
     setProgress(100);
 
+    // Start timer to lower progress bar
     const interval = setInterval(() => {
       setProgress((prevProgress) => {
         if (prevProgress <= 0) {
           clearInterval(interval);
-          onClose(); // Trigger close when timer runs out
+          onClose(); // Close popup when time is up
           return 0;
         }
         return prevProgress - PROGRESS_DECREMENT_STEP;
@@ -78,6 +65,7 @@ export function LoginPopup({ message, type = "info", onClose }) {
         role="alert"
         style={{ borderColor: themeColor }}
       >
+        
         {/* Close Button */}
         <p
           className="position-absolute top-0 end-0 m-1 login-btn-close-popup focus-ring-0"
@@ -88,7 +76,7 @@ export function LoginPopup({ message, type = "info", onClose }) {
           {POPUP_ICONS.close(themeColor)}
         </p>
 
-        {/* Message with Icon */}
+        {/* Message Content */}
         <div className="toast-body d-flex align-items-center justify-content-center login-pop-up-icon">
           {type === "success" ? POPUP_ICONS.success(themeColor) : POPUP_ICONS.error(themeColor)}
           <span style={{ color: themeColor }} className="text-base pr-2">
@@ -96,7 +84,7 @@ export function LoginPopup({ message, type = "info", onClose }) {
           </span>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar Animation */}
         <div
           className="progress-bar"
           style={{
@@ -107,6 +95,7 @@ export function LoginPopup({ message, type = "info", onClose }) {
             transition: "width 40ms linear",
           }}
         ></div>
+
       </div>
     </div>
   );
