@@ -184,6 +184,8 @@ export default function Login() {
                 autoComplete="off"
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
+                //added for testing 
+                aria-label="Password Input"
               />
               <button
                 type="button"

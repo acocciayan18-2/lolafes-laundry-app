@@ -16,7 +16,6 @@ import {
   setPersistence,
 } from "firebase/auth";
 
-// ✅ Navigation mock (CONNECTED)
 const mockNavigate = jest.fn();
 
 jest.mock("react-router-dom", () => ({
@@ -139,7 +138,8 @@ describe("Login Component (Jest)", () => {
   test("toggles password visibility", () => {
     renderLogin();
 
-    const passwordInput = screen.getByLabelText(/password/i);
+    //added , { selector: 'input' }
+    const passwordInput = screen.getByLabelText(/password/i, { selector: 'input' });
     const toggleButton = screen.getByRole("button", {
       name: /toggle password visibility/i,
     });
