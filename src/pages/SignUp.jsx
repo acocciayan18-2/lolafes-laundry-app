@@ -12,7 +12,7 @@ import { LoginPopup } from "../modal/LoginPopup";
 import "../style/signup.css";
 
 // ----------------------------------------------------------------------
-// CONSTANTS & ICONS
+// CONSTANTS & ICONSs
 // ----------------------------------------------------------------------
 
 const EMAILJS_CONFIG = {
