@@ -139,9 +139,7 @@ describe("Login Component (Jest)", () => {
   test("toggles password visibility", () => {
     renderLogin();
 
-    const passwordInput = screen.getByLabelText(/password/i, { selector: 'input' })  
-    //screen.getByLabelText(/password/i); pinalitan ko -ren
-    
+    const passwordInput = screen.getByLabelText(/password/i);
     const toggleButton = screen.getByRole("button", {
       name: /toggle password visibility/i,
     });

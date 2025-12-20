@@ -1,22 +1,9 @@
-jest.mock('../services/firebase', () => ({ auth: {}, database: {} }));
-jest.mock('firebase/auth', () => ({
-  createUserWithEmailAndPassword: jest.fn(),
-  sendEmailVerification: jest.fn(),
-  fetchSignInMethodsForEmail: jest.fn(),
-}));
-jest.mock('firebase/database', () => ({ getDatabase: jest.fn(), ref: jest.fn(), get: jest.fn() }));
-jest.mock('@emailjs/browser');
-
-
-
-// __tests__/SignUp.test.js
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import SignUp from "../pages/SignUp";
 
 // Mock Firebase Auth functions
-import { auth } from "../services/firebase";
 import {
   createUserWithEmailAndPassword,
   fetchSignInMethodsForEmail,
@@ -24,23 +11,32 @@ import {
 } from "firebase/auth";
 
 // Mock Firebase Realtime Database
-import { getDatabase, ref, get } from "firebase/database";
+import { get } from "firebase/database";
 
 // Mock EmailJS
 import emailjs from "@emailjs/browser";
 
-jest.mock("../services/firebase");
+// ✅ Consolidated Mocks
+jest.mock("../services/firebase", () => ({
+  auth: {},
+  database: {},
+}));
+
 jest.mock("firebase/auth", () => ({
   createUserWithEmailAndPassword: jest.fn(),
   sendEmailVerification: jest.fn(),
   fetchSignInMethodsForEmail: jest.fn(),
 }));
+
 jest.mock("firebase/database", () => ({
   getDatabase: jest.fn(),
   ref: jest.fn(),
   get: jest.fn(),
 }));
-jest.mock("@emailjs/browser");
+
+jest.mock("@emailjs/browser", () => ({
+  send: jest.fn(),
+}));
 
 describe("SignUp Component", () => {
   beforeEach(() => {
@@ -93,16 +89,17 @@ describe("SignUp Component", () => {
     const passwordInput = screen.getByPlaceholderText(/Enter your password/i);
     const button = screen.getByRole("button", { name: /Send OTP Verification/i });
 
-    // Fill inputs
     fireEvent.change(emailInput, { target: { value: "test@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "Abcdef1!" } });
 
-    // Click send OTP
     fireEvent.click(button);
 
+    // ✅ Fix: Using findByText to properly await the async status message appearance
+    // This resolves MutationObserver issues by waiting for the re-render.
+    expect(await screen.findByText(/OTP sent to admin email/i)).toBeInTheDocument();
+    
     await waitFor(() => {
       expect(emailjs.send).toHaveBeenCalled();
-      expect(screen.getByText(/OTP sent to admin email/i)).toBeInTheDocument();
     });
   });
 
@@ -124,26 +121,21 @@ describe("SignUp Component", () => {
     const passwordInput = screen.getByPlaceholderText(/Enter your password/i);
     const sendOtpButton = screen.getByRole("button", { name: /Send OTP Verification/i });
 
-    // Fill email & password
     fireEvent.change(emailInput, { target: { value: "test@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "Abcdef1!" } });
 
-    // Send OTP
     fireEvent.click(sendOtpButton);
 
-    await waitFor(() => {
-      expect(emailjs.send).toHaveBeenCalled();
-    });
-
-    const otpInput = screen.getByPlaceholderText(/000000/i);
+    // ✅ Fix: Await the transition to the OTP input screen
+    // Using findBy ensures the element exists before trying to interact with it.
+    const otpInput = await screen.findByPlaceholderText(/000000/i);
     const completeSignupButton = screen.getByRole("button", { name: /Complete Signup/i });
 
-    // Fill OTP with the mocked generatedOtp
     fireEvent.change(otpInput, { target: { value: "123456" } });
-
-    // Mock setGeneratedOtp internally to match
     fireEvent.click(completeSignupButton);
 
-    // Note: OTP validation may need to be adjusted depending on implementation
+    await waitFor(() => {
+      expect(createUserWithEmailAndPassword).toHaveBeenCalled();
+    });
   });
 });
