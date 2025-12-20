@@ -1,5 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom"; // ✅ FIX 1: Import this to fix "toBeInTheDocument" error
 import Login from "../pages/Login";
 
 import {
@@ -7,7 +8,7 @@ import {
   setPersistence,
 } from "firebase/auth";
 
-// ✅ Navigation mock (CONNECTED)
+// Navigation mock
 const mockNavigate = jest.fn();
 
 jest.mock("react-router-dom", () => ({
@@ -15,9 +16,11 @@ jest.mock("react-router-dom", () => ({
   Link: ({ children }) => <>{children}</>,
 }));
 
-// Mock Firebase auth instance
+// ✅ FIX 2: Add signOut to the auth mock
 jest.mock("../services/firebase", () => ({
-  auth: {},
+  auth: {
+    signOut: jest.fn(),
+  },
 }));
 
 // Mock Firebase auth functions
@@ -38,43 +41,26 @@ describe("Login Component (Jest)", () => {
 
   test("renders email and password inputs", () => {
     renderLogin();
-
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByText(/log in/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i, { selector: 'input' })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /log in/i })).toBeInTheDocument();
   });
 
   test("updates input values when typing", () => {
     renderLogin();
-
-    fireEvent.change(screen.getByLabelText(/email/i), {
-      target: { value: "test@email.com" },
-    });
-
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: { value: "password123" },
-    });
-
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "test@email.com" } });
+    fireEvent.change(screen.getByLabelText(/password/i, { selector: 'input' }), { target: { value: "password123" } });
     expect(screen.getByLabelText(/email/i).value).toBe("test@email.com");
-    expect(screen.getByLabelText(/password/i).value).toBe("password123");
+    expect(screen.getByLabelText(/password/i, { selector: 'input' }).value).toBe("password123");
   });
 
   test("calls Firebase login on submit", async () => {
-    signInWithEmailAndPassword.mockResolvedValue({
-      user: { emailVerified: true },
-    });
-
+    signInWithEmailAndPassword.mockResolvedValue({ user: { emailVerified: true } });
     renderLogin();
 
-    fireEvent.change(screen.getByLabelText(/email/i), {
-      target: { value: "user@email.com" },
-    });
-
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: { value: "password123" },
-    });
-
-    fireEvent.click(screen.getByText(/log in/i));
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "user@email.com" } });
+    fireEvent.change(screen.getByLabelText(/password/i, { selector: 'input' }), { target: { value: "password123" } });
+    fireEvent.click(screen.getByRole("button", { name: /log in/i }));
 
     await waitFor(() => {
       expect(signInWithEmailAndPassword).toHaveBeenCalled();
@@ -82,21 +68,12 @@ describe("Login Component (Jest)", () => {
   });
 
   test("prevents login if email is not verified", async () => {
-    signInWithEmailAndPassword.mockResolvedValue({
-      user: { emailVerified: false },
-    });
-
+    signInWithEmailAndPassword.mockResolvedValue({ user: { emailVerified: false } });
     renderLogin();
 
-    fireEvent.change(screen.getByLabelText(/email/i), {
-      target: { value: "unverified@email.com" },
-    });
-
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: { value: "password123" },
-    });
-
-    fireEvent.click(screen.getByText(/log in/i));
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "unverified@email.com" } });
+    fireEvent.change(screen.getByLabelText(/password/i, { selector: 'input' }), { target: { value: "password123" } });
+    fireEvent.click(screen.getByRole("button", { name: /log in/i }));
 
     await waitFor(() => {
       expect(mockNavigate).not.toHaveBeenCalled();
@@ -104,66 +81,46 @@ describe("Login Component (Jest)", () => {
   });
 
   test("shows error message on invalid login", async () => {
-    signInWithEmailAndPassword.mockRejectedValue({
-      code: "auth/wrong-password",
-    });
-
+    // ✅ Mock console.error to keep output clean
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    
+    signInWithEmailAndPassword.mockRejectedValue({ code: "auth/wrong-password" });
     renderLogin();
 
-    fireEvent.change(screen.getByLabelText(/email/i), {
-      target: { value: "wrong@email.com" },
-    });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "wrong@email.com" } });
+    fireEvent.change(screen.getByLabelText(/password/i, { selector: 'input' }), { target: { value: "wrongpass" } });
+    fireEvent.click(screen.getByRole("button", { name: /log in/i }));
 
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: { value: "wrongpass" },
-    });
+    // ✅ Use findByText to wait for the popup
+    const errorMessage = await screen.findByText(/invalid email or password/i);
+    expect(errorMessage).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText(/log in/i));
-
-    await waitFor(() => {
-      expect(
-        screen.getByText(/invalid email or password/i)
-      ).toBeInTheDocument();
-    });
+    consoleSpy.mockRestore();
   });
 
   test("toggles password visibility", () => {
     renderLogin();
-
-    const passwordInput = screen.getByLabelText(/password/i);
-    const toggleButton = screen.getByRole("button", {
-      name: /toggle password visibility/i,
-    });
+    const passwordInput = screen.getByLabelText(/password/i, { selector: 'input' });
+    const toggleButton = screen.getByRole("button", { name: /toggle password visibility/i });
 
     expect(passwordInput.type).toBe("password");
-
     fireEvent.click(toggleButton);
     expect(passwordInput.type).toBe("text");
-
     fireEvent.click(toggleButton);
     expect(passwordInput.type).toBe("password");
   });
 
   test("navigates to main page after successful login", async () => {
-    signInWithEmailAndPassword.mockResolvedValue({
-      user: { emailVerified: true },
-    });
-
+    signInWithEmailAndPassword.mockResolvedValue({ user: { emailVerified: true } });
     renderLogin();
 
-    fireEvent.change(screen.getByLabelText(/email/i), {
-      target: { value: "success@email.com" },
-    });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "success@email.com" } });
+    fireEvent.change(screen.getByLabelText(/password/i, { selector: 'input' }), { target: { value: "password123" } });
+    fireEvent.click(screen.getByRole("button", { name: /log in/i }));
 
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: { value: "password123" },
-    });
-
-    fireEvent.click(screen.getByText(/log in/i));
-
+    // ✅ Wait long enough for the 1000ms setTimeout
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/main");
-    });
+    }, { timeout: 2000 });
   });
 });
-

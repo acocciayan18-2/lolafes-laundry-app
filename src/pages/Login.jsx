@@ -11,7 +11,6 @@ import { LoginPopup } from "../modal/LoginPopup";
 import ForgotPassword from "../modal/ForgotPassword";
 import "../style/login.css";
 
-
 const LOGIN_ICONS = {
   atSymbol: (
     <svg xmlns="http://www.w3.org/2000/svg" width="1.4rem" height="1.4rem" fill="currentColor" className="bi bi-at" viewBox="0 0 16 16">
@@ -38,8 +37,6 @@ const LOGIN_ICONS = {
   ),
 };
 
-
-
 export default function Login() {
   const navigate = useNavigate();
 
@@ -65,7 +62,6 @@ export default function Login() {
     setTimeout(() => setPopupMessage(""), 3000);
   };
 
- 
   const handleForgotPassword = async () => {
     if (!resetEmail.trim()) {
       triggerPopup("Please enter your email.", "error");
@@ -90,8 +86,7 @@ export default function Login() {
     }
   };
 
- 
- const handleLogin = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (isLoginLoading) return;
 
@@ -110,8 +105,6 @@ export default function Login() {
         return;
       }
 
-     
-
       triggerPopup("Login successful!", "success");
       setTimeout(() => navigate("/main"), 1000);
     } catch (error) {
@@ -125,7 +118,6 @@ export default function Login() {
 
   return (
     <div className="login-container">
-     
       <LoginPopup
         message={popupMessage}
         type={popupType}
@@ -149,9 +141,7 @@ export default function Login() {
         </h3>
         <p className="text-center">Log in to continue</p>
 
-        
         <form onSubmit={handleLogin}>
-          
           
           <div className="mb-3 text-start">
             <label htmlFor="login-email" className="form-label">Email</label>
@@ -170,7 +160,6 @@ export default function Login() {
             </div>
           </div>
 
-         
           <div className="mb-3 text-start">
             <label htmlFor="login-password" className="form-label">Password</label>
             <div className="inputForm pwd-login-con">
@@ -195,7 +184,6 @@ export default function Login() {
               </button>
             </div>
 
-            
             <div className="text-end mt-2">
               <button
                 type="button"
@@ -207,7 +195,6 @@ export default function Login() {
             </div>
           </div>
 
-          
           <button
             type="submit"
             disabled={isLoginLoading}
@@ -219,7 +206,6 @@ export default function Login() {
           </button>
         </form>
 
-        
         <div className="footer-links mt-3 d-flex gap-3">
           <p className="text-sm">
             Don't have an account?{" "}
@@ -230,7 +216,6 @@ export default function Login() {
         </div>
       </div>
 
-     
       {showForgotPopup && (
         <ForgotPassword
           resetEmail={resetEmail}
