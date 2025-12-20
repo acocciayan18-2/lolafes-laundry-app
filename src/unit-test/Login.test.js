@@ -48,7 +48,8 @@ describe("Login Component (Jest)", () => {
     renderLogin();
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    //added{ selector: 'input' })
+    expect(screen.getByLabelText(/password/i, { selector: 'input' })).toBeInTheDocument();
     expect(screen.getByText(/log in/i)).toBeInTheDocument();
   });
 
@@ -59,12 +60,15 @@ describe("Login Component (Jest)", () => {
       target: { value: "test@email.com" },
     });
 
-    fireEvent.change(screen.getByLabelText(/password/i), {
+      //added{ selector: 'input' })
+
+    fireEvent.change(screen.getByLabelText(/password/i, { selector: 'input' }), {
       target: { value: "password123" },
     });
 
     expect(screen.getByLabelText(/email/i).value).toBe("test@email.com");
-    expect(screen.getByLabelText(/password/i).value).toBe("password123");
+    //added { selector: 'input' }
+    expect(screen.getByLabelText(/password/i,{ selector: 'input' }).value).toBe("password123");
   });
 
   test("calls Firebase login on submit", async () => {
@@ -77,8 +81,8 @@ describe("Login Component (Jest)", () => {
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: "user@email.com" },
     });
-
-    fireEvent.change(screen.getByLabelText(/password/i), {
+//added { selector: 'input' }
+    fireEvent.change(screen.getByLabelText(/password/i, { selector: 'input' }), {
       target: { value: "password123" },
     });
 
@@ -99,8 +103,8 @@ describe("Login Component (Jest)", () => {
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: "unverified@email.com" },
     });
-
-    fireEvent.change(screen.getByLabelText(/password/i), {
+//added { selector: 'input' }
+    fireEvent.change(screen.getByLabelText(/password/i, { selector: 'input' }), {
       target: { value: "password123" },
     });
 
@@ -121,8 +125,8 @@ describe("Login Component (Jest)", () => {
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: "wrong@email.com" },
     });
-
-    fireEvent.change(screen.getByLabelText(/password/i), {
+//added { selector: 'input' }
+    fireEvent.change(screen.getByLabelText(/password/i,{ selector: 'input' }), {
       target: { value: "wrongpass" },
     });
 
@@ -163,8 +167,8 @@ describe("Login Component (Jest)", () => {
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: "success@email.com" },
     });
-
-    fireEvent.change(screen.getByLabelText(/password/i), {
+//added { selector: 'input' }
+    fireEvent.change(screen.getByLabelText(/password/i, { selector: 'input' }), {
       target: { value: "password123" },
     });
 
