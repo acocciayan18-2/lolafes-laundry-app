@@ -1,3 +1,14 @@
+jest.mock('../services/firebase', () => ({ auth: {}, database: {} }));
+jest.mock('firebase/auth', () => ({
+  createUserWithEmailAndPassword: jest.fn(),
+  sendEmailVerification: jest.fn(),
+  fetchSignInMethodsForEmail: jest.fn(),
+}));
+jest.mock('firebase/database', () => ({ getDatabase: jest.fn(), ref: jest.fn(), get: jest.fn() }));
+jest.mock('@emailjs/browser');
+
+
+
 // __tests__/SignUp.test.js
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";

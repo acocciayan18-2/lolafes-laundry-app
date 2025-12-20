@@ -1,3 +1,12 @@
+
+jest.mock('../services/firebase', () => ({ auth: {} }));
+jest.mock('firebase/auth', () => ({
+  signInWithEmailAndPassword: jest.fn(),
+  setPersistence: jest.fn(),
+  browserLocalPersistence: {},
+  sendPasswordResetEmail: jest.fn(),
+}));
+
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import Login from "../pages/Login";
@@ -130,7 +139,9 @@ describe("Login Component (Jest)", () => {
   test("toggles password visibility", () => {
     renderLogin();
 
-    const passwordInput = screen.getByLabelText(/password/i);
+    const passwordInput = screen.getByLabelText(/password/i, { selector: 'input' })  
+    //screen.getByLabelText(/password/i); pinalitan ko -ren
+    
     const toggleButton = screen.getByRole("button", {
       name: /toggle password visibility/i,
     });
