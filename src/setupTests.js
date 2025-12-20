@@ -1,4 +1,6 @@
 // src/setupTests.js
+
+import '@testing-library/jest-dom';
 console.log('setupTests loaded');
 process.env.REACT_APP_FIREBASE_API_KEY = 'fake-key';
 process.env.REACT_APP_FIREBASE_AUTH_DOMAIN = 'fake-domain';

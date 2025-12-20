@@ -10,6 +10,7 @@ import {
 import { LoginPopup } from "../modal/LoginPopup";
 import ForgotPassword from "../modal/ForgotPassword";
 import "../style/login.css";
+import { signOut } from "firebase/auth";
 
 
 const LOGIN_ICONS = {
@@ -106,7 +107,7 @@ export default function Login() {
 
       if (!user.emailVerified) {
         triggerPopup("Please verify your email before logging in.", "error");
-        await auth.signOut();
+        await signOut(auth);
         return;
       }
 
