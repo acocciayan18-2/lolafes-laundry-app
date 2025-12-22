@@ -137,7 +137,7 @@ export default function Login() {
         </div>
 
         <h3 className="text-center text-3xl font-extrabold text-gray-800 mb-1">
-          Welcome to Lola Fe's Laundry&nbsp;Shop
+          Hello to Lola Fe's Laundry&nbsp;Shop
           
         </h3>
         <p className="text-center">Log in to continue</p>
