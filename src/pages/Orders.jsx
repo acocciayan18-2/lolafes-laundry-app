@@ -25,7 +25,7 @@ const MOCK_ORDERS = [
   { 
     id: "2", 
     order_number: "ORD-002", 
-    customer_name: "MARIA SANTOS", 
+    customer_name: "MARIA SANTOSss", 
     customer_phone: "09987654321", 
     customer_address: "123 Rizal Ave, Pasig City",
     total_weight: 12.5, 
