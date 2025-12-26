@@ -18,7 +18,7 @@ export default function MainApp() {
       <Sidebar />
 
      
-      <main className="flex-1 p-6 overflow-y-auto mainapp-pages-con">
+      <main className="flex-1 overflow-y-auto mainapp-pages-con">
         <Routes>
           
           <Route path="/" element={<Navigate to="/main/dashboard" replace />} />

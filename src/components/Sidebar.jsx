@@ -19,7 +19,7 @@ const SIDEBAR_CONFIG = {
       )
     },
     {
-      text: "NewOrder",
+      text: "New Order",
       to: "/main/neworder",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-plus">
@@ -81,23 +81,50 @@ const SIDEBAR_CONFIG = {
 
 /**
  * Renders a single menu item in the sidebar list.
- * Handles navigation and active state styling.
+ * UPDATED: Active state is now White text/icon on Blue background.
+ * Hover state remains Blue text/icon on Transparent background.
  */
 const MenuItem = ({ to, icon, text }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Standard: Descriptive Naming (handleClick -> handleNavigation)
   const handleNavigation = () => navigate(to);
 
   const isActive = location.pathname === to;
-  const classes = `flex items-center gap-2 px-3 w-full text-left nav-page-btn ${isActive ? "active" : ""}`;
 
   return (
     <li>
-      <button onClick={handleNavigation} className={classes}>
-        {icon}
-        <p className="text-sm">{text}</p>
+      <button
+        onClick={handleNavigation}
+        className={`
+          group flex items-center gap-2 px-3 w-full text-left nav-page-btn transition-colors duration-200
+          ${isActive 
+            ? "active bg-blue-600 shadow-md" // Changed: Active BG is now darker blue
+            : "bg-transparent hover:bg-transparent"
+          }
+        `}
+      >
+        <div className="shrink-0 flex items-center justify-center">
+          {/* ICON STYLING */}
+          {React.cloneElement(icon, {
+            className: `${icon.props.className || ""} transition-colors duration-200 ${
+              isActive
+                ? "!text-white !stroke-white" // Active: White
+                : "text-gray-600 stroke-gray-600 group-hover:!text-blue-600 group-hover:!stroke-blue-600" // Hover: Blue
+            }`
+          })}
+        </div>
+
+        {/* TEXT STYLING */}
+        <p
+          className={`text-sm font-medium transition-colors duration-200 ${
+            isActive
+              ? "text-white" // Active: White
+              : "text-gray-600 group-hover:text-blue-600" // Hover: Blue
+          }`}
+        >
+          {text}
+        </p>
       </button>
     </li>
   );
@@ -175,21 +202,18 @@ export default function Sidebar() {
 
   /**
    * Handles the Firebase sign-out process.
-   * Standard: Error Handling and Logging
    */
   const handleLogout = async () => {
     try {
       await signOut(auth);
       navigate("/login");
     } catch (error) {
-      // Standard: Errors must be properly logged
       console.error("Logout failed:", error);
     }
   };
 
   /**
    * Modal component for logout confirmation.
-   * Defined inside Sidebar to access local state handlers easily.
    */
   const LogoutConfirmationModal = () => (
     <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">

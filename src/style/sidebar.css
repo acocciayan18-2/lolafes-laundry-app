@@ -51,17 +51,10 @@
   cursor: pointer;
 }
 
-/* Helper Class for additional padding overrides */
-.nav-page-btn {
-  padding-top: 7px;
-  padding-bottom: 7px;
-}
+
 
 /* Hover State */
-.nav-page-btn:hover {
-  background-color: rgba(37, 99, 235, 0.08);
-  color: #2563eb; /* Optional: blue text on hover */
-}
+
 
 /* ----------------------------------------------------------------------
  * ACTIVE STATE
@@ -72,12 +65,11 @@
   background: linear-gradient(to right, #3b82f6, #4f46e5);
 }
 
-/* Active Text & Icon Colors */
-.nav-page-btn.active p {
-  color: #ffffff;
-  font-weight: 600;
+
+/* Navigation Links */
+.sidebar-container nav {
+  margin: 0 5px;
 }
 
-.nav-page-btn.active svg {
-  stroke: #ffffff;
-}
+
+

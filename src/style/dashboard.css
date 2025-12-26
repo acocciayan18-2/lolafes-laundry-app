@@ -33,7 +33,6 @@ html, body {
 
 .main-content {
   flex: 1;
-  padding: 35px;
   overflow-y: auto;
   background-color: transparent;
 }
@@ -41,110 +40,7 @@ html, body {
 /* ----------------------------------------------------------------------
  * SIDEBAR STYLES (Refactored from .dashboard)
  * ---------------------------------------------------------------------- */
-.sidebar-container {
-  width: 255px;
-  min-width: 255px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  border-right: 1px solid #e0e0e0;
-  background: #ffffff;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-}
 
-.sidebar-container .logo {
-  text-align: center;
-  margin-bottom: 15px;
-}
-
-.sidebar-container .logo img {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  border: 3px solid #eee;
-  margin-bottom: 10px;
-}
-
-.sidebar-container .logo h5 {
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.sidebar-container .logo small {
-  font-size: 15px;
-  color: #666;
-}
-
-/* Navigation Links */
-.sidebar-container nav {
-  margin: 0 5px;
-}
-
-.sidebar-container nav ul {
-  list-style: none;
-  padding: 0;
-}
-
-.sidebar-container nav ul li a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 16px;
-  margin-bottom: 8px;
-  border-radius: 13px;
-  font-size: 17px;
-  font-weight: 500;
-  color: #333;
-  text-decoration: none;
-  transition: 0.2s;
-}
-
-.sidebar-container nav ul li a:hover {
-  background: rgba(37, 99, 235, 0.08);
-  color: #2563eb;
-}
-
-.sidebar-container nav ul li a.active {
-  background: linear-gradient(to right, #3b82f6, #4f46e5);
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.sidebar-container nav ul li a.active > * {
-  color: #ffffff;
-}
-
-/* Quick Info Section */
-.sidebar-container .quick-info {
-  margin-top: 20px;
-}
-
-.sidebar-container .quick-info div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 15px;
-  border-radius: 10px;
-  margin-bottom: 10px;
-  font-weight: 500;
-}
-
-.sidebar-container .quick-info div:first-of-type {
-  background: #e5f7e5;
-  color: #2b7a2b;
-}
-
-.sidebar-container .quick-info div:last-of-type {
-  background: #fff4e5;
-  color: #d67b2b;
-}
-
-.sidebar-container footer {
-  font-size: 14px;
-  text-align: center;
-  margin-top: 20px;
-  color: #777;
-}
 
 /* ----------------------------------------------------------------------
  * DASHBOARD CONTENT STYLES

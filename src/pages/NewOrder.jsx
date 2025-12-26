@@ -1,224 +1,175 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { IconArrowLeft } from "../components/icons";
+import { CustomerForm } from "../components/orders/CustomerForm";
+import { LoyaltyStatus } from "../components/orders/LoyaltyStatus";
+import { ServiceSelector } from "../components/orders/ServiceSelector";
+import { OrderSummary } from "../components/orders/OrderSummary";
 
+import '../style/neworder.css'; 
 
-const SERVICE_OPTIONS = [
-  { id: 1, name: "Regular Wash & Dry", price: 25 },
-  { id: 2, name: "Wash, Dry & Fold", price: 35 },
-  { id: 3, name: "Premium Wash, Dry & Press", price: 45 },
-];
+// --- Helper Components ---
+const Button = ({ children, variant = "primary", size = "md", className = "", ...props }) => {
+  const variants = {
+    primary: "bg-blue-600 text-white hover:bg-blue-700",
+    outline: "border border-gray-200 text-gray-700 hover:bg-gray-50",
+    default: "bg-gray-900 text-white",
+    yellow: "bg-yellow-500 text-white hover:bg-yellow-600",
+    ghost: "text-red-500 hover:bg-red-50"
+  };
+  const sizes = { sm: "px-3 py-1 text-xs", md: "px-4 py-2 text-sm", icon: "p-2" };
+  return <button className={`rounded-lg font-medium transition-all flex items-center justify-center ${variants[variant]} ${sizes[size]} ${className}`} {...props}>{children}</button>;
+};
 
-const PAYMENT_METHODS = ["Cash", "GCash", "Card"];
+const Input = ({ label, className = "", ...props }) => (
+  <div className="w-full space-y-1.5">
+    {label && (
+      <label className="text-sm font-bold text-black ml-1 tracking-tight uppercase">
+        {label}
+      </label>
+    )}
+    <input 
+      className={`
+        w-full h-11 px-4 rounded-xl border border-gray-200 outline-none text-sm transition-all
+        focus:border-black focus:ring-0
+        placeholder:text-gray-400 
+        ${className}
+      `} 
+      {...props} 
+    />
+  </div>
+);
 
+const Badge = ({ children, className = "" }) => (
+  <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${className}`}>{children}</span>
+);
+
+// --- Main Page Component ---
 export default function NewOrder() {
-  // Customer Information State
-  const [customer, setCustomer] = useState({
-    name: "",
-    phone: "",
-    address: "",
-  });
+  const navigate = useNavigate();
 
-  // Service Selection State
+  // --- STATE ---
+  const [customer, setCustomer] = useState({ name: "", phone: "", address: "" });
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
-  const [totalAmount, setTotalAmount] = useState(0);
-  const [specialNotes, setSpecialNotes] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [notes, setNotes] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Local state to track input values for weights
-  const [inputWeights, setInputWeights] = useState({});
+  // --- MOCK DATA ---
+  const servicesList = [
+    { id: 1, name: "Wash & Fold", type: "wash_fold", price_per_kg: 35 },
+    { id: 2, name: "Dry Clean", type: "dry_only", price_per_kg: 65 },
+    { id: 3, name: "Comforter (Single)", type: "wash_dry", price_per_kg: 150 },
+    { id: 4, name: "Comforter (Double)", type: "wash_dry", price_per_kg: 200 },
+    { id: 5, name: "Express Wash", type: "press_only", price_per_kg: 60 }
+  ]; 
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setCustomer({ ...customer, [name]: value });
+  const customersList = [
+    { id: 101, name: "JUAN DELA CRUZ", phone: "09123456789", address: "Taguig City", order_count: 5 },
+    { id: 102, name: "MARIA CLARA", phone: "09987654321", address: "Quezon City", order_count: 12 },
+    { id: 103, name: "JOSE RIZAL", phone: "09171234567", address: "Calamba, Laguna", order_count: 8 },
+    { id: 104, name: "ANDRES BONIFACIO", phone: "09187654321", address: "Tondo, Manila", order_count: 3 },
+    { id: 105, name: "EMILIO AGUINALDO", phone: "09191234567", address: "Kawit, Cavite", order_count: 15 },
+    { id: 106, name: "APOLINARIO MABINI", phone: "09207654321", address: "Tanauan, Batangas", order_count: 20 },
+    { id: 107, name: "MELCHORA AQUINO", phone: "09211234567", address: "Quezon City", order_count: 7 },
+    { id: 108, name: "GABRIELA SILANG", phone: "09227654321", address: "Vigan, Ilocos Sur", order_count: 4 },
+    { id: 109, name: "ANTONIO LUNA", phone: "09231234567", address: "Binondo, Manila", order_count: 9 },
+    { id: 110, name: "MARCELO H. DEL PILAR", phone: "09247654321", address: "Bulakan, Bulacan", order_count: 11 }
+  ];
+
+  const loyaltySettings = { is_enabled: true, orders_required: 10 };
+
+  // --- HANDLERS ---
+  
+  /**
+   * Added handleApplyReward inside the component to manage the free 8kg service.
+   * It checks for duplicates using the is_reward flag.
+   */
+  const handleApplyReward = () => {
+    const hasReward = selectedServices.some(s => s.is_reward);
+    if (hasReward) return;
+
+    const freeService = {
+      id: 'reward-wash-fold', 
+      service_name: "Wash & Fold (Reward)",
+      service_type: "wash_fold",
+      weight_kg: 8,
+      price_per_kg: 0,
+      subtotal: 0,
+      is_reward: true // Identifier for ServiceSelector and LoyaltyStatus
+    };
+
+    setSelectedServices([...selectedServices, freeService]);
   };
 
-  const handleWeightChange = (serviceId, value) => {
-    setInputWeights({ ...inputWeights, [serviceId]: value });
-  };
-
-  const addService = (service) => {
-    const weight = parseFloat(inputWeights[service.id]);
-    
-    if (!weight || weight <= 0) {
-      alert("Please enter a valid weight.");
+  const handleSubmit = async () => {
+    if (!customer.name || selectedServices.length === 0) {
+      alert("Please select a customer and at least one service.");
       return;
     }
-
-    const subtotal = service.price * weight;
-    const newServiceItem = { ...service, weight, subtotal };
-
-    // Update state
-    setSelectedServices([...selectedServices, newServiceItem]);
-    setTotalAmount(totalAmount + subtotal);
-    
-    // Clear the input for that specific service
-    setInputWeights({ ...inputWeights, [service.id]: "" });
-  };
-
-  const handleCreateOrder = () => {
-    if (!customer.name || !customer.phone || selectedServices.length === 0) {
-      alert("Please fill customer details and add at least one service.");
-      return;
-    }
-
-    // Logic to send to Firebase would go here
-    console.log("Order Created:", { customer, selectedServices, totalAmount, paymentMethod, specialNotes });
-    alert("✅ Order Created Successfully!");
+    setIsProcessing(true);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    alert("Order created successfully!");
+    navigate("/main/orders");
+    setIsProcessing(false);
   };
 
   return (
-    <div className="p-4 w-full">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">New Order</h1>
-        <p className="text-gray-500">Create a new laundry order</p>
-      </header>
-
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+    <div className="min-h-screen bg-slate-50 p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         
-        {/* LEFT COLUMN: Customer & Services */}
-        <section className="md:col-span-7 space-y-6">
+        {/* Page Header */}
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+            <IconArrowLeft className="w-5"/>
+          </Button>
+          <h1 className="text-2xl font-bold text-gray-900">New Order</h1>
+        </div>
+
+        {/* --- MAIN GRID --- */}
+        <div className="grid lg:grid-cols-3 gap-6 items-start">
           
-          {/* Customer Form */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <h5 className="text-lg font-semibold mb-4 text-gray-700">👤 Customer Information</h5>
+          {/* Left Column */}
+          <div className="lg:col-span-2 space-y-6">
+            <CustomerForm 
+              customer={customer} setCustomer={setCustomer}
+              selectedCustomerId={selectedCustomerId} setSelectedCustomerId={setSelectedCustomerId}
+              allCustomers={customersList} Button={Button} Input={Input}
+            />
             
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
-                <input
-                  type="text"
-                  name="name"
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={customer.name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
-                <input
-                  type="text"
-                  name="phone"
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={customer.phone}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                <input
-                  type="text"
-                  name="address"
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={customer.address}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Service Selection */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <h5 className="text-lg font-semibold mb-4 text-gray-700">📦 Services</h5>
-            <div className="space-y-3">
-              {SERVICE_OPTIONS.map((service) => (
-                <div key={service.id} className="flex justify-between items-center border border-gray-100 p-3 rounded bg-gray-50">
-                  <div>
-                    <h6 className="font-medium text-gray-800">{service.name}</h6>
-                    <small className="text-gray-500">₱{service.price}/kg</small>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      className="w-20 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Kg"
-                      value={inputWeights[service.id] || ""}
-                      onChange={(e) => handleWeightChange(service.id, e.target.value)}
-                    />
-                    <button
-                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                      onClick={() => addService(service)}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* RIGHT COLUMN: Order Summary */}
-        <aside className="md:col-span-5">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 sticky top-4">
-            <h5 className="text-lg font-semibold mb-4 text-gray-700">📋 Order Summary</h5>
+            {/* Updated LoyaltyStatus with onApplyFreeService and selectedServices 
+              to enable reward logic and button disabling.
+            */}
+            <LoyaltyStatus 
+              customer={customersList.find(c => c.id === selectedCustomerId)}
+              loyaltySettings={loyaltySettings} 
+              Button={Button} 
+              Badge={Badge}
+              onApplyFreeService={handleApplyReward}
+              selectedServices={selectedServices} 
+            />
             
-            {/* Customer Details Summary */}
-            <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded">
-              <p className="font-medium text-gray-800">Customer:</p>
-              <p>{customer.name || "No name provided"}</p>
-              <p>{customer.phone || "No phone provided"}</p>
-              <p>{customer.address}</p>
-            </div>
-
-            {/* Selected Services List */}
-            <div className="mb-4">
-              <p className="font-medium text-gray-800 mb-2">Services ({selectedServices.length})</p>
-              <ul className="space-y-2 text-sm">
-                {selectedServices.length === 0 ? (
-                  <li className="text-gray-400 italic">No services added yet.</li>
-                ) : (
-                  selectedServices.map((item, index) => (
-                    <li key={index} className="flex justify-between text-gray-600 border-b border-dashed border-gray-200 pb-1">
-                      <span>{item.weight}kg {item.name}</span>
-                      <span className="font-medium text-gray-800">₱{item.subtotal.toFixed(2)}</span>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
-
-            {/* Total */}
-            <div className="flex justify-between items-center text-xl font-bold text-gray-900 border-t border-gray-200 pt-3 mb-4">
-              <span>Total:</span>
-              <span>₱{totalAmount.toFixed(2)}</span>
-            </div>
-
-            {/* Notes */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
-              <textarea
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows="2"
-                placeholder="Add notes..."
-                value={specialNotes}
-                onChange={(e) => setSpecialNotes(e.target.value)}
-              />
-            </div>
-
-            {/* Payment Method */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-              <select 
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-              >
-                {PAYMENT_METHODS.map(method => (
-                  <option key={method} value={method}>{method}</option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded transition-colors shadow-sm"
-              onClick={handleCreateOrder}
-            >
-              Create Order
-            </button>
+            <ServiceSelector 
+              services={servicesList} 
+              selectedServices={selectedServices} 
+              setSelectedServices={setSelectedServices} 
+              Button={Button} Input={Input} Badge={Badge}
+            />
           </div>
-        </aside>
 
+          {/* Right Column */}
+          <div className="lg:col-span-1">
+            <OrderSummary 
+              customer={customer} selectedServices={selectedServices}
+              notes={notes} setNotes={setNotes}
+              paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod}
+              onSubmit={handleSubmit} isProcessing={isProcessing}
+              Button={Button} Input={Input}
+            />
+          </div>
+
+        </div>
       </div>
     </div>
   );
