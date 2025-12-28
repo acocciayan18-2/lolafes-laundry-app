@@ -7,25 +7,25 @@ import OrderCard from "../components/orders/OrderCard";
 // Mock Data
 const MOCK_ORDERS = [
   // 1. THE PENDING ITEM (Amber Banner)
+ 
   { 
     id: "1", 
     order_number: "ORD-001", 
-    customer_name: "JUAN DELA CRUZ", 
+    customer_name: "JUAN DELA CRUZ TORREDA LAURETA", 
     customer_phone: "09123456789", 
-    customer_address: "B5 L2, Acacia St., Taguig",
+    customer_address: "B5 L2, Acacia St., Taguig 123 Rizal Ave, Pasig City 123 Rizal Ave, Pasig City",
     total_weight: 5.0, 
     total_amount: 175.00, 
     status: "pending", 
     is_paid: false,
     created_date: new Date().toISOString(),
-    services: [{ service_name: "Wash & Fold", weight_kg: 5.0 }]
+    services: [{ service_name: "Wash & Fold", weight_kg: 5.0 }],
+    special_instructions: "ertyertyrtyUZSHofiuhsadk fiubwoe" // Added
   },
-
-  // 2. PROCESSING / IN PROGRESS (Brand Blue Gradient + 3 Services)
   { 
     id: "2", 
     order_number: "ORD-002", 
-    customer_name: "MARIA SANTOSss", 
+    customer_name: "MARIA SANTOS", 
     customer_phone: "09987654321", 
     customer_address: "123 Rizal Ave, Pasig City",
     total_weight: 12.5, 
@@ -38,8 +38,10 @@ const MOCK_ORDERS = [
       { service_name: "Dry Clean", weight_kg: 2.0 },
       { service_name: "Wash & Dry", weight_kg: 3.0 },
       
-    ]
+    ],
+    special_instructions: "asdfaskludgIOUYITIUYGjkubgfsdfgwergsergsdfgsdfgsdfgsdfgehgago ka pala pamo nmosab  nas ako un?" // Added
   },
+
 
   // 3. READY FOR PICKUP (Emerald Green Banner)
   { 
@@ -165,78 +167,84 @@ export default function Orders() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 md:p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">All Orders</h1>
-            <p className="text-gray-600 mt-1">Manage and track laundry orders</p>
-          </div>
-          <Link to="/main/neworder">
-  <Button className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md text-white px-4 py-3 h-9">
-    {/* Icon: Reduced to w-4 h-4 and forced white via stroke and text classes */}
-    <IconPlus className="w-4 h-4 mr-2 !text-white !stroke-white" />
-    {/* Text: Reduced to text-xs (Extra Small) */}
-    <span className="text-sm font-medium text-white">New Order</span>
-  </Button>
-</Link>
+  <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-3 md:p-4">
+    <div className="max-w-6xl mx-auto px-1 md:px-2">
+      {/* Header - Slightly reduced margin-bottom */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-3">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">All Orders</h1>
+          <p className="text-gray-600 mt-1">Manage and track laundry orders</p>
         </div>
+        <Link to="/main/neworder">
+          <Button className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md text-white px-4 py-3 h-9">
+            <IconPlus className="w-4 h-4 mr-2 !text-white !stroke-white" />
+            <span className="text-sm font-medium text-white">New Order</span>
+          </Button>
+        </Link>
+      </div>
 
-       
-       <div className="flex flex-col lg:flex-row gap-4 mb-6">
+      {/* Search & Filters - Restored Original H-11 and design */}
+    <div className="flex flex-row gap-2 mb-6">
   <div className="flex-1 relative">
-    <IconSearch className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-    <Input
-      placeholder="Search by customer name, phone, or order number..."
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-      
-      className="pl-10 bg-white/80 backdrop-blur-sm h-11 !focus:border-black !focus:ring-0 transition-colors"
-    />
-  </div>
+  {/* The Icon: Positioned 12px (left-3) from the edge */}
+  <IconSearch className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+  
+  <Input
+    placeholder="Search name, phone, or order number..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    
+    className="!pl-10 bg-white/80 backdrop-blur-sm  !focus:border-black !focus:ring-0 transition-colors border-slate-200"
+  />
+</div>
   <OrderFilters 
     statusFilter={statusFilter}
     setStatusFilter={setStatusFilter}
   />
 </div>
 
-        {/* Orders List */}
-        <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1">
-          {isLoading ? (
-            <div className="col-span-full flex justify-center items-center py-24">
-              <LaundryLoader />
+
+
+
+
+      {/* Orders List 
+          - Added px-1 and overflow-visible so card shadows aren't clipped on the sides
+      */}
+      <div className="grid gap-3 grid-cols-1  overflow-visible">
+        {isLoading ? (
+          <div className="col-span-full flex justify-center items-center py-20">
+            <LaundryLoader />
+          </div>
+        ) : filteredOrders.length > 0 ? (
+          filteredOrders.map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              onStatusUpdate={updateOrderStatus}
+            />
+          ))
+        ) : (
+          <div className="col-span-full text-center py-16 bg-white/40 backdrop-blur-sm rounded-2xl border border-dashed border-slate-300">
+            <div className="flex justify-center mb-4">
+              <IconShirt className="w-12 h-12 text-slate-300" />
             </div>
-          ) : filteredOrders.length > 0 ? (
-            filteredOrders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                onStatusUpdate={updateOrderStatus}
-              />
-            ))
-          ) : (
-            <div className="col-span-full text-center py-12 bg-white/50 rounded-xl border border-dashed border-gray-300">
-              <div className="flex justify-center mb-4">
-                <IconShirt className="w-16 h-16 text-gray-300" />
-              </div>
-              <h3 className="text-xl font-medium text-gray-500 mb-2">No orders found</h3>
-              <p className="text-gray-400 mb-6">
-                {searchTerm || statusFilter !== "all" 
-                  ? "Try adjusting your search or filters"
-                  : "Start by creating your first order"
-                }
-              </p>
-              <Link to="/main/neworder">
-                <Button className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 h-10">
-                  <IconPlus className="w-5 h-5 mr-2" />
-                  Create First Order
-                </Button>
-              </Link>
-            </div>
-          )}
-        </div>
+            <h3 className="text-lg font-bold text-slate-600 mb-1">No orders found</h3>
+            <p className="text-sm text-slate-400 mb-6">
+              {searchTerm || statusFilter !== "all" 
+                ? "Try adjusting your search or filters"
+                : "Start by creating your first order"
+              }
+            </p>
+            <Link to="/main/neworder">
+              <Button className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-6 py-2 rounded-xl shadow-sm transition-all">
+                <IconPlus className="w-4 h-4 mr-2" />
+                Create First Order
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
-  );
+  </div>
+);
 }

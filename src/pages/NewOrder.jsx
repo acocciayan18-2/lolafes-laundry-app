@@ -24,14 +24,15 @@ const Button = ({ children, variant = "primary", size = "md", className = "", ..
 const Input = ({ label, className = "", ...props }) => (
   <div className="w-full space-y-1.5">
     {label && (
-      <label className="text-sm font-bold text-black ml-1 tracking-tight uppercase">
+      <label className="text-sm font-bold text-black ml-1 tracking-tight">
         {label}
       </label>
     )}
     <input 
       className={`
-        w-full h-11 px-4 rounded-xl border border-gray-200 outline-none text-sm transition-all
-        focus:border-black focus:ring-0
+        w-full h-11 px-4 rounded-xl border border-gray-300 transition-all text-sm
+        /* REMOVE ALL DEFAULT FOCUS STYLES */
+        outline-none focus:outline-none focus:ring-0 focus:ring-offset-0
         placeholder:text-gray-400 
         ${className}
       `} 

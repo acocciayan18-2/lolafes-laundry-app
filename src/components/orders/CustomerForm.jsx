@@ -23,7 +23,7 @@ export const CustomerForm = ({
   const selectCustomer = (c) => {
     setCustomer({ name: c.name, phone: c.phone, address: c.address || "" });
     setSelectedCustomerId(c.id);
-    setShowExistingCustomers(false); // Switch to form view to see the details
+    setShowExistingCustomers(false); 
   };
 
   const getIconClasses = (isActive) => {
@@ -32,9 +32,17 @@ export const CustomerForm = ({
     }`;
   };
 
-  // Logic for button active states
   const isExistingActive = showExistingCustomers || selectedCustomerId !== null;
   const isAddNewActive = !showExistingCustomers && selectedCustomerId === null;
+
+  /**
+   * FINAL FOCUS LOGIC:
+   * 1. focus:outline-none -> Removes default browser outline
+   * 2. focus:ring-offset-0 -> REMOVES THE WHITE GAP/BORDER
+   * 3. focus:!border-[#2d79f3] -> Brand Blue Border
+   * 4. focus:!ring-2 -> Soft Glow
+   */
+   const focusClasses = "focus:outline-none focus:!ring-0 focus:!shadow-none focus:!border-[#2d79f3] border-gray-300";
 
   return (
     <div className="bg-white/80 rounded-xl shadow-[rgba(50,50,93,0.15)_0px_50px_100px_-20px,rgba(0,0,0,0.1)_0px_30px_60px_-30px] border border-gray-100 overflow-hidden">
@@ -42,7 +50,7 @@ export const CustomerForm = ({
       <div className="p-6 pb-0 border-b border-gray-100">
         <div className="flex flex-wrap items-center gap-2 pb-4">
           <h3 className="flex items-center gap-2 text-xl font-bold text-gray-900">
-            <IconUsers className="w-6 h-6 !text-blue-600 !stroke-blue-600" />
+            <IconUsers className="w-6 h-6 !text-[#2d79f3] !stroke-[#2d79f3]" />
             Customer Information
           </h3>
           
@@ -55,7 +63,6 @@ export const CustomerForm = ({
       </div>
 
       <div className="p-6 space-y-2">
-        {/* BUTTON TOGGLE GROUP */}
         <div className="flex gap-2 pb-2">
           <Button
             variant={isExistingActive ? "default" : "outline"}
@@ -82,14 +89,13 @@ export const CustomerForm = ({
           </Button>
         </div>
 
-        {/* --- TOGGLEABLE CONTENT --- */}
         {showExistingCustomers ? (
           <div className="space-y-3">
             <Input
               placeholder="Search by name or phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="focus:!border-black focus:!ring-black/10"
+              className={focusClasses}
             />
 
             <div className="max-h-40 overflow-y-auto bg-gray-50/50 rounded-xl p-1 border border-gray-100 custom-scrollbar">
@@ -98,9 +104,9 @@ export const CustomerForm = ({
                   <button
                     key={c.id}
                     onClick={() => selectCustomer(c)}
-                    className="w-full text-left p-3 rounded-lg transition-colors hover:bg-gray-100/50 group"
+                    className="w-full text-left p-3 rounded-lg transition-colors hover:bg-blue-50 group"
                   >
-                    <p className="font-bold text-gray-900 ">{c.name}</p>
+                    <p className="font-bold text-gray-900 group-hover:text-[#2d79f3] transition-colors">{c.name}</p>
                     <p className="text-sm text-gray-500">{c.phone}</p>
                   </button>
                 ))
@@ -117,7 +123,7 @@ export const CustomerForm = ({
               <Input
                 label="Customer Name *"
                 value={customer.name}
-                readOnly={!!selectedCustomerId} // Prevent editing if existing
+                readOnly={!!selectedCustomerId}
                 onChange={(e) =>
                   setCustomer({
                     ...customer,
@@ -125,28 +131,28 @@ export const CustomerForm = ({
                   })
                 }
                 placeholder="Enter Customer Name"
-                className={`focus:!border-black focus:!ring-0 uppercase ${selectedCustomerId ? "bg-gray-50 cursor-not-allowed text-gray-500" : ""}`}
+                className={`uppercase ${selectedCustomerId ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-500 border-gray-200" : focusClasses}`}
               />
               <Input
                 label="Contact Number *"
                 value={customer.phone}
-                readOnly={!!selectedCustomerId} // Prevent editing if existing
+                readOnly={!!selectedCustomerId}
                 onChange={(e) =>
                   setCustomer({ ...customer, phone: e.target.value })
                 }
                 placeholder="09XX XXX XXXX"
-                className={`focus:!border-black focus:!ring-0 ${selectedCustomerId ? "bg-gray-50 cursor-not-allowed text-gray-500" : "text-gray-900"}`}
+                className={`${selectedCustomerId ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-500 border-gray-200" : `text-gray-900 ${focusClasses}`}`}
               />
             </div>
             <Input
               label="Address"
               value={customer.address}
-              readOnly={!!selectedCustomerId} // Prevent editing if existing
+              readOnly={!!selectedCustomerId}
               onChange={(e) =>
                 setCustomer({ ...customer, address: e.target.value })
               }
               placeholder="Customer Address (Optional)"
-              className={`focus:!border-black focus:!ring-0 ${selectedCustomerId ? "bg-gray-50 cursor-not-allowed text-gray-500" : ""}`}
+              className={`${selectedCustomerId ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-500 border-gray-200" : focusClasses}`}
             />
           </div>
         )}

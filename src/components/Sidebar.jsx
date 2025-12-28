@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../services/firebase";
 import "../style/sidebar.css";
+import "../style/main-app.css";
 
 const SIDEBAR_CONFIG = {
   menuItems: [
@@ -79,16 +80,104 @@ const SIDEBAR_CONFIG = {
 };
 
 
-/**
- * Renders a single menu item in the sidebar list.
- * UPDATED: Active state is now White text/icon on Blue background.
- * Hover state remains Blue text/icon on Transparent background.
- */
-const MenuItem = ({ to, icon, text }) => {
+
+export default function Sidebar({ isOpen, setIsOpen }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  return (
+    <>
+      {/* 1. MOBILE BACKDROP (Click outside to close) */}
+      <div 
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[45] transition-opacity duration-300 lg:hidden ${
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setIsOpen(false)}
+      />
+
+      {/* 2. SIDEBAR CONTAINER (Applied your design classes here) */}
+      <div className={`
+        sidebar-container flex h-screen fixed inset-y-0 left-0 z-[50] transition-transform duration-300 ease-in-out
+        lg:relative lg:translate-x-0
+        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+      `}>
+        <aside className="sidebar w-64 bg-white flex flex-col h-screen shadow-2xl lg:shadow-none">
+          
+          {/* Top Section: Logo + Added Close Button for Mobile */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between">
+              <Logo />
+             
+              
+            </div>
+            
+            {/* Scrollable Navigation Area (Your Design) */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Main Menu */}
+              <div className="p-3">
+                <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider px-2 py-2">
+                  Main Menu
+                </p>
+                <nav>
+                  <ul className="space-y-1">
+                    {SIDEBAR_CONFIG.menuItems.map((item) => (
+                      <MenuItem key={item.text} {...item} closeSidebar={() => setIsOpen(false)} />
+                    ))}
+                  </ul>
+                </nav>
+              </div>
+
+              {/* Quick Info Section (Your Design) */}
+              <div className="px-3 pt-2 pb-3">
+                <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider px-2 py-2 pt-1">
+                  Quick Info
+                </p>
+                <div className="px-3 py-1 space-y-3 items-center justify-center">
+                  {SIDEBAR_CONFIG.quickInfo.map((card) => (
+                    <InfoCard key={card.title} {...card} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Section: Footer & Logout (Your Design) */}
+          <div className="bg-white border-t border-gray-50">
+            <LogoutButton onClick={() => setShowConfirm(true)} />
+            <FooterCard />
+          </div>
+
+          {/* Modals */}
+          {showConfirm && (
+            <LogoutConfirmationModal 
+              onCancel={() => setShowConfirm(false)} 
+              onConfirm={handleLogout} 
+            />
+          )}
+        </aside>
+      </div>
+    </>
+  );
+}
+
+// Updated MenuItem to include auto-close on mobile
+const MenuItem = ({ to, icon, text, closeSidebar }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleNavigation = () => navigate(to);
+  const handleNavigation = () => {
+    navigate(to);
+    if (window.innerWidth < 1024) closeSidebar();
+  };
 
   const isActive = location.pathname === to;
 
@@ -99,40 +188,29 @@ const MenuItem = ({ to, icon, text }) => {
         className={`
           group flex items-center gap-2 px-3 w-full text-left nav-page-btn transition-colors duration-200
           ${isActive 
-            ? "active bg-blue-600 shadow-md" // Changed: Active BG is now darker blue
+            ? "active bg-blue-600 shadow-md" 
             : "bg-transparent hover:bg-transparent"
           }
         `}
       >
         <div className="shrink-0 flex items-center justify-center">
-          {/* ICON STYLING */}
           {React.cloneElement(icon, {
             className: `${icon.props.className || ""} transition-colors duration-200 ${
               isActive
-                ? "!text-white !stroke-white" // Active: White
-                : "text-gray-600 stroke-gray-600 group-hover:!text-blue-600 group-hover:!stroke-blue-600" // Hover: Blue
+                ? "!text-white !stroke-white"
+                : "text-gray-600 stroke-gray-600 group-hover:!text-blue-600 group-hover:!stroke-blue-600"
             }`
           })}
         </div>
-
-        {/* TEXT STYLING */}
-        <p
-          className={`text-sm font-medium transition-colors duration-200 ${
-            isActive
-              ? "text-white" // Active: White
-              : "text-gray-600 group-hover:text-blue-600" // Hover: Blue
-          }`}
-        >
+        <p className={`text-sm font-medium transition-colors duration-200 ${isActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"}`}>
           {text}
         </p>
       </button>
     </li>
   );
 };
+// --- These helper components stay exactly as you designed them ---
 
-/**
- * Displays a quick statistic card with gradient background.
- */
 const InfoCard = ({ title, value, bgColor, textColor }) => (
   <div className={`bg-gradient-to-r ${bgColor} p-2 rounded-xl border ${textColor}`}>
     <div className="flex items-center justify-between px-1">
@@ -142,148 +220,75 @@ const InfoCard = ({ title, value, bgColor, textColor }) => (
   </div>
 );
 
-/**
- * Renders the application branding/logo section.
- */
 const Logo = () => (
-  <div className="flex items-center gap-2.5 pl-5 pt-3.5 pb-3.5 logo-con">
+  <div className="flex items-center gap-2.5 pl-5 pt-3.5 pb-3.5 w-full logo-con">
     <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
-      <img src="/images/lolafeslaundry-logo.png" alt="Lola Fe's Laundry Logo" className="w-full h-full object-contain" />
+      <img
+        src="/images/lolafeslaundry-logo.png"
+        alt="Logo"
+        className="w-full h-full object-contain"
+      />
     </div>
     <div className="flex flex-col items-start">
-      <h2 className="font-bold text-gray-900 text-lg leading-none">Lola Fe's Laundry</h2>
-      <p className="text-xxs text-blue-600 font-medium">Laundry Shop Manager</p>
+      <h2 className="font-bold text-gray-900 text-lg leading-none">
+        Lola Fe's Laundry
+      </h2>
+      <p className="text-xxs text-blue-600 font-medium">
+        Manager System
+      </p>
     </div>
   </div>
 );
 
-/**
- * Renders the logout button with an icon.
- */
+
 const LogoutButton = ({ onClick }) => (
   <div className="px-3 py-2.5">
     <div
       onClick={onClick}
-      className="rounded-xl p-2 border cursor-pointer hover:bg-red-100 transition-colors flex items-center gap-2 w-full"
+      className="rounded-xl p-2.5 border cursor-pointer hover:bg-red-50 hover:border-red-200 transition-colors flex items-center gap-2 w-full active:scale-95"
     >
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-red-500" viewBox="0 0 16 16">
         <path fillRule="evenodd" d="M6 12.5a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-1 0v-2A1.5 1.5 0 0 1 6.5 2h8A1.5 1.5 0 0 1 16 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 5 12.5v-2a.5.5 0 0 1 1 0z" />
         <path fillRule="evenodd" d="M.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L1.707 7.5H10.5a.5.5 0 0 1 0 1H1.707l2.147 2.146a.5.5 0 0 1-.708.708z" />
       </svg>
-      <p className="text-xs font-medium text-gray-900">Log out</p>
+      <p className="text-xs font-bold text-gray-700">Log out</p>
     </div>
   </div>
 );
 
-/**
- * Renders the footer card containing shop location/info.
- */
 const FooterCard = () => (
-  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-2 border border-blue-200 cursor-pointer mx-3 mb-3">
+  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-2.5 border border-blue-100 cursor-pointer mx-3 mb-3 hover:border-blue-300 transition-colors">
     <div className="flex items-center gap-2">
-      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-        <span className="text-white font-bold text-sm">LS</span>
+      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-sm">
+        <span className="text-white font-bold text-[10px]">LS</span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-900 text-sm truncate">Lola Fe's Laundry Shop</p>
-        <p className="text-xs text-blue-600 truncate">Taguig City</p>
+        <p className="font-bold text-gray-900 text-xs truncate">Main Branch</p>
+        <p className="text-[10px] text-blue-600 font-medium truncate">Taguig City, PH</p>
       </div>
     </div>
   </div>
 );
 
-/**
- * Main Sidebar component that handles layout, navigation rendering,
- * and user logout functionality.
- */
-export default function Sidebar() {
-  const [showConfirm, setShowConfirm] = useState(false);
-  const navigate = useNavigate();
-
-  /**
-   * Handles the Firebase sign-out process.
-   */
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
-
-  /**
-   * Modal component for logout confirmation.
-   */
-  const LogoutConfirmationModal = () => (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
-      <div className="bg-white rounded-xl shadow-lg p-6 w-80">
-        <h3 className="text-xl font-semibold mb-4">Confirm Logout</h3>
-        <p className="text-sm text-gray-600 mb-6">Are you sure you want to log out?</p>
-        <div className="flex justify-center item-center gap-3">
-          <button
-            className="px-2 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 w-full"
-            onClick={() => setShowConfirm(false)}
-          >
-            Cancel
-          </button>
-          <button
-            className="px-2 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 w-full"
-            onClick={handleLogout}
-          >
-            Log Out
-          </button>
-        </div>
+const LogoutConfirmationModal = ({ onCancel, onConfirm }) => (
+  <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-[60] p-4">
+    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-in zoom-in duration-200">
+      <h3 className="text-lg font-bold mb-2 text-gray-900">Confirm Logout</h3>
+      <p className="text-sm text-gray-500 mb-6">Are you sure you want to log out of the manager system?</p>
+      <div className="flex gap-3">
+        <button
+          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 active:scale-95 transition-all"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600 shadow-lg shadow-red-200 active:scale-95 transition-all"
+          onClick={onConfirm}
+        >
+          Yes, Log Out
+        </button>
       </div>
     </div>
-  );
-
-  return (
-    <div className="sidebar-container flex h-screen">
-      <aside className="sidebar w-64 bg-white flex flex-col h-screen">
-        {/* Top Section: Logo */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Logo />
-          
-          {/* Scrollable Navigation Area */}
-          <div className="flex-1 overflow-y-auto">
-            {/* Main Menu */}
-            <div className="p-3">
-              <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider px-2 py-2">
-                Main Menu
-              </p>
-              <nav>
-                <ul className="space-y-1">
-                  {SIDEBAR_CONFIG.menuItems.map((item) => (
-                    <MenuItem key={item.text} {...item} />
-                  ))}
-                </ul>
-              </nav>
-            </div>
-
-            {/* Quick Info Section */}
-            <div className="px-3 pt-2 pb-3">
-              <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider px-2 py-2 pt-1">
-                Quick Info
-              </p>
-              <div className="px-3 py-1 space-y-3 items-center justify-center">
-                {SIDEBAR_CONFIG.quickInfo.map((card) => (
-                  <InfoCard key={card.title} {...card} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Section: Footer & Logout */}
-        <div className="bg-white">
-          <LogoutButton onClick={() => setShowConfirm(true)} />
-          <FooterCard />
-        </div>
-
-        {/* Modals */}
-        {showConfirm && <LogoutConfirmationModal />}
-      </aside>
-    </div>
-  );
-}
+  </div>
+);
