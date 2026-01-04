@@ -1,193 +1,228 @@
-import React, { useState } from "react";
-import { IconPackage, IconPlus, IconTrash } from "../icons";
+import React, { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { IconPackage } from "../icons";
+import { useServiceStore } from "../../store/services/useServiceStore";
+
+const SPRING_TRANSITION = {
+  type: "spring", stiffness: 300, damping: 30, mass: 1, restDelta: 0.01
+};
 
 export const ServiceSelector = ({
-  services,
   selectedServices,
   setSelectedServices,
   Button,
-  Input,
   Badge,
 }) => {
-  const [newServiceWeight, setNewServiceWeight] = useState({});
+  const { services, subscribeToServices, isLoading } = useServiceStore();
 
+  useEffect(() => {
+    const unsubscribe = subscribeToServices();
+    return () => unsubscribe();
+  }, [subscribeToServices]);
+
+  // --- 1. DEFINED ORDER: The object keys determine the rank ---
   const serviceTypeLabels = {
     wash_only: "Wash Only",
-    wash_fold: "Wash & Fold",
-    wash_dry: "Wash & Dry",
-    wash_dry_fold: "Wash, Dry & Fold",
     dry_only: "Dry Only",
+    fold_only: "Fold Only",
     press_only: "Press Only",
+    wash_dry: "Wash & Dry",
+    wash_fold: "Wash & Fold",
+    dry_fold: "Dry & Fold",
+    dry_press: "Dry & Press",
+    wash_dry_fold: "Wash, Dry & Fold",
+    wash_dry_press: "Wash, Dry & Press",
+    wash_fold_press: "Wash, Fold & Press",
+    full_service: "Full Service (W/D/F/P)",
+    special_care: "Delicates / Handwash",
+    bulk_items: "Bulk (Comforters/Rug)",
+    add_on: "Add-ons & Supplies"
   };
 
-  const addService = (service) => {
-    const weight = parseFloat(newServiceWeight[service.id]) || 0;
-    if (weight <= 0) return;
+  // Helper to find current quantity of a service in the cart
+  const getQuantity = (serviceId) => {
+    const item = selectedServices.find(s => s.id === serviceId && !s.is_reward);
+    return item ? item.quantity : 0;
+  };
 
-    const existingIndex = selectedServices.findIndex((s) => s.id === service.id);
-
+  const updateQuantity = (service, delta) => {
+    const existingIndex = selectedServices.findIndex((s) => s.id === service.id && !s.is_reward);
+    
     if (existingIndex !== -1) {
       const updatedServices = [...selectedServices];
-      const existingService = updatedServices[existingIndex];
-      const newTotalWeight = existingService.weight_kg + weight;
+      const newQty = updatedServices[existingIndex].quantity + delta;
 
-      updatedServices[existingIndex] = {
-        ...existingService,
-        weight_kg: newTotalWeight,
-        subtotal: newTotalWeight * service.price_per_kg,
-      };
-      setSelectedServices(updatedServices);
-    } else {
-      const subtotal = weight * service.price_per_kg;
+      if (newQty <= 0) {
+        // Remove if quantity hits 0
+        setSelectedServices(selectedServices.filter((_, i) => i !== existingIndex));
+      } else {
+        // Update existing
+        updatedServices[existingIndex] = {
+          ...updatedServices[existingIndex],
+          quantity: newQty,
+          subtotal: newQty * service.price_per_kg,
+        };
+        setSelectedServices(updatedServices);
+      }
+    } else if (delta > 0) {
+      // Add new
       setSelectedServices([...selectedServices, {
         id: service.id,
         service_name: service.name,
         service_type: service.type,
-        weight_kg: weight,
+        quantity: 1,
         price_per_kg: service.price_per_kg,
-        subtotal: subtotal,
+        subtotal: service.price_per_kg,
+        is_reward: false
       }]);
     }
-    setNewServiceWeight({ ...newServiceWeight, [service.id]: "" });
   };
 
-  const removeService = (index) => {
-    setSelectedServices(selectedServices.filter((_, i) => i !== index));
-  };
+  // Group services by their type
+  const groupedServices = services
+    .filter(s => s.is_active)
+    .reduce((acc, service) => {
+      const type = service.type || 'other';
+      if (!acc[type]) acc[type] = [];
+      acc[type].push(service);
+      return acc;
+    }, {});
 
-  const updateServiceWeight = (index, newWeight) => {
-    const weight = parseFloat(newWeight) || 0;
-    const updatedServices = [...selectedServices];
-    updatedServices[index] = {
-      ...updatedServices[index],
-      weight_kg: weight,
-      subtotal: weight * updatedServices[index].price_per_kg,
-    };
-    setSelectedServices(updatedServices);
-  };
-
-  // Focus style used for brand consistency
-  const focusClasses = "focus:outline-none focus:!ring-0 focus:!shadow-none focus:!border-[#2d79f3] border-gray-300";
+  // --- 2. SORTING LOGIC: Force the groups to follow the label order ---
+  // This creates an array of keys (e.g. ['wash_only', 'dry_only'...])
+  // sorted by their position in the serviceTypeLabels object.
+  const serviceOrder = Object.keys(serviceTypeLabels);
+  
+  const sortedServiceTypes = Object.keys(groupedServices).sort((a, b) => {
+    const indexA = serviceOrder.indexOf(a);
+    const indexB = serviceOrder.indexOf(b);
+    
+    // If a type isn't in our list (e.g. 'other'), push it to the end
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    
+    return indexA - indexB;
+  });
 
   return (
-    <div className="bg-white/80 shadow-[rgba(50,50,93,0.15)_0px_50px_100px_-20px,rgba(0,0,0,0.1)_0px_30px_60px_-30px] rounded-xl border border-gray-100 overflow-hidden">
-      {/* Header */}
-      <div className="p-6 pb-2">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white/80 shadow-md rounded-xl border border-gray-100 overflow-hidden"
+    >
+      <div className="p-4 pb-2 border-b border-gray-50 bg-white">
         <h3 className="flex items-center gap-2 text-xl font-bold text-gray-900">
           <IconPackage className="w-6 h-6 !text-[#2d79f3] !stroke-[#2d79f3]" />
           Services
         </h3>
       </div>
 
-      <div className="p-6 space-y-6 pt-2">
-        <h3 className="text-l font-medium text-gray-900 ml-1">Available Services</h3>
+      <div className="p-4 pt-0 space-y-8">
+        {isLoading ? (
+          <div className="py-10 text-center text-sm text-gray-400 italic">Syncing with cloud...</div>
+        ) : (
+          // --- 3. RENDER LOOP: Iterate over the SORTED keys ---
+          sortedServiceTypes.map((type) => (
+            <div key={type} className="space-y-2 !mt-4">
+              <h4 className="text-xs uppercase font-bold text-blue-600 ml-1">
+                {serviceTypeLabels[type] || type.replace('_', ' ')}
+              </h4>
+              
+              <div className="grid gap-2">
+                {groupedServices[type].map((service) => {
+                  const qty = getQuantity(service.id);
+                  return (
+                    <div 
+                      key={service.id} 
+                      className={`flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
+                        qty > 0 
+                          ? "border-1 border-gray-600 shadow-sm" 
+                          : "bg-gray-50/50 border border-gray-100 hover:border-gray-300"
+                      }`}
+                    >
+ 
+                      <div className="flex-1">
+                        <h5 className="font-bold text-gray-900 text-[16px]">{service.name}</h5>
+                        <Badge className="text-xs font-bold text-gray-600"> ₱{Number(service.price_per_kg).toFixed(2)}</Badge>
+                      </div>
 
-        {/* --- AVAILABLE SERVICES LIST --- */}
-        <div className="grid gap-3">
-          {services.map((service) => (
-            <div key={service.id} className="group bg-blue-100/50 rounded-xl p-4 border border-blue-400 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:shadow-sm hover:border-blue-500">
-              <div className="flex-1">
-                <h4 className="font-bold text-gray-900 text-lg">{service.name}</h4>
-                <div className="flex gap-2 mt-1">
-                  <Badge className="bg-blue-100/50 text-blue-700 border-blue-200 px-3">
-                    {serviceTypeLabels[service.type] || service.type}
-                  </Badge>
-                  <Badge className="bg-white text-gray-600 border-gray-200 px-3 font-mono">
-                    ₱{service.price_per_kg}/kg
-                  </Badge>
-                </div>
-              </div>
+                      {/* QUANTITY CONTROLS */}
+                      <div className="flex items-center gap-2 p-1 rounded-lg">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(service, -1)}
+                          disabled={qty === 0}
+                          className="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer transition-all active:scale-90 hover:bg-gray-50 disabled:opacity-20 disabled:border-gray-300 disabled:cursor-not-allowed"
+                        >
+                          <p className="text-xl font-medium text-gray-800">–</p>
+                        </button>
+                        
+                        <div className="w-8 text-center font-bold text-sm text-gray-800">
+                          {qty}
+                        </div>
 
-              <div className="flex gap-2 items-center p-2 rounded-lg">
-                <Input
-                  placeholder="Weight"
-                  type="text"
-                  inputMode="decimal"
-                  value={newServiceWeight[service.id] || ""}
-                  onChange={(e) => {
-                    let val = e.target.value.replace(/[^0-9.]/g, '');
-                    if (val.startsWith('0') && !val.startsWith('0.')) return;
-                    if (val.split('.').length > 2) return;
-                    setNewServiceWeight({ ...newServiceWeight, [service.id]: val });
-                  }}
-                  className={`w-24 !h-10 text-center font-normal ${focusClasses}`}
-                />
-                <Button
-                  onClick={() => addService(service)}
-                  disabled={!newServiceWeight[service.id] || parseFloat(newServiceWeight[service.id]) <= 0}
-                  className="h-10 w-10 !p-0 shadow-sm transition-all !bg-[#2d79f3] hover:!bg-blue-700 disabled:!bg-blue-300 !border-0"
-                >
-                  <IconPlus className="w-5 h-5 !text-white !stroke-white" />
-                </Button>
+                        <button
+                          onClick={() => updateQuantity(service, 1)}
+                          aria-label={`Add ${service.name}`}
+                          className="w-8 h-8 flex items-center justify-center rounded-md bg-blue-500 text-white hover:bg-blue-700 transition-colors"
+                        >
+                          <span className="text-xl font-medium text-white">+</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* --- SELECTED ITEMS SECTION --- */}
-        {selectedServices.length > 0 && (
-          <div className="space-y-4 pt-2">
-            {/* Added your requested heading style here */}
-            <h3 className="text-l font-medium text-gray-900 ml-1">Selected Services</h3>
-            
-            {selectedServices.map((service, index) => (
-              <div 
-                key={index} 
-                className={`
-                  flex items-center justify-between p-4 pt-3 pb-3 rounded-xl border transition-all hover:bg-white
-                  ${service.is_reward 
-                    ? "bg-green-50/50 !border-green-700 shadow-[0_0_10px_rgba(21,128,61,0.1)]" 
-                    : "bg-gray-50/50 border-gray-100"
-                  }
-                `}
-              >
-                <div className="flex-1 pr-4">
-                  <div className="flex items-center mb-1">
-                    <p className="font-bold text-gray-900 text-sm leading-none">
-                      {service.service_name}
-                    </p>
-                  </div>
-                  
-                  <p className={`text-xxs tracking-tighter font-mono ${service.is_reward ? "text-green-700 font-bold" : "text-gray-500"}`}>
-                    {service.is_reward ? "LOYALTY REWARD APPLIED" : `₱ ${service.price_per_kg}/kg`}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col items-center">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase">Weight</span>
-                    <Input
-                      type="number"
-                      value={service.weight_kg}
-                      readOnly={service.is_reward}
-                      onChange={(e) => updateServiceWeight(index, e.target.value)}
-                      className={`w-14 !h-10 !p-1 text-center font-bold !text-xs !rounded-md ${
-                        service.is_reward ? "bg-white border-green-200 text-green-700 cursor-not-allowed" : `text-gray-900 ${focusClasses}`
-                      }`}
-                    />
-                  </div>
-
-                  <div className="text-right min-w-[70px]">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase block">Subtotal</span>
-                    <p className={`font-black ${service.is_reward ? "text-green-700" : "text-[#2d79f3]"}`}>
-                      ₱{service.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeService(index)}
-                    className="!text-red-500 hover:!text-red-700 hover:!bg-red-50 !p-2 transition-colors"
-                  >
-                    <IconTrash className="w-5 h-5 !text-red-500 !stroke-red-500" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+          ))
         )}
+
+        {/* SUMMARY OF SELECTED ITEMS */}
+        <AnimatePresence>
+          {selectedServices.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="!pt-0 border-t border-gray-100"
+            >
+              <h3 className="text-sm font-bold text-gray-700 mb-3 ml-1">Current Selection</h3>
+              <div className="space-y-3">
+                {selectedServices.map((service, index) => (
+                  <motion.div 
+                    key={service.id || index} 
+                    layout
+                    transition={SPRING_TRANSITION}
+                    className="flex justify-between items-center bg-gray-50/30 p-3 rounded-xl border-2 border-gray-100 hover:border-gray-200 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-row gap-1 items-center justify-center">
+                         <span className="text-[12px] font-medium text-gray-700 leading-none">x</span>
+                         <span className="text-sm font-bold text-gray-700 leading-none">{service.quantity}</span>
+                      </div>
+
+                      <div className="flex flex-col">
+                        <span className="text-[16px] font-bold text-gray-900 leading-tight">
+                          {service.service_name}
+                        </span>
+                        <span className="text-[12px] font-bold text-blue-600 uppercase tracking-tight">
+                           ₱{Number(service.price_per_kg).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="px-3 py-1.5 ">
+                      <span className="text-[17px] font-mono font-medium text-gray-900">
+                        ₱{service.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
-};
+}

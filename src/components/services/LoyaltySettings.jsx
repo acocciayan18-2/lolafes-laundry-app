@@ -1,186 +1,309 @@
-import React, { useState, useEffect } from "react";
-import { IconGift, IconStar, IconSave } from "../icons";
+import React, { useState, useEffect, useRef } from "react";
+import { IconGift, IconArrowUp, IconAlertTriangle } from "../icons"; // Assuming you have an alert icon, or use SVG
+import { useLoyaltyStore } from "../../store/services/useLoyaltyStore";
+import { useServiceStore } from "../../store/services/useServiceStore";
+import { motion, AnimatePresence } from "framer-motion";
 
-// --- Local UI Components ---
-const Label = ({ children, htmlFor }) => (
-  <label htmlFor={htmlFor} className="text-sm font-medium text-gray-700 block mb-1">
+// --- UI Helpers ---
+const Label = ({ children }) => (
+  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1.5 ml-1 tracking-wider">
     {children}
   </label>
 );
 
-const Input = ({ id, type, value, onChange, min, step, className }) => (
-  <input
-    id={id}
-    type={type}
-    value={value}
-    onChange={onChange}
-    min={min}
-    step={step}
-    className={`flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 ${className}`}
+const Input = ({ type, value, onChange, disabled, className, placeholder, inputMode }) => (
+  <input 
+    type={type} 
+    value={value} 
+    onChange={onChange} 
+    disabled={disabled}
+    placeholder={placeholder}
+    inputMode={inputMode}
+    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium transition-all focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 shadow-sm disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
   />
 );
 
 const Switch = ({ checked, onCheckedChange }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={checked}
+  <button 
+    type="button" 
     onClick={() => onCheckedChange(!checked)}
-    className={`
-      peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2
-      ${checked ? 'bg-purple-600' : 'bg-gray-200'}
-    `}
+    className={`relative inline-flex h-5 w-10 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${checked ? 'bg-green-700' : 'bg-slate-300'}`}
   >
-    <span
-      className={`
-        pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform 
-        ${checked ? 'translate-x-5' : 'translate-x-0'}
-      `}
-    />
+    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-1'}`} />
   </button>
 );
 
-const Badge = ({ children, className }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
-    {children}
-  </span>
-);
+// --- CUSTOM POP-OUT SELECT COMPONENT ---
+const CustomSelect = ({ value, onChange, options, disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
 
-const Button = ({ children, onClick, disabled, className }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none h-10 px-4 py-2 ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
-  >
-    {children}
-  </button>
-);
-
-export default function LoyaltySettings() {
-  const [settings, setSettings] = useState({
-    is_enabled: true,
-    orders_required: 4,
-    free_service_kg: 8,
-    free_service_type: "wash_dry"
-  });
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Simulate Load
   useEffect(() => {
-    // In a real app, fetch data here
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const saveSettings = async () => {
-    setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log("Saved:", settings);
-    alert("Loyalty settings saved successfully!");
-    setIsSaving(false);
+  return (
+    <div className="relative w-full" ref={containerRef}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex h-10 w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-sm font-medium transition-all focus:outline-none
+          ${isOpen ? "border-gray-900 ring-1 ring-gray-900" : "border-slate-200 hover:border-gray-300"}
+          ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50" : "cursor-pointer"}
+        `}
+      >
+        <span className={value ? "text-sm text-slate-800" : "text-sm text-slate-400"}>
+          {value || "Select Service"}
+        </span>
+        <IconArrowUp className={`w-4 h-4 text-slate-800 transition-transform duration-200 ${isOpen ? 'rotate-0' : 'rotate-180'}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl z-[999] overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100">
+          <div className="max-h-60 overflow-y-auto">
+            {options.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  onChange(option.name);
+                  setIsOpen(false);
+                }}
+                className="w-full px-3 py-2.5 text-left text-sm flex items-center justify-between transition-colors hover:bg-gray-50 font-medium text-slate-700"
+              >
+                {option.name}
+                {value === option.name && (
+                  <svg className="h-3.5 w-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            ))}
+            {options.length === 0 && (
+              <div className="px-3 py-3 text-center text-[11px] font-bold text-slate-400 uppercase">
+                No Active Services Found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function LoyaltySettings() {
+  const { loyaltySettings, saveLoyaltySettings, subscribeToLoyalty, isLoading } = useLoyaltyStore();
+  const { services, subscribeToServices } = useServiceStore();
+  
+  const [localSettings, setLocalSettings] = useState(loyaltySettings);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  useEffect(() => {
+    const unsubL = subscribeToLoyalty();
+    const unsubS = subscribeToServices();
+    return () => { unsubL(); unsubS(); };
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) setLocalSettings(loyaltySettings);
+  }, [loyaltySettings, isLoading]);
+
+  const handleInputChange = (field, rawValue) => {
+    let val = rawValue.replace(/\D/g, ""); 
+    if (val.length > 0) val = String(Number(val)); 
+    setLocalSettings({ ...localSettings, [field]: val });
   };
 
+  const executeStatusChange = (newStatus) => {
+    const updated = { ...localSettings, is_enabled: newStatus };
+    setLocalSettings(updated);
+    saveLoyaltySettings(updated);
+  };
+
+  const handleToggle = (checked) => {
+    if (checked) {
+      executeStatusChange(true);
+    } else {
+      setShowConfirmDialog(true);
+    }
+  };
+
+  const confirmDisable = () => {
+    executeStatusChange(false);
+    setShowConfirmDialog(false);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await saveLoyaltySettings({
+        ...localSettings,
+        orders_required: Number(localSettings.orders_required)
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const hasChanges = JSON.stringify(localSettings) !== JSON.stringify(loyaltySettings);
+  const isValid = localSettings.orders_required > 0 && localSettings.free_service_type !== "";
+
+  if (isLoading) return null;
+
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-xl border-0 shadow-xl overflow-hidden">
-      <div className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
-        <h3 className="flex items-center gap-2 text-xl font-bold text-gray-900">
-          <IconGift className="w-6 h-6 text-purple-600" />
-          Customer Loyalty Program
-        </h3>
-        <p className="text-gray-600 text-sm mt-1">
-          Reward returning customers with free services
-        </p>
-      </div>
-      
-      <div className="p-6 space-y-6">
-        {/* Enable/Disable Toggle */}
-        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ${
-              settings.is_enabled 
-                ? 'bg-gradient-to-r from-green-400 to-emerald-500' 
-                : 'bg-gray-400'
-            }`}>
-              <IconStar className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">Loyalty Program Status</h4>
-              <p className="text-xs text-gray-600">
-                {settings.is_enabled ? 'Active for all customers' : 'Disabled - no rewards'}
-              </p>
-            </div>
-          </div>
-          <Switch
-            checked={settings.is_enabled}
-            onCheckedChange={(checked) => setSettings({...settings, is_enabled: checked})}
-          />
-        </div>
-
-        {/* Conditional Content */}
-        {settings.is_enabled && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
-            {/* Settings Configuration */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="orders_required">Orders Required for Free Service</Label>
-                <Input
-                  id="orders_required"
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={settings.orders_required}
-                  onChange={(e) => setSettings({...settings, orders_required: parseInt(e.target.value) || 4})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="free_service_kg">Free Service Weight (kg)</Label>
-                <Input
-                  id="free_service_kg"
-                  type="number"
-                  min="1"
-                  max="50"
-                  step="0.5"
-                  value={settings.free_service_kg}
-                  onChange={(e) => setSettings({...settings, free_service_kg: parseFloat(e.target.value) || 8})}
-                />
-              </div>
-            </div>
-
-            {/* Program Preview */}
-            <div className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl">
-              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                <IconGift className="w-5 h-5 text-amber-600" />
-                Program Preview
-              </h4>
-              <div className="text-sm text-gray-700 space-y-1">
-                <p>• Customer completes <Badge className="bg-blue-100 text-blue-800">{settings.orders_required} orders</Badge></p>
-                <p>• Gets <Badge className="bg-green-100 text-green-800">{settings.free_service_kg}kg FREE</Badge> wash & dry service on next visit</p>
-                <p>• Loyalty counter resets to 0 after claiming free service</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Save Button */}
-        <div className="flex justify-end pt-4 border-t border-gray-100">
-          <Button
-            onClick={saveSettings}
-            disabled={isSaving}
-            className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg"
+    <div className="w-full relative z-10">
+      <AnimatePresence mode="wait">
+        
+        {/* --- STATE 1: CONFIRMATION WARNING (Replaces Settings) --- */}
+        {showConfirmDialog ? (
+          <motion.div
+            key="confirm"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+            className="w-full bg-red-50 border border-red-200 shadow-sm rounded-xl p-6 flex flex-col items-center text-center"
           >
-            {isSaving ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <IconSave className="w-4 h-4 mr-2" />
-                Save Settings
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3">
+              {/* Alert Icon */}
+             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+  
+  <circle cx="9" cy="10" r="1" fill="currentColor"/>
+  <circle cx="15" cy="10" r="1" fill="currentColor"/>
+  
+  <path d="M16 16C16 16 14.5 14 12 14C9.5 14 8 16 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+            </div>
+            
+            <h3 className="text-lg font-bold text-red-900 mb-1">Disable Loyalty Program?</h3>
+            <p className="text-sm text-red-700 max-w-sm leading-relaxed mb-6">
+              This will <span className="font-bold">reset all customer points to zero</span>. Customers will lose their progress towards free rewards.
+            </p>
+
+            <div className="flex w-full max-w-xs gap-3">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="flex-1 h-10 rounded-lg border border-red-200 bg-white text-slate-700 font-medium text-sm hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDisable}
+                className="flex-1 h-10 rounded-lg bg-red-600 text-white font-medium text-sm hover:bg-red-700 transition-colors shadow-sm"
+              >
+                Yes, Disable
+              </button>
+            </div>
+          </motion.div>
+        ) : (
+
+        /* --- STATE 2: NORMAL SETTINGS UI --- */
+          <motion.div
+            key="settings"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col md:flex-row bg-white border border-slate-200 shadow-sm rounded-xl"
+          >
+            {/* LEFT SECTION (Settings) */}
+            <div className="flex-1 p-4 rounded-t-xl md:rounded-l-xl md:rounded-tr-none bg-white">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${localSettings.is_enabled ? 'bg-sky-200' : 'bg-slate-100'}`}>
+                    <IconGift className={`w-5 h-5 ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-400'}`} />
+                  </div>
+                  <div>
+                    <h3 className="text-md font-bold text-slate-900 leading-tight">Customer Loyalty</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${localSettings.is_enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
+                        <span className={`text-[10px] font-bold uppercase tracking-tighter ${localSettings.is_enabled ? 'text-emerald-600' : 'text-slate-400'}`}>
+                          {localSettings.is_enabled ? 'Promo Active' : 'Promo Inactive'}
+                        </span>
+                    </div>
+                  </div>
+                </div>
+                <Switch checked={localSettings.is_enabled} onCheckedChange={handleToggle} />
+              </div>
+
+              <div className={`space-y-4 ${!localSettings.is_enabled ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className="space-y-0.5 relative z-20"> 
+                  <Label>Free Service Reward</Label>
+                  <CustomSelect 
+                    options={services.filter(s => s.is_active)} 
+                    value={localSettings.free_service_type}
+                    onChange={(val) => setLocalSettings({...localSettings, free_service_type: val})}
+                  />
+                </div>
+                <div className="space-y-0.5 relative z-10">
+                  <Label>Orders Needed</Label>
+                  <Input 
+                    type="text"
+                    inputMode="numeric" 
+                    placeholder="Ex: 5"
+                    value={localSettings.orders_required}
+                    onChange={(e) => handleInputChange('orders_required', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* PERFORATION */}
+            <div className="relative flex items-center justify-center bg-white md:bg-transparent">
+                <div className="w-[calc(100%-2rem)] mx-auto h-px md:w-px md:h-[calc(100%-2rem)] border-t-2 md:border-t-0 md:border-l-2 border-dashed border-slate-300" />
+            </div>
+
+            {/* RIGHT SECTION (Visual Ticket) */}
+            <div className={`w-full md:w-60 p-4 flex flex-col justify-between rounded-b-xl md:rounded-r-xl md:rounded-bl-none ${localSettings.is_enabled ? 'bg-sky-100/60' : 'bg-slate-50'}`}>
+              <div className="space-y-3">
+                <h4 className="text-[9px] font-black uppercase tracking-widest text-teal-600 text-center">Reward Summary</h4>
+                <div className="relative group">
+                  <div className={`p-3 bg-white rounded-lg border border-dashed text-center shadow-sm ${localSettings.is_enabled ? 'border-sky-300' : 'border-slate-300 grayscale'}`}>
+                    <div className="text-md font-black leading-tight text-slate-900">
+                      FREE
+                    </div>
+                    <div className="text-[11px] font-bold uppercase tracking-tight mb-1 text-teal-600 truncate px-1">
+                       {localSettings.free_service_type || "No Service"}
+                    </div>
+                    <div className="h-px bg-slate-100 my-2" />
+                    <p className="text-[10px] text-slate-500 font-medium tracking-tight">After {localSettings.orders_required} visits</p>
+                  </div>
+
+                  {!localSettings.is_enabled && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-100/40 rounded-lg backdrop-blur-[1px]">
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter bg-white px-2 py-1 rounded-md border border-slate-200 shadow-sm">
+                        Inactive
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={handleSave}
+                disabled={!hasChanges || isSaving || !isValid}
+                className={`mt-3 w-full h-10 flex items-center justify-center rounded-xl text-sm font-bold transition-all shadow-md active:scale-95 disabled:opacity-50 
+                  ${hasChanges && isValid ? 'bg-green-700 text-white' : 'bg-slate-800 text-white'}`}
+              >
+                {isSaving ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <span className="text-white font-normal text-sm">Save Ticket</span>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

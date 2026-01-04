@@ -6,10 +6,25 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import MainApp from "./pages/MainApp";
 
+// --- NEW IMPORTS ---
+import { LoginPopup } from "./modal/LoginPopup";
+import { useNotificationStore } from "./store/ui/useNotificationStore";
+
 function App() {
+  // Pull the notification state from your store
+  const { message, type, hideNotification } = useNotificationStore();
+
   return (
     <Router>
       <AuthProvider>
+        {/* GLOBAL NOTIFICATION COMPONENT */}
+        {/* Placed here so it's always available across all routes */}
+        <LoginPopup 
+          message={message} 
+          type={type} 
+          onClose={hideNotification} 
+        />
+
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />

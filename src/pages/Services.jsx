@@ -1,21 +1,25 @@
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { LoginPopup } from "../modal/LoginPopup"; 
 import LoyaltySettings from "../components/services/LoyaltySettings";
-import { IconSettings, IconPlus, IconPackage, IconEdit2 } from "../components/icons";
+import ServiceCard from "../components/services/ServiceCard";
+import { IconPlus } from "../components/icons";
+import { useServiceStore } from "../store/services/useServiceStore";
 
-// ==========================================
-// 1. UI HELPERS (Locally defined for this page)
-// ==========================================
-const Button = ({ children, onClick, className = "", variant = "primary", ...props }) => {
+const SMOOTH_TRANSITION = { type: "spring", stiffness: 300, damping: 30, mass: 1 };
+
+// --- UI HELPERS ---
+export const Button = ({ children, onClick, className = "", variant = "primary", ...props }) => {
   const variants = {
-    primary: "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg",
-    outline: "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50",
-    success: "bg-green-600 hover:bg-green-700 text-white shadow-md",
+    primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-sm",
+    outline: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50",
+    success: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm",
     danger: "bg-red-500 hover:bg-red-600 text-white shadow-sm"
   };
   return (
     <button 
       onClick={onClick} 
-      className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none px-4 py-2 ${variants[variant] || variants.primary} ${className}`} 
+      className={`inline-flex items-center justify-center rounded-lg font-bold transition-all px-4 py-2 ${variants[variant] || variants.primary} ${className}`} 
       {...props}
     >
       {children}
@@ -23,230 +27,151 @@ const Button = ({ children, onClick, className = "", variant = "primary", ...pro
   );
 };
 
-const Input = ({ id, type = "text", value, onChange, placeholder, required, className = "" }) => (
-  <input
-    id={id}
-    type={type}
-    value={value}
-    onChange={onChange}
-    placeholder={placeholder}
-    required={required}
-    className={`flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+export const Input = ({ className = "", ...props }) => (
+  <input 
+    className={`flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${className}`} 
+    {...props} 
   />
 );
 
-const Label = ({ htmlFor, children }) => (
-  <label htmlFor={htmlFor} className="text-sm font-medium text-gray-700 block mb-1">
-    {children}
-  </label>
-);
-
-const Badge = ({ children, className }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${className}`}>
+export const Badge = ({ children, className }) => (
+  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${className}`}>
     {children}
   </span>
 );
 
-// ==========================================
-// 2. CONFIG
-// ==========================================
-const serviceTypeLabels = {
-  wash_only: "Wash Only",
-  wash_dry: "Wash & Dry", 
-  wash_dry_fold: "Wash, Dry & Fold",
-  wash_dry_press: "Wash, Dry & Press",
-  dry_only: "Dry Only",
-  press_only: "Press Only"
-};
-
-const MOCK_SERVICES = [
-  { id: 1, name: "Regular Wash & Dry", type: "wash_dry", price_per_kg: 35, duration_hours: 24, is_active: true },
-  { id: 2, name: "Express Wash", type: "wash_dry_fold", price_per_kg: 65, duration_hours: 4, is_active: true },
-  { id: 3, name: "Comforter Cleaning", type: "wash_only", price_per_kg: 150, duration_hours: 48, is_active: false },
-];
-
-// ==========================================
-// 3. MAIN COMPONENT
-// ==========================================
 export default function Services() {
-  const [services, setServices] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingService, setEditingService] = useState(null);
-  const [formData, setFormData] = useState({
-    name: "", price_per_kg: "", type: "", duration_hours: "", is_active: true
-  });
+  const { services, isLoading, addService, updateService, subscribeToServices, deleteServiceSafe } = useServiceStore();
+
+  const [editingId, setEditingId] = useState(null);
+  const [tempData, setTempData] = useState(null);
+  const [popup, setPopup] = useState({ message: "", type: "info" });
+  
+  // FIX: State to forcefully handle overflow visibility
+  const [allowOverflow, setAllowOverflow] = useState(false);
 
   useEffect(() => {
-    // Simulate API Load
-    setServices(MOCK_SERVICES);
-  }, []);
+    const unsubscribe = subscribeToServices();
+    return () => unsubscribe();
+  }, [subscribeToServices]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingService) {
-      const updatedServices = services.map(s => 
-        s.id === editingService.id ? { ...s, ...formData, price_per_kg: parseFloat(formData.price_per_kg) } : s
-      );
-      setServices(updatedServices);
-    } else {
-      const newService = {
-        id: Date.now(),
-        ...formData,
-        price_per_kg: parseFloat(formData.price_per_kg),
-        duration_hours: parseFloat(formData.duration_hours)
-      };
-      setServices([newService, ...services]);
+  const triggerPopup = (message, type = "error") => setPopup({ message, type });
+
+  const handleSave = async (id) => {
+    if (!tempData.name.trim()) return triggerPopup("Name is required");
+    const price = parseFloat(tempData.price_per_kg);
+    if (isNaN(price) || price <= 0) return triggerPopup("Invalid price");
+
+    try {
+      let result = false;
+      if (id === "new_draft") {
+        const { id: _, ...cleanData } = tempData; 
+        result = await addService({ ...cleanData, price_per_kg: price }); 
+      } else {
+        result = await updateService(id, { ...tempData, price_per_kg: price });
+      }
+
+      if (result === false) return;
+
+      setEditingId(null);
+      setTempData(null);
+    } catch (err) {
+      console.error("Firebase Save Error:", err); 
     }
-    resetForm();
   };
 
-  const resetForm = () => {
-    setFormData({ name: "", price_per_kg: "", type: "", duration_hours: "", is_active: true });
-    setShowForm(false);
-    setEditingService(null);
+  const toggleStatus = async (id, currentStatus) => {
+    await updateService(id, { is_active: !currentStatus });
   };
 
-  const editService = (service) => {
-    setFormData({
-      name: service.name,
-      price_per_kg: service.price_per_kg.toString(),
-      type: service.type,
-      duration_hours: service.duration_hours?.toString() || "",
-      is_active: service.is_active
-    });
-    setEditingService(service);
-    setShowForm(true);
+  const addNewService = () => {
+    if (editingId) return;
+    setAllowOverflow(false); // Reset overflow state before opening
+    setEditingId("new_draft");
+    setTempData({ name: "", type: "wash_only", price_per_kg: 0, duration_hours: 24, is_active: true });
   };
 
-  const toggleServiceStatus = (serviceId) => {
-    const updatedServices = services.map(s => 
-      s.id === serviceId ? { ...s, is_active: !s.is_active } : s
-    );
-    setServices(updatedServices);
-  };
+  if (isLoading) return <div className="p-10 text-center">Loading Cloud Services...</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 md:p-6">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <IconSettings className="w-8 h-8 text-blue-600" />
-              Services Management
-            </h1>
-            <p className="text-gray-600 mt-1">Configure your laundry services and pricing</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-3 md:p-6">
+      <LoginPopup message={popup.message} type={popup.type} onClose={() => setPopup({ ...popup, message: "" })} />
+
+      <motion.div layoutRoot className="max-w-5xl mx-auto space-y-4">
+        <div className="flex justify-between items-center">
+          <div> 
+            <h1 className="text-2xl font-bold text-gray-900">Services</h1>
+            <p className="text-gray-600 mt-1 text-[14px]">Manage your shop's offering</p>
           </div>
-          <Button onClick={() => setShowForm(!showForm)}>
-            <IconPlus className="w-5 h-5 mr-2" />
-            Add Service
+          <Button onClick={addNewService} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md text-white px-4 py-3 h-9">
+            <IconPlus className="w-4 h-4 mr-2 !text-white !stroke-white" /> 
+            <span className="text-sm font-medium text-white">Add Service</span>
           </Button>
         </div>
 
-        {/* Loyalty Program Settings Component */}
-        <div className="mb-8">
-          <LoyaltySettings />
-        </div>
+        <LayoutGroup>
+          <AnimatePresence 
+            // Important: Ensures the exit animation completes before unmounting
+            mode="wait" 
+            onExitComplete={() => setAllowOverflow(false)}
+          >
+            {editingId === "new_draft" && (
+              <motion.div 
+                key="new-service-form"
+                initial={{ opacity: 0, height: 0 }} 
+                animate={{ opacity: 1, height: "auto" }} 
+                exit={{ opacity: 0, height: 0 }} 
+                
+                // FIX: Force overflow visible ONLY when animation is done
+                onAnimationComplete={() => setAllowOverflow(true)}
+                // FIX: Snap back to hidden instantly when closing starts
+                onExitStart={() => setAllowOverflow(false)}
+                
+                transition={SMOOTH_TRANSITION}
+                
+                // FIX: Dynamic styling based on state
+                style={{ overflow: allowOverflow ? "visible" : "hidden" }}
+                className="mb-4 relative z-50" 
+              >
+                <ServiceCard 
+                  service={tempData} 
+                  isEditing={true}
+                  tempData={tempData} 
+                  setTempData={setTempData}
+                  onSave={() => handleSave("new_draft")}
+                  onCancel={() => setEditingId(null)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        {/* Service Form */}
-        {showForm && (
-          <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-300">
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl border-0 shadow-xl overflow-hidden">
-              <div className="p-6 border-b border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900">
-                  {editingService ? 'Edit Service' : 'Add New Service'}
-                </h3>
-              </div>
-              <div className="p-6">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Service Name *</Label>
-                      <Input id="name" placeholder="e.g. Regular Wash & Dry" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="type">Service Type *</Label>
-                      <div className="relative">
-                        <select
-                          id="type"
-                          value={formData.type}
-                          onChange={(e) => setFormData({...formData, type: e.target.value})}
-                          required
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
-                        >
-                          <option value="" disabled>Select service type</option>
-                          {Object.entries(serviceTypeLabels).map(([key, label]) => (
-                            <option key={key} value={key}>{label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="price">Price per KG (₱) *</Label>
-                      <Input id="price" type="number" step="0.01" placeholder="25.00" value={formData.price_per_kg} onChange={(e) => setFormData({...formData, price_per_kg: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="duration">Duration (hours)</Label>
-                      <Input id="duration" type="number" placeholder="24" value={formData.duration_hours} onChange={(e) => setFormData({...formData, duration_hours: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-3 pt-2">
-                    <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
-                    <Button type="submit" variant="success">{editingService ? 'Update Service' : 'Add Service'}</Button>
-                  </div>
-                </form>
-              </div>
-            </div>
+          {/* LOWER Z-INDEX for Loyalty Settings so dropdowns overlap it */}
+          <div className="relative z-0">
+             <LoyaltySettings />
           </div>
-        )}
 
-        {/* Services List */}
-        <div className="grid gap-4">
-          {services.map((service) => (
-            <div key={service.id} className={`rounded-xl border-0 shadow-lg p-6 transition-all duration-300 transform hover:-translate-y-1 ${service.is_active ? 'bg-white/90' : 'bg-gray-100/90 opacity-75'}`}>
-              <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                <div className="flex-1">
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${service.is_active ? 'bg-gradient-to-r from-blue-500 to-indigo-600' : 'bg-gray-400'}`}>
-                      <IconPackage className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">{service.name}</h3>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        <Badge className="bg-blue-100 text-blue-800 border-blue-200">{serviceTypeLabels[service.type]}</Badge>
-                        <Badge className="bg-white text-green-700 border-green-200 border">₱{service.price_per_kg}/kg</Badge>
-                        {service.duration_hours && <Badge className="bg-white text-gray-600 border-gray-200 border">{service.duration_hours}h duration</Badge>}
-                        <Badge className={service.is_active ? "bg-green-100 text-green-800 border-green-200" : "bg-red-100 text-red-800 border-red-200"}>{service.is_active ? "Active" : "Inactive"}</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="h-9 text-sm" onClick={() => editService(service)}>
-                    <IconEdit2 className="w-4 h-4 mr-1" /> Edit
-                  </Button>
-                  <Button 
-                    onClick={() => toggleServiceStatus(service.id)} 
-                    variant={service.is_active ? "danger" : "success"}
-                    className="h-9 text-sm"
-                  >
-                    {service.is_active ? "Disable" : "Enable"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {services.length === 0 && (
-          <div className="text-center py-12 bg-white/50 rounded-xl border border-dashed border-gray-300">
-            <div className="flex justify-center mb-4"><IconPackage className="w-16 h-16 text-gray-300" /></div>
-            <h3 className="text-xl font-medium text-gray-500 mb-2">No services configured</h3>
-            <p className="text-gray-400 mb-6">Start by adding your first laundry service</p>
-            <Button onClick={() => setShowForm(true)}><IconPlus className="w-5 h-5 mr-2" /> Add First Service</Button>
+          <div className="grid gap-3 relative z-0">
+            <AnimatePresence mode="popLayout">
+              {services.map((service) => (
+                <motion.div key={service.id} layout transition={SMOOTH_TRANSITION}>
+                  <ServiceCard 
+                    service={service} 
+                    isEditing={editingId === service.id}
+                    tempData={tempData}
+                    setTempData={setTempData}
+                    onEdit={(s) => { setEditingId(s.id); setTempData({...s}); }} 
+                    onSave={() => handleSave(service.id)}
+                    onCancel={() => setEditingId(null)}
+                    onToggle={() => toggleStatus(service.id, service.is_active)} 
+                    onDelete={deleteServiceSafe}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
-        )}
-      </div>
+          
+        </LayoutGroup>
+      </motion.div>
     </div>
   );
 }

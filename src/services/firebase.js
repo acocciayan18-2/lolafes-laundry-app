@@ -1,11 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
+import { getFirestore } from "firebase/firestore";
+import { getDatabase } from "firebase/database"; // Realtime Database
 import { getAuth } from "firebase/auth";
-
-// ----------------------------------------------------------------------
-// FIREBASE CONFIGURATION
-// Standard: Security Practices (Use environment variables)
-// ----------------------------------------------------------------------
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -21,5 +17,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Export Services
-export const database = getDatabase(app);
+export const db = getFirestore(app);        // Firestore (Structured Data)
+export const rtdb = getDatabase(app);      // Realtime Database (Live Stats/Timers)
 export const auth = getAuth(app);
