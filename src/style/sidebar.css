@@ -1,0 +1,75 @@
+/* ----------------------------------------------------------------------
+ * SIDEBAR NAVIGATION STYLES
+ * Standard: Clean Code (No !important, proper indentation)
+ * ---------------------------------------------------------------------- */
+
+/* Note: Font import should ideally be in index.css to avoid duplicates */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ----------------------------------------------------------------------
+ * LAYOUT & CONTAINER
+ * ---------------------------------------------------------------------- */
+
+.sidebar-container {
+  display: flex;
+  overflow: hidden;
+}
+
+.sidebar {
+  /* Box styling */
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  border-right: 0.1px solid rgba(59, 131, 246, 0.4); /* #3b83f667 converted for readability */
+}
+
+.logo-con {
+  border-bottom: 0.1px solid rgba(59, 131, 246, 0.4);
+}
+
+/* ----------------------------------------------------------------------
+ * NAVIGATION BUTTONS
+ * ---------------------------------------------------------------------- */
+
+/* Base Button Style */
+.sidebar nav ul li button {
+  display: flex;
+  align-items: center;
+  gap: 13px; /* Removed !important */
+  
+  width: 100%; /* Ensure full click area */
+  padding: 5px 16px;
+  margin-bottom: 8px;
+  
+  font-size: 17px;
+  font-weight: 500;
+  color: #333333;
+  
+  text-decoration: none;
+  border-radius: 13px;
+  border: none;
+  background: transparent;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+
+
+/* Hover State */
+
+
+/* ----------------------------------------------------------------------
+ * ACTIVE STATE
+ * ---------------------------------------------------------------------- */
+
+/* Active Background Gradient */
+.nav-page-btn.active {
+  background: linear-gradient(to right, #3b82f6, #4f46e5);
+}
+
+
+/* Navigation Links */
+.sidebar-container nav {
+  margin: 0 5px;
+}
+
+
+
