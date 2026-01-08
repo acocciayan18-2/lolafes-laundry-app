@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-// 1. Import Framer Motion
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { IconUsers, IconSearch } from "../components/icons";
 import CustomerStats from "../components/customers/CustomerStats";
 import CustomerCard from "../components/customers/CustomerCard";
+// 1. Import Store
+import { useCustomerStore } from "../store/customer/useCustomerStore";
 
-// Smooth spring transition to match the Services page
 const SMOOTH_TRANSITION = {
   type: "spring",
   stiffness: 300,
@@ -13,14 +13,6 @@ const SMOOTH_TRANSITION = {
   mass: 1,
   restDelta: 0.01 
 };
-
-// Mock Data
-const MOCK_CUSTOMERS = [
-  { id: 1, name: "Juan Dela Cruz", phone: "09123456789", address: "Unit 101, Taguig City", created_date: new Date().toISOString() },
-  { id: 2, name: "Maria Clara", phone: "09987654321", address: "BGC, Taguig", created_date: new Date().toISOString() },
-  { id: 3, name: "Jose Rizal", phone: "09111112222", address: "Laguna", created_date: "2023-12-01T10:00:00Z" },
-  { id: 4, name: "Andres Bonifacio", phone: "09223334444", address: "Tondo, Manila", created_date: "2023-11-15T08:30:00Z" },
-];
 
 const Input = ({ className, ...props }) => (
   <input 
@@ -30,26 +22,22 @@ const Input = ({ className, ...props }) => (
 );
 
 export default function Customers() {
-  const [customers, setCustomers] = useState([]);
+  // 2. Use Zustand Store
+  const { customers, isLoading, subscribeToCustomers } = useCustomerStore();
+  
   const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
 
+  // 3. Subscribe on Mount
   useEffect(() => {
-    loadCustomers();
-  }, []);
-
-  const loadCustomers = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setCustomers(MOCK_CUSTOMERS);
-    setIsLoading(false);
-  };
+    const unsubscribe = subscribeToCustomers();
+    return () => unsubscribe();
+  }, [subscribeToCustomers]);
 
   const filteredCustomers = customers.filter(customer => {
     const term = searchTerm.toLowerCase();
     return (
       customer.name.toLowerCase().includes(term) ||
-      customer.phone.includes(term) ||
+      (customer.phone && customer.phone.includes(term)) ||
       (customer.address && customer.address.toLowerCase().includes(term))
     );
   });
@@ -77,7 +65,7 @@ export default function Customers() {
           />
         </div>
 
-        {/* Stats */}
+        {/* Stats - Now using real data from store */}
         <CustomerStats customers={customers} />
 
         {/* List Container with LayoutGroup for synchronized movement */}
@@ -106,6 +94,7 @@ export default function Customers() {
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={SMOOTH_TRANSITION}
                   >
+                    {/* The CustomerCard now handles the disable-click logic */}
                     <CustomerCard customer={customer} />
                   </motion.div>
                 ))

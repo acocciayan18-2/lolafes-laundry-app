@@ -6,6 +6,8 @@ import OrderFilters from "../components/orders/OrderFilters";
 import OrderCard from "../components/orders/OrderCard";
 import { useOrderStore } from "../store/orders/useOrderStore"; 
 
+import { useActivityStore } from "../store/activities/useActivityStore";
+
 const SPRING_TRANSITION = {
   type: "spring",
   stiffness: 300,
@@ -42,30 +44,48 @@ const LaundryLoader = () => (
 export default function Orders() {
   const { orders, isLoading, subscribeToOrders, updateOrderStatus } = useOrderStore();
   
+  // 2. INITIALIZE THE LOGGER
+  const logActivity = useActivityStore((state) => state.logActivity);
+  
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
 
-  // Subscribe to Firebase on mount
   useEffect(() => {
     const unsubscribe = subscribeToOrders();
     return () => unsubscribe(); 
   }, [subscribeToOrders]);
 
+  // 3. CREATE THE INTERCEPTOR HANDLER
+  // This ensures that whenever a status changes, a new card is created in the history
+  const handleStatusUpdate = useCallback(async (orderId, newStatus) => {
+    try {
+      // Find the current order data before/during update to get details (name, amount, etc.)
+      const orderToLog = orders.find(o => o.id === orderId);
+      
+      // Update the actual Order state/database
+      await updateOrderStatus(orderId, newStatus);
+      
+      // Create a NEW dedicated card in the activity feed
+      if (orderToLog) {
+        logActivity(orderToLog, newStatus);
+      }
+    } catch (error) {
+      console.error("Failed to update status and log activity:", error);
+    }
+  }, [orders, updateOrderStatus, logActivity]);
+
   const filterOrders = useCallback(() => {
     let filtered = [...orders];
 
-    // Status Filter
     if (statusFilter !== "all") {
       filtered = filtered.filter(order => order.status === statusFilter);
     }
 
-    // Date Filter Logic
     if (dateFilter !== "all") {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
       filtered = filtered.filter(order => {
         const orderDate = new Date(order.created_date);
         switch (dateFilter) {
@@ -87,14 +107,12 @@ export default function Orders() {
       });
     }
 
-    // --- UPDATED SEARCH FILTER ---
-    // Now searches Name, Phone, Order #, AND Address
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(order =>
         (order.customer_name?.toLowerCase().includes(lowerTerm)) ||
         (order.customer_phone?.includes(lowerTerm)) ||
-        (order.customer_address?.toLowerCase().includes(lowerTerm)) || // Added Address Search
+        (order.customer_address?.toLowerCase().includes(lowerTerm)) ||
         (order.order_number?.toLowerCase().includes(lowerTerm))
       );
     }
@@ -110,50 +128,41 @@ export default function Orders() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-3 pt-2 md:p-4">
       <motion.div layoutRoot className="max-w-5xl mx-auto px-1 md:px-2">
         <LayoutGroup>
-          {/* Header */}
+          {/* Header & Filters (remain the same) */}
           <motion.div layout className="flex flex-row justify-between items-center mt-2 mb-3 gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">All Orders</h1>
               <p className="text-gray-600 mt-1 text-[14px]">Manage and track orders</p>
             </div>
             <Link to="/main/neworder">
-              <Button className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md text-white px-4 py-3 h-9">
-                <IconPlus className="w-4 h-4 mr-2 !text-white !stroke-white" />
+              <button className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md text-white px-4 py-2 h-9 rounded-lg flex items-center gap-2">
+                <IconPlus className="w-4 h-4 !text-white !stroke-white" />
                 <span className="text-sm font-medium text-white">New Order</span>
-              </Button>
+              </button>
             </Link>
           </motion.div>
 
-          {/* Search & Filters */}
           <motion.div layout className="flex flex-col lg:flex-row gap-2 mb-3">
             <div className="relative w-full lg:flex-1">
-              <IconSearch className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+              <IconSearch className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10" />
               <Input
-                // Updated Placeholder to indicate Address search
                 placeholder="Search name, phone, address, or order #..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="!pl-10 bg-white/80 backdrop-blur-sm transition-colors border-slate-200 w-full"
+                className="!pl-10 bg-white/80 border-slate-200"
               />
             </div>
-            
-            <div className="w-full lg:w-auto">
-              <OrderFilters 
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                dateFilter={dateFilter}
-                setDateFilter={setDateFilter}
-              />
-            </div>
+            <OrderFilters 
+              statusFilter={statusFilter} setStatusFilter={setStatusFilter}
+              dateFilter={dateFilter} setDateFilter={setDateFilter}
+            />
           </motion.div>
 
           {/* Orders List */}
           <motion.div layout className="grid gap-1 grid-cols-1 overflow-visible">
             <AnimatePresence mode="popLayout">
               {isLoading ? (
-                <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="col-span-full flex justify-center items-center py-20">
-                  <LaundryLoader />
-                </motion.div>
+                <motion.div key="loader" className="col-span-full py-20 flex justify-center"><LaundryLoader /></motion.div>
               ) : filteredOrders.length > 0 ? (
                 filteredOrders.map((order, index) => (
                   <motion.div
@@ -166,28 +175,16 @@ export default function Orders() {
                   >
                     <OrderCard
                       order={order}
-                      onStatusUpdate={updateOrderStatus}
+                      // 4. USE THE NEW HANDLER HERE
+                      onStatusUpdate={handleStatusUpdate}
                     />
                   </motion.div>
                 ))
               ) : (
-                <motion.div key="empty" layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="col-span-full text-center py-16 bg-white/40 backdrop-blur-sm rounded-2xl border border-dashed border-slate-300">
-                  <div className="flex justify-center mb-4">
-                    <IconShirt className="w-12 h-12 text-slate-300" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-600 mb-1">No orders found</h3>
-                  <p className="text-sm text-slate-400 mb-6">
-                    {(searchTerm || statusFilter !== "all" || dateFilter !== "all")
-                      ? "Try adjusting your search or filters"
-                      : "Start by creating your first order"
-                    }
-                  </p>
-                  <Link to="/main/neworder">
-                    <Button className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-6 py-2 rounded-xl shadow-sm transition-all">
-                      <IconPlus className="w-4 h-4 mr-2" />
-                      Create First Order
-                    </Button>
-                  </Link>
+                <motion.div className="text-center py-16 bg-white/40 border border-dashed border-slate-300 rounded-2xl">
+                   {/* Empty State UI */}
+                   <IconShirt className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                   <h3 className="text-lg font-bold text-slate-600">No orders found</h3>
                 </motion.div>
               )}
             </AnimatePresence>

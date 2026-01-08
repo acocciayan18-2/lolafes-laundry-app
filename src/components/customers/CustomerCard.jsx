@@ -1,54 +1,53 @@
 import React from "react";
 import { IconPhone, IconMapPin } from "../icons";
 
-export default function CustomerCard({ customer }) {
+const CustomerCard = ({ customer }) => {
+  const firstLetter = customer.name ? customer.name.charAt(0).toUpperCase() : "?";
+
   return (
-    /* Removed translate-y, hover shadow, and reduced padding to p-4 */
-    <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm mb-1">
+    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200">
       <div className="flex items-center gap-4">
         
-        {/* Compact Avatar - Using Brand Blue #2d79f3 */}
-        <div className="w-10 h-10 bg-gradient-to-r border border-slate-100 rounded-xl flex items-center from-blue-500 to-indigo-600 justify-center shrink-0">
-          <span className="text-white font-medium text-base">
-            {(customer.name || "U").charAt(0).toUpperCase()}
-          </span>
+        {/* LEFT: Avatar Icon */}
+        <div className="w-11 h-11 shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg border border-blue-200">
+          {firstLetter}
         </div>
-        
-        {/* Details Section */}
+
+        {/* RIGHT: Details */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-[15px] font-bold uppercase text-slate-900 leading-none mb-1.5 truncate">
+          
+          {/* Name */}
+          <h3 className="font-bold text-gray-900 text-base leading-tight truncate mb-1.5">
             {customer.name}
           </h3>
-          
-          <div className="flex flex-wrap items-center gap-y-1 gap-x-3">
-            {/* Phone Number */}
-            <div className="flex items-center gap-1.5 text-slate-500">
-              <IconPhone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="text-xs font-medium">{customer.phone}</span>
+
+          {/* CONTACT INFO CONTAINER */}
+          {/* Mobile: Vertical Stack (flex-col) | Desktop: Side-by-Side (md:flex-row) */}
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
+            
+            {/* Phone (Non-clickable) */}
+            <div className="flex items-center gap-1 text-gray-600 shrink-0">
+              <IconPhone className="w-3 h-3 text-gray-400 shrink-0" />
+              <span className="pointer-events-none select-none !no-underline text-[13px] font-medium !text-gray-600">
+                {customer.phone || "No contact"}
+              </span>
             </div>
 
-            {/* Vertical Separator for desktop */}
+            {/* Address (Non-clickable) */}
             {customer.address && (
-              <div className="hidden sm:block w-px h-3 bg-slate-200" />
-            )}
-
-            {/* Address */}
-            {customer.address && (
-              <div className="flex items-center gap-1.5 text-slate-500 min-w-0 flex-1 sm:flex-none">
-                <IconMapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="text-xs font-medium truncate">
+              <div className="flex items-start md:items-center gap-1 text-sm text-gray-600">
+                <IconMapPin className="w-3 h-3 text-gray-400 shrink-0 mt-0.5 md:mt-0" />
+                <span className="pointer-events-none select-none !no-underline text-[13px] font-medium !text-gray-600 line-clamp-1 md:line-clamp-none">
                   {customer.address}
                 </span>
               </div>
             )}
+            
           </div>
-        </div>
-
-        {/* Action area - Placeholder for future Edit/Delete buttons */}
-        <div className="flex items-center">
-           {/* Add buttons here if needed */}
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default CustomerCard;

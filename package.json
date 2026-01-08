@@ -10,6 +10,7 @@
     "bootstrap": "^5.3.8",
     "cra-template-pwa": "^2.0.0",
     "cross-env": "^10.0.0",
+    "driver.js": "^1.4.0",
     "firebase": "^12.3.0",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.544.0",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { IconArrowLeft } from "../components/icons";
 import { CustomerForm } from "../components/orders/CustomerForm";
 import { LoyaltyStatus } from "../components/orders/LoyaltyStatus";
@@ -10,11 +10,21 @@ import { useLoyaltyStore } from "../store/services/useLoyaltyStore";
 import { useNewOrderStore } from "../store/new-order/useNewOrderStore";
 import { useNotificationStore } from "../store/ui/useNotificationStore";
 
+import { useActivityStore } from "../store/activities/useActivityStore";
+import { startGlobalTour } from "../tours/globalTours";
+
 // FIX 1: Import customers list AND checkPhoneExists
 import { useCustomerStore } from "../store/customer/useCustomerStore";
 
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
+
+import { driver } from "driver.js"; // Import Driver.js
+import "driver.js/dist/driver.css"; // Import styles
+
+
+
+
 
 // --- Helper Functions ---
 const generateUniqueOrderNumber = async () => {
@@ -77,21 +87,23 @@ const Badge = ({ children, className = "" }) => (
 );
 
 export default function NewOrder() {
+ 
+  const location = useLocation();
   const navigate = useNavigate();
+  
 
-  // FIX 2: Get both the checker AND the customer list
   const checkPhoneExists = useCustomerStore((state) => state.checkPhoneExists);
   const customers = useCustomerStore((state) => state.customers);
 
-  // --- GLOBAL STORES ---
   const { services, subscribeToServices } = useServiceStore();
   const { loyaltySettings, subscribeToLoyalty } = useLoyaltyStore();
   const { submitOrder, createCustomer } = useNewOrderStore(); 
   const showNotification = useNotificationStore((state) => state.showNotification);
 
-  // --- LOCAL STATE ---
-  const [isProcessing, setIsProcessing] = useState(false);
+  // 2. INITIALIZE THE LOGGER
+  const logActivity = useActivityStore((state) => state.logActivity);
 
+  const [isProcessing, setIsProcessing] = useState(false);
   const [customer, setCustomer] = useState({ name: "", phone: "", address: "" });
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
@@ -105,7 +117,6 @@ export default function NewOrder() {
     return () => { unsubServices(); unsubLoyalty(); };
   }, [subscribeToServices, subscribeToLoyalty]);
 
-  // Helper: Find the full customer object from the store if an ID is selected
   const selectedCustomerData = selectedCustomerId 
     ? customers.find(c => c.id === selectedCustomerId) 
     : null;
@@ -115,25 +126,18 @@ export default function NewOrder() {
     const hasReward = selectedServices.some(s => s.is_reward);
     if (hasReward || !loyaltySettings?.is_enabled) return;
 
-    // --- LOGIC CHECK START ---
-    // Use store data if available, else local state (though local state won't have points yet usually)
     const currentData = selectedCustomerData || customer;
-
-    // Fallback: If loyalty_points doesn't exist (old customer), use order_count temporarily
     const points = currentData.loyalty_points !== undefined 
         ? currentData.loyalty_points 
         : (currentData.order_count || 0);
         
     const required = loyaltySettings.orders_required || 10;
-    
-    // Calculate Available Rewards: Floor(Points / Required)
     const available = Math.floor(points / required);
 
     if (available <= 0) {
         showNotification("Customer does not have enough points for a reward.", "error");
         return;
     }
-    // --- LOGIC CHECK END ---
 
     const freeService = {
       id: `reward-${Date.now()}`, 
@@ -144,34 +148,40 @@ export default function NewOrder() {
       subtotal: 0,
       is_reward: true 
     };
+
     setSelectedServices([...selectedServices, freeService]);
+
+    // 3. LOG ACTIVITY: REWARD APPLIED
+    logActivity({
+        id: `reward-${Date.now()}`,
+        customer_name: currentData.name,
+        order_number: "REWARD",
+        total_amount: 0
+    }, 'ready'); // Using 'ready' status to show a green/check icon for rewards
+
     showNotification("Reward applied to order!", "success");
   };
 
   const handleSubmit = async () => {
-    // 1. Basic Validation
     if (!customer.name.trim() || selectedServices.length === 0) {
       showNotification("Please enter customer name and select a service.", "error");
       return;
     }
 
-    // 2. Blocking Duplicate Check
     if (!selectedCustomerId && customer.phone) {
       const isDuplicate = checkPhoneExists(customer.phone);
       if (isDuplicate) {
-        showNotification("This contact number is already registered. Please click 'Select Existing' instead.", "error");
+        showNotification("This contact number is already registered.", "error");
         return; 
       }
     }
 
-    // 3. START PROCESSING
     setIsProcessing(true);
 
     try {
       const uniqueOrderNumber = await generateUniqueOrderNumber();
       let finalCustomerId = selectedCustomerId;
       
-      // Create customer if they don't exist
       if (!finalCustomerId) {
         const newCust = await createCustomer({
           name: customer.name.trim(),
@@ -182,9 +192,6 @@ export default function NewOrder() {
       }
 
       const totalAmount = selectedServices.reduce((sum, s) => sum + (Number(s.subtotal) || 0), 0);
-      
-      // Calculate Loyalty Deduction
-      // If a reward is used, we deduct the required points from their balance
       const hasReward = selectedServices.some(s => s.is_reward);
       const pointsToDeduct = hasReward ? (loyaltySettings.orders_required || 10) : 0;
 
@@ -198,7 +205,6 @@ export default function NewOrder() {
         notes: notes.trim(),
         payment_method: paymentMethod,
         is_paid: Boolean(isPaid),
-        // Pass the deduction info to the store
         loyalty_points_to_deduct: pointsToDeduct,
         services: selectedServices.map(s => ({
           service_id: s.id,
@@ -210,71 +216,104 @@ export default function NewOrder() {
         }))
       };
 
+      // SUBMIT TO FIREBASE/STORE
       await submitOrder(orderPayload);
 
-      // 4. Success Logic
+      // 4. LOG ACTIVITY: ORDER CREATED
+      // This creates a dedicated card in your Recent Activity feed
+      logActivity({
+          ...orderPayload,
+          id: uniqueOrderNumber // Ensuring this version of the event has its own ID
+      }, 'pending');
+
       setCustomer({ name: "", phone: "", address: "" });
       setSelectedCustomerId(null);
-
       showNotification(`Order ${uniqueOrderNumber} created successfully!`, "success");
       navigate("/main/orders");
 
     } catch (err) {
       console.error(err);
       setIsProcessing(false);
-      showNotification("Failed to save order. Please check your internet.", "error");
+      showNotification("Failed to save order.", "error");
     }
   };
 
-  return (
+  const [forceReveal, setForceReveal] = useState(false);
+
+useEffect(() => {
+  const searchParams = new URLSearchParams(location.search);
+  
+  if (searchParams.get('tour') === 'active') {
+    setForceReveal(true);
+
+    const timer = setTimeout(() => {
+      // RESUME the tour at index 3
+      startGlobalTour(navigate, 3); 
+    }, 700); // 700ms is safer for page loading
+
+    return () => clearTimeout(timer);
+  }
+}, [location.search, navigate]);
+ return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-3 pt-3 md:p-4">
       <div className="max-w-5xl mx-auto space-y-6">
         
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-bold text-gray-900">New Order</h1>
-          <p className="text-gray-600 mt-1 text-[14px]">Create a new laundry order</p>
+        {/* HEADER (Excluded from Tour Steps) */}
+        <div className="flex justify-between items-center">
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold text-gray-900">New Order</h1>
+            <p className="text-gray-600 mt-1 text-[14px]">Create a new laundry order</p>
+          </div>
+          
+          
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6 items-start mt-3">
           <div className="lg:col-span-2 space-y-6">
-            <CustomerForm 
-              customer={customer} setCustomer={setCustomer}
-              selectedCustomerId={selectedCustomerId} setSelectedCustomerId={setSelectedCustomerId}
-              allCustomers={[]} 
-              Button={Button} Input={Input}
-              isSubmitting={isProcessing}
-            />
+            <div id="step-customer">
+              <CustomerForm 
+                customer={customer} setCustomer={setCustomer}
+                selectedCustomerId={selectedCustomerId} setSelectedCustomerId={setSelectedCustomerId}
+                allCustomers={[]} Button={Button} Input={Input}
+                isSubmitting={isProcessing}
+              />
+            </div>
             
-            {/* Pass the STORE customer object to LoyaltyStatus */}
-            <LoyaltyStatus 
-              customer={selectedCustomerData} 
-              loyaltySettings={loyaltySettings} 
-              Button={Button} 
-              Badge={Badge}
-              onApplyFreeService={handleApplyReward}
-              selectedServices={selectedServices} 
-            />
+            {/* FORCE REVEAL LOGIC: Show if customer is selected OR if tour is active */}
+            {(selectedCustomerData || forceReveal) && (
+              <div id="step-loyalty" className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <LoyaltyStatus 
+                  customer={selectedCustomerData || { name: "Tour Demo", loyalty_points: 0 }} 
+                  loyaltySettings={loyaltySettings} 
+                  Button={Button} Badge={Badge}
+                  onApplyFreeService={handleApplyReward}
+                  selectedServices={selectedServices} 
+                />
+              </div>
+            )}
             
-            <ServiceSelector 
-              services={services.filter(s => s.is_active)} 
-              selectedServices={selectedServices} 
-              setSelectedServices={setSelectedServices} 
-              Button={Button} Badge={Badge}
-            />
+            <div id="step-services">
+              <ServiceSelector 
+                services={services.filter(s => s.is_active)} 
+                selectedServices={selectedServices} 
+                setSelectedServices={setSelectedServices} 
+                Button={Button} Badge={Badge}
+              />
+            </div>
           </div>
 
           <div className="lg:col-span-1">
-            <OrderSummary 
-              customer={customer} 
-              selectedServices={selectedServices}
-              notes={notes} setNotes={setNotes}
-              paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod}
-              isPaid={isPaid}
-              setIsPaid={setIsPaid}
-              onSubmit={handleSubmit} 
-              isProcessing={isProcessing}
-              Button={Button} Input={Input}
-            />
+            <div id="step-summary">
+              <OrderSummary 
+                customer={customer} 
+                selectedServices={selectedServices}
+                notes={notes} setNotes={setNotes}
+                paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod}
+                isPaid={isPaid} setIsPaid={setIsPaid}
+                onSubmit={handleSubmit} isProcessing={isProcessing}
+                Button={Button} Input={Input}
+              />
+            </div>
           </div>
         </div>
       </div>

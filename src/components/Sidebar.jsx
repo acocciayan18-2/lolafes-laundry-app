@@ -96,7 +96,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   return (
     <>
-      {/* 1. MOBILE BACKDROP (Click outside to close) */}
+      {/* 1. MOBILE BACKDROP */}
       <div 
         className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[45] transition-opacity duration-300 lg:hidden ${
           isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -104,29 +104,22 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         onClick={() => setIsOpen(false)}
       />
 
-      {/* 2. SIDEBAR CONTAINER (Applied your design classes here) */}
+      {/* 2. SIDEBAR CONTAINER */}
       <div className={`
         sidebar-container flex h-screen fixed inset-y-0 left-0 z-[50] transition-transform duration-300 ease-in-out
         lg:relative lg:translate-x-0
         ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}>
         <aside className="sidebar w-64 bg-white flex flex-col h-screen shadow-2xl lg:shadow-none">
-          
-          {/* Top Section: Logo + Added Close Button for Mobile */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between">
               <Logo />
-             
-              
             </div>
             
-            {/* Scrollable Navigation Area (Your Design) */}
             <div className="flex-1 overflow-y-auto">
-              {/* Main Menu */}
+              {/* Navigation */}
               <div className="p-3">
-                <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider px-2 py-2">
-                  Main Menu
-                </p>
+                <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider px-2 py-2">Main Menu</p>
                 <nav>
                   <ul className="space-y-1">
                     {SIDEBAR_CONFIG.menuItems.map((item) => (
@@ -136,12 +129,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 </nav>
               </div>
 
-              {/* Quick Info Section (Your Design) */}
+              {/* Quick Info */}
               <div className="px-3 pt-2 pb-3">
-                <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider px-2 py-2 pt-1">
-                  Quick Info
-                </p>
-                <div className="px-3 py-1 space-y-3 items-center justify-center">
+                <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider px-2 py-2 pt-1">Quick Info</p>
+                <div className="px-3 py-1 space-y-3">
                   {SIDEBAR_CONFIG.quickInfo.map((card) => (
                     <InfoCard key={card.title} {...card} />
                   ))}
@@ -150,21 +141,21 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             </div>
           </div>
 
-          {/* Bottom Section: Footer & Logout (Your Design) */}
           <div className="bg-white border-t border-gray-50">
             <LogoutButton onClick={() => setShowConfirm(true)} />
             <FooterCard />
           </div>
-
-          {/* Modals */}
-          {showConfirm && (
-            <LogoutConfirmationModal 
-              onCancel={() => setShowConfirm(false)} 
-              onConfirm={handleLogout} 
-            />
-          )}
         </aside>
       </div>
+
+      {/* 3. MODAL - MOVED OUTSIDE SIDEBAR CONTAINER */}
+      {/* This ensures it centers based on the window, not the sidebar div */}
+      {showConfirm && (
+        <LogoutConfirmationModal 
+          onCancel={() => setShowConfirm(false)} 
+          onConfirm={handleLogout} 
+        />
+      )}
     </>
   );
 }
@@ -271,23 +262,40 @@ const FooterCard = () => (
 );
 
 const LogoutConfirmationModal = ({ onCancel, onConfirm }) => (
-  <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-[60] p-4">
-    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-in zoom-in duration-200">
-      <h3 className="text-lg font-bold mb-2 text-gray-900">Confirm Logout</h3>
-      <p className="text-sm text-gray-500 mb-6">Are you sure you want to log out of the manager system?</p>
-      <div className="flex gap-3">
-        <button
-          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 active:scale-95 transition-all"
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
-        <button
-          className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600 shadow-lg shadow-red-200 active:scale-95 transition-all"
-          onClick={onConfirm}
-        >
-          Yes, Log Out
-        </button>
+  // fixed inset-0 covers the whole screen
+  // z-[100] puts it above the sidebar (z-50)
+  <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md z-[100] p-4">
+    {/* Animation and max-width for mobile responsiveness */}
+    <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-[340px] md:max-w-sm animate-in fade-in zoom-in duration-300">
+      <div className="flex flex-col items-center text-center">
+        {/* Added a visual icon for better UX */}
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </div>
+        
+        <h3 className="text-xl font-bold mb-2 text-gray-900">Confirm Logout</h3>
+        <p className="text-sm text-gray-500 mb-8">
+          Are you sure you want to log out? Any unsaved changes might be lost.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <button
+            className="flex-1 order-2 sm:order-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium text-sm hover:bg-gray-50 active:scale-95 transition-all"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+          <button
+            className="flex-1 order-1 sm:order-2 px-4 py-3 rounded-xl bg-red-500 text-white font-medium text-sm hover:bg-red-600 shadow-lg shadow-red-200 active:scale-95 transition-all"
+            onClick={onConfirm}
+          >
+            Yes, Log Out
+          </button>
+        </div>
       </div>
     </div>
   </div>

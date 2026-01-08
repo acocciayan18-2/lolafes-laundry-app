@@ -3,26 +3,25 @@ import { Link } from 'react-router-dom';
 import { IconPlus, IconUsers } from '../icons'; 
 
 export default function QuickActions() {
-  // Shared structural classes (Shape, Size, Shadow, Font)
-  // We extract this to ensure BOTH buttons are identical in size/feel
-  const commonBtnClass = "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none shadow-md px-4 py-3 h-9 text-sm";
+  // We use h-9 and flex items-center to match the height 
+  // and vertical alignment of your Dashboard header.
+  const commonBtnClass = "h-9 px-4 rounded-lg flex items-center gap-2 text-sm font-medium transition-all shadow-md focus:outline-none active:scale-95";
 
   return (
-    <div className="flex gap-3">
-      {/* Button 1: New Order (Primary - Blue Gradient) */}
+    <div className="flex items-center gap-3">
+      {/* 1. NEW ORDER BUTTON */}
       <Link to="/main/neworder">
         <button className={`${commonBtnClass} bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white`}>
-          <IconPlus className="w-4 h-4 mr-2 !text-white !stroke-white" />
-          New Order
+          <IconPlus className="w-4 h-4 !text-white !stroke-white" />
+          <span className='text-sm font-medium text-white'>New Order</span>
         </button>
       </Link>
 
-      {/* Button 2: Customers (Secondary - White/Gray) */}
-      {/* Uses the exact same commonBtnClass for structure, only color differs */}
+      {/* 2. CUSTOMERS BUTTON */}
       <Link to="/main/customers">
         <button className={`${commonBtnClass} bg-white border border-gray-200 text-slate-700 hover:bg-gray-50`}>
-          <IconUsers className="w-4 h-4 mr-2 text-slate-700" />
-          Customers
+          <IconUsers className="w-4 h-4 text-slate-400" />
+          <span className='text-sm font-medium text-gray-700'>Customers</span>
         </button>
       </Link>
     </div>

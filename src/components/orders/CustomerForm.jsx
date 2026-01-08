@@ -184,7 +184,7 @@ export const CustomerForm = ({
                       })
                     }
                     placeholder="Enter Customer Name"
-                    className={`uppercase ${selectedCustomerId ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-400 border-gray-200" : focusClasses}`}
+                    className={`uppercase ${selectedCustomerId ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-700 border-gray-200" : focusClasses}`}
                   />
                <div className="flex flex-col relative">
   <Input
@@ -210,7 +210,7 @@ export const CustomerForm = ({
     }}
     placeholder="09XX XXX XXXX"
     // VISUAL FIX: Only turn red if Duplicate OR (Length is 11 AND format is wrong)
-    className={`${selectedCustomerId ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-400 border-gray-200" : `text-gray-900 ${focusClasses}`} ${(isPhoneDuplicate || (customer.phone.length === 11 && !customer.phone.startsWith("09"))) ? "!border-red-500 !text-red-600 !bg-red-50" : ""}`}
+    className={`${selectedCustomerId ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-700 border-gray-200" : `text-gray-900 ${focusClasses}`} ${(isPhoneDuplicate || (customer.phone.length === 11 && !customer.phone.startsWith("09"))) ? "!border-red-500 !text-red-600 !bg-red-50" : ""}`}
   />
   
   {/* Error Messages Container */}
@@ -257,7 +257,7 @@ export const CustomerForm = ({
                     setCustomer({ ...customer, address: e.target.value })
                   }
                   placeholder="Customer Address (Optional)"
-                  className={`${selectedCustomerId ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-400 border-gray-200" : focusClasses}`}
+                  className={`${selectedCustomerId ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-700 border-gray-200" : focusClasses}`}
                 />
               </motion.div>
             )}

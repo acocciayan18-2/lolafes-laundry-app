@@ -2,13 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    /* Light Mode Tokens */
+    --color-bg-main: #f8fafc;        /* slate-50 */
+    --color-bg-card: #ffffff;        /* pure white */
+    --color-bg-surface: #f1f5f9;     /* slate-100 */
+    --color-border: #e2e8f0;         /* slate-200 */
+    --color-text-primary: #0f172a;   /* slate-900 */
+    --color-text-secondary: #64748b; /* slate-500 */
+    --color-border: #f1f5f9;
+  }
+
+  .dark {
+    /* Professional Dark Mode (#121212 Standard) */
+    --color-bg-main: #121212;        /* Level 0: Pure Background */
+    --color-bg-card: #1e1e1e;        /* Level 1: Elevated Card Surface */
+    --color-bg-surface: #2a2a2a;     /* Level 2: Buttons/Icon Containers */
+    --color-border: #2d2d2d;         /* Subtle separator */
+    --color-text-primary: #f8fafc;   /* slate-50 (90% opacity feel) */
+    --color-text-secondary: #94a3b8; /* slate-400 (60% opacity feel) */
+    --color-border: #333333;
+  }
+}
 
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

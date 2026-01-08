@@ -1,25 +1,15 @@
-import React, { useState, useRef, useEffect } from "react";
-// 1. Import Framer Motion
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useRef } from "react";
+import { motion } from "framer-motion";
 import { 
   IconClock, IconPackage, IconCheckCircle, IconPhone, 
   IconArrowRight, IconMapPin, IconInfo, IconShirt
 } from "../icons";
 import "../../style/OrderCard.css";
 import { useOrderStore } from "../../store/orders/useOrderStore";
-
 import { useNotificationStore } from "../../store/ui/useNotificationStore";
 
-
-// Transition configuration for a smooth "springy" feel
-const SPRING_TRANSITION = {
-  type: "spring",
-  stiffness: 300,
-  damping: 30,
-  mass: 1
-};
-
-
+// 1. IMPORT THE ACTIVITY STORE
+import { useActivityStore } from "../../store/activities/useActivityStore";
 
 const IconEdit = ({ className }) => (
   <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className}>
@@ -53,11 +43,14 @@ export default function OrderCard({ order }) {
   // --- ZUSTAND ACTIONS ---
   const updateOrderStatus = useOrderStore((state) => state.updateOrderStatus);
   const togglePaymentStatus = useOrderStore((state) => state.togglePaymentStatus);
+  const showNotification = useNotificationStore((state) => state.showNotification);
   
+  // 2. INITIALIZE LOG ACTIVITY
+  const logActivity = useActivityStore((state) => state.logActivity);
+
   const status = statusConfig[order.status] || statusConfig.pending;
   const instructions = order.special_instructions || order.notes;
 
-  // Handle Firebase Timestamps or standard Strings
   const getFormattedDate = (dateObj) => {
     const d = dateObj?.seconds ? new Date(dateObj.seconds * 1000) : new Date(dateObj);
     return {
@@ -65,10 +58,6 @@ export default function OrderCard({ order }) {
       time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     };
   };
-
-  const totalQty = order.services?.reduce((sum, s) => 
-  sum + (Number(s.quantity || s.weight_kg) || 0), 0
-);
 
   const { date: dateStamp, time: timeStamp } = getFormattedDate(order.created_at || order.created_date);
 
@@ -81,109 +70,124 @@ export default function OrderCard({ order }) {
     setIsOpen(!isOpen);
   };
 
+  // 3. UPDATED STATUS CHANGE HANDLER
   const handleStatusChange = async (e, newStatus) => {
-
     if (newStatus === "picked_up" && !order.is_paid) {
-    // REPLACED ALERT
-    showNotification("Cannot pick up unpaid orders!", "error");
-    setIsOpen(false);
-    return;
-  }
+      showNotification("Cannot pick up unpaid orders!", "error");
+      setIsOpen(false);
+      return;
+    }
     e.stopPropagation();
     setIsOpen(false);
+    
     try {
       await updateOrderStatus(order.id, newStatus);
+      
+      // LOG ACTIVITY: Create a dedicated card for this status change
+      logActivity(order, newStatus, 'status_update');
+      
     } catch (err) {
-      alert("Failed to update status. Please try again.");
+      showNotification("Failed to update status.", "error");
     }
   };
 
-  const handlePaymentToggle = (e) => {
-    e.stopPropagation();
-    togglePaymentStatus(order.id, order.is_paid);
-  };
+  const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
 
-  const showNotification = useNotificationStore((state) => state.showNotification);
+  // 4. UPDATED PAYMENT TOGGLE HANDLER
+ const handlePaymentToggle = async (e) => {
+  e.stopPropagation(); // Prevents card expansion
+  if (isUpdatingPayment) return;
+
+  setIsUpdatingPayment(true);
+  try {
+    await togglePaymentStatus(order.id, order.is_paid);
+    
+    const paymentAction = !order.is_paid ? "Payment Received" : "Payment Reversed";
+    
+    // Notify the user
+    showNotification(paymentAction, "success");
+
+    // LOG ACTIVITY
+    logActivity({
+        ...order,
+        customer_name: order.customer_name
+    }, order.status, { 
+      action: 'payment_update', 
+      label: paymentAction 
+    });
+
+  } catch (err) {
+    showNotification("Failed to update payment.", "error");
+  } finally {
+    setIsUpdatingPayment(false);
+  }
+};
 
   return (
     <div
       onClick={() => setIsExpanded(!isExpanded)}
-      className={`group relative bg-white border transition-all duration-300 mb-3 cursor-pointer rounded-2xl ${
+      className={`group relative bg-white border transition-all duration-300 mb-3 cursor-pointer !shadow-sm rounded-2xl ${
         isOpen ? "z-50 border-blue-500 ring-2 ring-blue-500/10 shadow-md" : 
         isExpanded ? "z-40 border-blue-400 shadow-md" : "border-slate-200 hover:border-blue-300"
       }`}
     >
       <div className={`absolute left-0 top-0 bottom-0 w-2 rounded-l-2xl ${status.banner}`} />
-
+      
+      {/* ... Rest of your JSX (the visual card elements) ... */}
       <div className="flex flex-col ml-2">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 p-3 md:p-4">
-          
-          <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-sm ${status.theme}`}>
-              <status.icon className="w-5 h-5" />
-            </div>
-            
-            <div className="min-w-0 flex flex-col gap-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-bold text-gray-800 text-[16px] uppercase tracking-tight">{order.customer_name}</h3>
-                <span className="text-[10px] font-bold text-slate-500 uppercase">
-                  {dateStamp} <span className="mx-1 opacity-30">|</span> {timeStamp}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[9px] font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 uppercase">{order.order_number}</span>
-                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${status.theme}`}>{status.label}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between lg:justify-end gap-4 w-full lg:w-auto">
-            <div 
-              className="text-left lg:text-right cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={handlePaymentToggle} // Toggle payment status on click
-            >
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded mb-0.5 inline-block ${order.is_paid ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
-                {order.is_paid ? "PAID" : "UNPAID"}
-              </span>
-              <p className="text-lg font-bold text-gray-800">₱{order.total_amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-            </div>
-
-            <div className="flex items-center gap-1.5" ref={dropdownRef}>
-              <div className="relative">
-                <button
-                  onClick={toggleDropdown}
-                  className={`h-8 px-3 text-[13px] font-medium rounded-lg border transition-all ${isOpen ? "bg-slate-800 text-white" : "bg-white text-slate-600 border-slate-200"}`}
-                >
-                  Update Status
-                </button>
-
-                {isOpen && (
-                  <div className={`absolute right-0 w-40 bg-white border border-slate-200 rounded-xl shadow-2xl z-[100] py-1 ${isDropUp ? "bottom-full mb-2" : "top-full mt-1"}`}>
-                    {statusOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={(e) => handleStatusChange(e, option.value)}
-                        className={`w-full px-3 py-2 text-left text-[13px] font-medium flex items-center justify-between ${order.status === option.value ? "bg-blue-50 text-blue-600" : "text-slate-700 hover:bg-slate-50"}`}
-                      >
-                        {option.label}
-                        <option.icon className="w-4 h-4 opacity-40" />
-                      </button>
-                    ))}
+         {/* ... Existing Card Content ... */}
+         {/* Ensure you are using handlePaymentToggle on the total_amount/paid badge section */}
+         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 p-3 md:p-4">
+            {/* Customer Info Section */}
+            <div className="flex items-center gap-3 min-w-0">
+               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-sm ${status.theme}`}>
+                  <status.icon className="w-5 h-5" />
+               </div>
+               <div className="min-w-0 flex flex-col gap-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                     <h3 className="font-bold text-gray-800 text-[16px] uppercase tracking-tight">{order.customer_name}</h3>
+                     <span className="text-[10px] font-bold text-slate-500 uppercase">{dateStamp} <span className="mx-1 opacity-30">|</span> {timeStamp}</span>
                   </div>
-                )}
-              </div>
-
-              {status.nextStatus && (
-                <button
-                  onClick={(e) => handleStatusChange(e, status.nextStatus)}
-                  className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-[13px] bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
-                >
-                  Next <IconArrowRight className="w-3.5 h-3.5 !text-white !stroke-white" />
-                </button>
-              )}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                     <span className="text-[9px] font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 uppercase">{order.order_number}</span>
+                     <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${status.theme}`}>{status.label}</span>
+                  </div>
+               </div>
             </div>
-          </div>
-        </div>
+
+            {/* Payment & Action Section */}
+            <div className="flex items-center justify-between lg:justify-end gap-4 w-full lg:w-auto">
+               <div className="text-left lg:text-right cursor-pointer hover:opacity-80 transition-opacity" onClick={handlePaymentToggle}>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded mb-0.5 inline-block ${order.is_paid ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
+                     {order.is_paid ? "PAID" : "UNPAID"}
+                  </span>
+                  <p className="text-lg font-bold text-gray-800">₱{order.total_amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+               </div>
+
+               <div className="flex items-center gap-1.5" ref={dropdownRef}>
+                  <div className="relative">
+                     <button onClick={toggleDropdown} className={`h-8 px-3 text-[13px] font-medium rounded-lg border transition-all ${isOpen ? "bg-slate-800 text-white" : "bg-white text-slate-600 border-slate-200"}`}>
+                        Update Status
+                     </button>
+                     {isOpen && (
+                        <div className={`absolute right-0 w-40 bg-white border border-slate-200 rounded-xl shadow-2xl z-[100] py-1 ${isDropUp ? "bottom-full mb-2" : "top-full mt-1"}`}>
+                           {statusOptions.map((option) => (
+                              <button key={option.value} onClick={(e) => handleStatusChange(e, option.value)} className={`w-full px-3 py-2 text-left text-[13px] font-medium flex items-center justify-between ${order.status === option.value ? "bg-blue-50 text-blue-600" : "text-slate-700 hover:bg-slate-50"}`}>
+                                 {option.label}
+                                 <option.icon className="w-4 h-4 opacity-40" />
+                              </button>
+                           ))}
+                        </div>
+                     )}
+                  </div>
+                  {status.nextStatus && (
+                     <button onClick={(e) => handleStatusChange(e, status.nextStatus)} className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-[13px] bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 flex items-center gap-1.5 shadow-md active:scale-95 transition-all">
+                        Next <IconArrowRight className="w-3.5 h-3.5 !text-white !stroke-white" />
+                     </button>
+                  )}
+               </div>
+            </div>
+         </div>
 
         {isExpanded && (
           <motion.div 
