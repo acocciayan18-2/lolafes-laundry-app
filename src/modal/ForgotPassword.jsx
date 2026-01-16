@@ -48,23 +48,23 @@ export default function ForgotPassword({
         {/* Close Button */}
         <button
           onClick={handleClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600"
           aria-label="Close"
         >
           {UI_ICONS.close}
         </button>
 
-        <h4 className="text-xl font-bold mb-3">Reset Password</h4>
+        <h4 className="text-xl font-bold text-text-dark mb-3">Reset Password</h4>
 
         {/* Info Text */}
-        <p className="small text-muted flex items-start text-sm text-gray-500 mb-3">
+        <p className="small text-muted flex items-start text-sm text-text-dark/70 mb-3">
           {UI_ICONS.info}
           Only fully registered admin accounts will receive a password reset link.
         </p>
 
         {/* Email Input Field */}
         <div className="mb-3 text-start">
-          <label htmlFor="email" className="block text-gray-700 font-medium mb-1">
+          <label htmlFor="email" className="block text-text-dark font-normal mb-2 mt-1">
             Email
           </label>
           <div className="relative flex items-center mb-2">
@@ -72,7 +72,7 @@ export default function ForgotPassword({
             <input
               type="email"
               id="email"
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-app-dark"
               placeholder="Enter your Email"
               required
               autoComplete="off"
@@ -87,10 +87,10 @@ export default function ForgotPassword({
           <button
             onClick={handleForgotPassword}
             disabled={isButtonDisabled}
-            className={`px-4 py-2 rounded-md font-medium text-white transition-colors duration-200 ${
+            className={`px-4 py-2 rounded-md mt-2 font-normal w-full text-white transition-colors duration-200 ${
               isButtonDisabled
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-500 to-indigo-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                : "bg-app-dark focus:outline-none hover:bg-app-dark/90 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             }`}
           >
             {resetLoading ? "Sending..." : "Send Reset Link"}

@@ -17,12 +17,12 @@
 
 .sidebar {
   /* Box styling */
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-  border-right: 0.1px solid rgba(59, 131, 246, 0.4); /* #3b83f667 converted for readability */
+  box-shadow: 0px 4px 12px #1e1e1e2d;
+  border-right: 0.1px solid #1e1e1e2d; /* #3b83f667 converted for readability */
 }
 
 .logo-con {
-  border-bottom: 0.1px solid rgba(59, 131, 246, 0.4);
+  border-bottom: 0.1px solid #1e1e1e2d;
 }
 
 /* ----------------------------------------------------------------------
@@ -39,9 +39,6 @@
   padding: 5px 16px;
   margin-bottom: 8px;
   
-  font-size: 17px;
-  font-weight: 500;
-  color: #333333;
   
   text-decoration: none;
   border-radius: 13px;
@@ -62,7 +59,7 @@
 
 /* Active Background Gradient */
 .nav-page-btn.active {
-  background: linear-gradient(to right, #3b82f6, #4f46e5);
+  background: #1e1e1e;
 }
 
 

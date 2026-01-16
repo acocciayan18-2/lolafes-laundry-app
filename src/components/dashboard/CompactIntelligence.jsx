@@ -18,25 +18,21 @@ export default function CompactIntelligence() {
         label: "Sales Progress", 
         val: `${salesPercent}%`, 
         sub: `Today's revenue is ₱${metrics.salesToday.toLocaleString()} vs yesterday's ₱${metrics.salesYesterdayTotal.toLocaleString()}`, 
-        accent: "text-emerald-500" 
       },
       { 
         label: "Order Pacing", 
         val: `${ordersPercent}%`, 
         sub: `${metrics.ordersTodayCount} orders today vs ${metrics.ordersYesterdayTotalCount} yesterday`, 
-        accent: "text-blue-500" 
       },
       { 
         label: "Financial Risk", 
         val: `₱${metrics.revenueAtRisk.toLocaleString()}`, 
         sub: `Unpaid orders waiting to be collected`, 
-        accent: "text-rose-500" 
       },
       { 
         label: "Shop Speed", 
         val: metrics.avgVelocity, 
         sub: `Average time to finish laundry today`, 
-        accent: "text-indigo-500" 
       },
     ];
 
@@ -44,7 +40,6 @@ export default function CompactIntelligence() {
       label: "Action Needed",
       val: `#${order.order_number}`,
       sub: `${order.customer_name}'s order is stuck in "${order.status.replace('_', ' ')}"`,
-      accent: "text-orange-500",
       pulse: true
     }));
 
@@ -66,7 +61,7 @@ export default function CompactIntelligence() {
   if (!current) return null;
 
   return (
-    <div className="flex items-center overflow-hidden px-2">
+    <div className="flex items-center overflow-hidden px-2 h-8">
       <AnimatePresence mode="wait">
         <motion.div
           key={`${current.label}-${current.val}`}
@@ -74,24 +69,25 @@ export default function CompactIntelligence() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -10 }}
           transition={{ duration: 0.4 }}
-          className="flex items-center gap-3 w-full py-1"
+          className="flex items-center gap-3 w-full"
         >
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0">
             <div className="flex items-center gap-2">
-              {/* LABEL: Uses text-text-secondary */}
-              <span className={`text-[10px] font-bold uppercase tracking-widest whitespace-nowrap 
-                ${current.pulse ? 'text-orange-500 animate-pulse' : 'text-text-secondary'}`}>
+              
+              {/* LABEL: Applied 'text-nano' for the tiny uppercase overline look */}
+              <span className={`text-nano uppercase whitespace-nowrap 
+                ${current.pulse ? 'text-text-dark animate-pulse' : 'text-text-dark/50'}`}>
                 {current.label}:
               </span>
-              {/* VALUE: Uses text-text-primary */}
-              <span className={`text-[13px] font-black whitespace-nowrap 
-                ${current.pulse ? 'text-orange-500' : 'text-text-primary'}`}>
+              
+              {/* VALUE: Applied 'text-sm-text' with font-bold for primary focus */}
+              <span className="text-sm-text font-bold whitespace-nowrap text-text-dark">
                 {current.val}
               </span>
             </div>
             
-            {/* SUBTEXT: Uses secondary with a subtle border that matches the theme */}
-            <span className="text-[11px] font-medium text-text-secondary/70 italic truncate sm:pl-3">
+            {/* SUBTEXT: Applied 'text-micro' for metadata styling */}
+            <span className="text-micro text-text-dark/70 italic truncate sm:pl-3 border-l border-transparent sm:border-gray-200">
                {current.sub}
             </span>
           </div>

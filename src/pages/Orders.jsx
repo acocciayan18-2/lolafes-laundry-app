@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { IconPlus, IconSearch, IconShirt } from "../components/icons";
+import { IconSearch, IconShirt, IconAddNewOrder } from "../components/icons";
 import OrderFilters from "../components/orders/OrderFilters";
 import OrderCard from "../components/orders/OrderCard";
 import { useOrderStore } from "../store/orders/useOrderStore"; 
-
 import { useActivityStore } from "../store/activities/useActivityStore";
 
 const SPRING_TRANSITION = {
@@ -17,7 +16,7 @@ const SPRING_TRANSITION = {
 };
 
 const Button = ({ children, className = "", ...props }) => (
-  <button className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${className}`} {...props}>
+  <button className={`inline-flex items-center justify-center rounded-lg font-bold transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${className}`} {...props}>
     {children}
   </button>
 );
@@ -25,9 +24,9 @@ const Button = ({ children, className = "", ...props }) => (
 const Input = ({ className, ...props }) => (
   <input
     className={`
-      flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm
-      placeholder:text-gray-400 outline-none transition-all
-      focus:!border-black focus:!ring-0
+      flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 
+      text-sm-text text-text-dark placeholder:text-gray-400 outline-none transition-all
+      focus:!border-app-dark/70 focus:!ring-0
       ${className}
     `}
     {...props}
@@ -37,37 +36,54 @@ const Input = ({ className, ...props }) => (
 const LaundryLoader = () => (
   <div className="flex flex-col items-center justify-center space-y-2">
     <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-    <p className="text-xs text-gray-400">Loading orders...</p>
+    {/* Applied text-micro for meta-loading state */}
+    <p className="text-micro font-bold uppercase  text-gray-400">Loading orders...</p>
   </div>
 );
 
 export default function Orders() {
   const { orders, isLoading, subscribeToOrders, updateOrderStatus } = useOrderStore();
-  
-  // 2. INITIALIZE THE LOGGER
   const logActivity = useActivityStore((state) => state.logActivity);
   
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("today");
+
+  useEffect(() => {
+    const handleGlobalSearchFocus = (e) => {
+      const activeElement = document.activeElement;
+      const isAlreadyTyping = 
+        activeElement.tagName === "INPUT" || 
+        activeElement.tagName === "TEXTAREA" || 
+        activeElement.isContentEditable;
+
+      if (isAlreadyTyping) return;
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const searchInput = document.querySelector('input[placeholder*="Search name"]');
+        if (searchInput) {
+          searchInput.focus();
+          setSearchTerm(prev => prev + e.key);
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalSearchFocus);
+    return () => window.removeEventListener("keydown", handleGlobalSearchFocus);
+  }, [setSearchTerm]);
+
 
   useEffect(() => {
     const unsubscribe = subscribeToOrders();
     return () => unsubscribe(); 
   }, [subscribeToOrders]);
 
-  // 3. CREATE THE INTERCEPTOR HANDLER
-  // This ensures that whenever a status changes, a new card is created in the history
   const handleStatusUpdate = useCallback(async (orderId, newStatus) => {
     try {
-      // Find the current order data before/during update to get details (name, amount, etc.)
       const orderToLog = orders.find(o => o.id === orderId);
-      
-      // Update the actual Order state/database
       await updateOrderStatus(orderId, newStatus);
-      
-      // Create a NEW dedicated card in the activity feed
       if (orderToLog) {
         logActivity(orderToLog, newStatus);
       }
@@ -125,19 +141,30 @@ export default function Orders() {
   }, [filterOrders]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-3 pt-2 md:p-4">
-      <motion.div layoutRoot className="max-w-5xl mx-auto px-1 md:px-2">
+    <div className="min-h-screen bg-app-light p-2 ">
+      <motion.div layoutRoot className="max-w-6xl mx-auto px-1 md:px-2">
         <LayoutGroup>
-          {/* Header & Filters (remain the same) */}
-          <motion.div layout className="flex flex-row justify-between items-center mt-2 mb-3 gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">All Orders</h1>
-              <p className="text-gray-600 mt-1 text-[14px]">Manage and track orders</p>
+          
+          <motion.div layout className="flex flex-row items-center mb-3 gap-4">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                {/* Main Page Title: text-h1 */}
+                <h1 className="text-h2 text-text-dark">All Orders</h1>
+                
+                {/* ORDER COUNT BADGE: text-micro for meta clarity */}
+                {!isLoading && (
+                  <span className="flex items-center justify-center bg-app-dark/5 px-2 py-0.5 rounded-lg text-micro font-bold text-text-dark/70 uppercase tracking-tighter min-w-[24px]">
+                    {filteredOrders.length}
+                  </span>
+                )}
+              </div>
+              {/* Description: text-sm-text */}
+              <p className="text-sm-text text-gray-600 mt-0.5">Manage and track orders</p>
             </div>
+            
             <Link to="/main/neworder">
-              <button className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md text-white px-4 py-2 h-9 rounded-lg flex items-center gap-2">
-                <IconPlus className="w-4 h-4 !text-white !stroke-white" />
-                <span className="text-sm font-medium text-white">New Order</span>
+              <button className="group flex items-center justify-center w-9 h-9 shadow-md bg-white hover:bg-app-dark/5 active:bg-app-dark/5 rounded-xl border border-text-dark/20 active:scale-95 transition-all duration-200">
+                <IconAddNewOrder className="w-5 h-5" />
               </button>
             </Link>
           </motion.div>
@@ -159,36 +186,48 @@ export default function Orders() {
           </motion.div>
 
           {/* Orders List */}
-          <motion.div layout className="grid gap-1 grid-cols-1 overflow-visible">
-            <AnimatePresence mode="popLayout">
-              {isLoading ? (
-                <motion.div key="loader" className="col-span-full py-20 flex justify-center"><LaundryLoader /></motion.div>
-              ) : filteredOrders.length > 0 ? (
-                filteredOrders.map((order, index) => (
-                  <motion.div
-                    key={order.id}
-                    layout
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.98 }}
-                    transition={{ ...SPRING_TRANSITION, delay: index * 0.03 }}
-                  >
-                    <OrderCard
-                      order={order}
-                      // 4. USE THE NEW HANDLER HERE
-                      onStatusUpdate={handleStatusUpdate}
-                    />
-                  </motion.div>
-                ))
-              ) : (
-                <motion.div className="text-center py-16 bg-white/40 border border-dashed border-slate-300 rounded-2xl">
-                   {/* Empty State UI */}
-                   <IconShirt className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                   <h3 className="text-lg font-bold text-slate-600">No orders found</h3>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
+          {/* Orders List Container */}
+<motion.div 
+  layout 
+  className="flex flex-col overflow-visible" // Removed min-h-[400px] and gap-1
+>
+  <AnimatePresence mode="popLayout">
+    {isLoading ? (
+      <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-20 flex justify-center">
+        <LaundryLoader />
+      </motion.div>
+    ) : filteredOrders.length > 0 ? (
+      filteredOrders.map((order, index) => (
+        <motion.div
+          key={order.id}
+          layout
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ ...SPRING_TRANSITION, delay: index * 0.02 }}
+        >
+          {/* Note: OrderCard already has mb-3, so we don't need container gap */}
+          <OrderCard order={order} onStatusUpdate={handleStatusUpdate} />
+        </motion.div>
+      ))
+    ) : (
+      <motion.div 
+        key="empty-state"
+        layout
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="flex flex-col items-center text-center py-20" // Increased padding for empty state only
+      >
+        <div className="w-20 h-20 flex items-center justify-center">
+          <IconShirt className="w-10 h-10 text-text-dark/10" />
+        </div>
+        <h3 className="text-h3 font-bold text-text-dark/70">No orders found</h3>
+        <p className="text-sm-text font-medium text-text-dark/50 mt-1">Try adjusting your filters or search term</p>
+      </motion.div>
+    )}
+  </AnimatePresence>
+</motion.div>
         </LayoutGroup>
       </motion.div>
     </div>

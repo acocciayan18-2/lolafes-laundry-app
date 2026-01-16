@@ -1,27 +1,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { IconPlus, IconUsers } from '../icons'; 
+import { IconAddNewOrder, IconPlus, IconUsers } from '../icons'; 
 
 export default function QuickActions() {
-  // We use h-9 and flex items-center to match the height 
-  // and vertical alignment of your Dashboard header.
-  const commonBtnClass = "h-9 px-4 rounded-lg flex items-center gap-2 text-sm font-medium transition-all shadow-md focus:outline-none active:scale-95";
-
+  // Common classes updated to use transition between your new specific tokens
+  
   return (
-    <div className="flex items-center gap-3">
-      {/* 1. NEW ORDER BUTTON */}
+    <div className="flex items-center gap-1.5">
+      {/* 1. NEW ORDER BUTTON - Updated to high-contrast Dark theme */}
       <Link to="/main/neworder">
-        <button className={`${commonBtnClass} bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white`}>
-          <IconPlus className="w-4 h-4 !text-white !stroke-white" />
-          <span className='text-sm font-medium text-white'>New Order</span>
+        <button className="group flex items-center justify-center w-9 shadow-md h-9 hover:bg-app-dark/5 active:bg-app-dark/5 bg-white rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200 ">
+          <IconAddNewOrder className="w-5 h-5 " />
         </button>
       </Link>
 
-      {/* 2. CUSTOMERS BUTTON */}
+      {/* 2. CUSTOMERS BUTTON - Updated to Light theme with Dark text */}
       <Link to="/main/customers">
-        <button className={`${commonBtnClass} bg-white border border-gray-200 text-slate-700 hover:bg-gray-50`}>
-          <IconUsers className="w-4 h-4 text-slate-400" />
-          <span className='text-sm font-medium text-gray-700'>Customers</span>
+        <button className="group flex items-center justify-center w-9 h-9 shadow-md bg-white hover:bg-app-dark/5 active:bg-app-dark/5 rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200 ">
+          <IconUsers className="w-4 h-4 " />
         </button>
       </Link>
     </div>

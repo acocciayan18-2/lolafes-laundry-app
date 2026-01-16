@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
@@ -43,6 +43,13 @@ export default function Dashboard() {
     return () => unsubscribe && unsubscribe();
   }, [subscribeToOrders]);
 
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+useEffect(() => {
+  const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+  return () => clearInterval(timer);
+}, []);
+
   // --- TOUR HANDLER ---
 const handleStartTutorial = () => {
   // Argument 1: navigate
@@ -63,9 +70,9 @@ const handleStartTutorial = () => {
   const readyOrders = orders.filter(o => o.status === 'ready').length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-slate-900 p-3 md:p-6 transition-colors duration-500">
+    <div className="min-h-screen bg-app-light text-slate-900 p-2  transition-colors duration-500">
       
-      <div className="max-w-5xl mx-auto px-1 md:px-2">
+      <div className="max-w-6xl mx-auto px-1 md:px-2">
         <AnimatePresence mode="wait">
           {!isLoading ? (
             <motion.div 
@@ -73,24 +80,35 @@ const handleStartTutorial = () => {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="space-y-6"
+              className="space-y-4"
             >
               {/* --- 1. HEADER & ACTIONS --- */}
-              <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <motion.div variants={itemVariants} className="flex flex-row  justify-between  gap-6">
                 <div>
                   <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-                    
-                    {/* CONTROL GROUP */}
-                    <div className="flex items-center gap-1 bg-white/60 backdrop-blur-md p-1 rounded-2xl border border-white/20 shadow-sm">
-                 return (
-  <button onClick={handleStartTutorial}>
-  App Tutorial
-</button>
-);
-                    </div>
+                    <h1 className="text-2xl font-bold text-text-dark">Dashboard</h1>
                   </div>
-                  <p className="text-blue-500 text-xxs font-medium mt-1">{now.toDateString()}</p>
+                 <div>
+ 
+    <div className="flex items-center justify-between text-white py-0.5 gap-2">
+      <p className="text-text-dark text-[12px] font-medium ">
+    {currentTime.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    })}
+  </p>
+  <span className='opacity-60 text-[13px]'> | </span>
+  <span className="text-[12px] font-medium">
+        {currentTime.toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: true 
+        }).toUpperCase()}
+      </span>
+    </div>
+</div>
                 </div>
                 <div id="step-actions">
                   <QuickActions />
