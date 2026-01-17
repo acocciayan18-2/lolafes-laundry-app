@@ -139,7 +139,7 @@ export default function OrderCard({ order }) {
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 {/* ORDER ID: text-nano */}
-                <span className="text-nano font-mono font-bold text-text-dark px-2 py-0.5 rounded border uppercase bg-white/50">{order.order_number}</span>
+                <span className="text-nano font-bold text-text-dark px-2 py-0.5 rounded border uppercase bg-white/50">{order.order_number}</span>
                 {/* STATUS: text-nano */}
                 <span className={`text-nano font-bold uppercase px-2 py-0.5 rounded border ${status.theme}`}>{status.label}</span>
               </div>
@@ -208,7 +208,7 @@ export default function OrderCard({ order }) {
                       {/* SERVICE NAME: text-sm-text */}
                       <span className="text-sm-text font-medium text-text-dark">{s.service_name}</span>
                       {/* SERVICE QTY: text-micro */}
-                      <span className="ml-2 text-micro font-mono font-bold text-btn-primary">
+                      <span className="ml-2 text-micro  font-bold text-btn-primary">
                         x{s.quantity || s.weight_kg}
                       </span>
                     </div>

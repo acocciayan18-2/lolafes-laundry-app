@@ -1,11 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
-// 1. Store & Tour Imports
-import { useActivityStore } from '../store/activities/useActivityStore';
 import { useOrderStore } from '../store/orders/useOrderStore';
-import { startGlobalTour } from '../tours/globalTours';
 
 // 2. Component Imports
 import CompactIntelligence from '../components/dashboard/CompactIntelligence';
@@ -33,10 +29,8 @@ const isSameDay = (d1, d2) => {
 };
 
 export default function Dashboard() {
-  const navigate = useNavigate();
 
   const { orders, isLoading, subscribeToOrders } = useOrderStore();
-  // const activities = useActivityStore((state) => state.activities);
 
   useEffect(() => {
     const unsubscribe = subscribeToOrders();
@@ -50,7 +44,6 @@ useEffect(() => {
   return () => clearInterval(timer);
 }, []);
 
-  // --- TOUR HANDLER ---
 
   // --- CALCULATIONS ---
   const now = new Date();

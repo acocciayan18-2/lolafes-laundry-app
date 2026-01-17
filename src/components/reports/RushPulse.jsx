@@ -13,7 +13,6 @@ export default function RushPulse() {
   const infoRef = useRef(null);
   const svgRef = useRef(null);
   
-  const orders = useReportStore(state => state.orders); 
   const getPeakHours = useReportStore(state => state.getPeakHours);
 
   useEffect(() => {

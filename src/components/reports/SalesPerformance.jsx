@@ -9,7 +9,7 @@ export default function SalesPerformance() {
   const infoRef = useRef(null);
   const containerRef = useRef(null);
   
-  const orders = useReportStore(state => state.orders);
+  // Keep the store selectors
   const getSalesTrend = useReportStore(state => state.getSalesTrend);
 
   useEffect(() => {
@@ -25,7 +25,11 @@ export default function SalesPerformance() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const chartData = useMemo(() => getSalesTrend(range), [orders, range, getSalesTrend]);
+  /* FIX: Removed 'orders' from the dependency array. 
+    getSalesTrend(range) is the logic executor, so we only need to watch 
+    the 'range' and the function itself.
+  */
+  const chartData = useMemo(() => getSalesTrend(range), [range, getSalesTrend]);
   
   const maxVal = useMemo(() => {
     const values = chartData.map(d => d.value);
@@ -43,7 +47,7 @@ export default function SalesPerformance() {
         <div className="flex gap-1">
           <div className="min-w-0 flex-1 relative" ref={infoRef}>
             <div className="flex items-start">
-              <p className="text-[13px] font-bold text-text-dark/70 truncate  uppercase mr-2">Revenue analysis</p>
+              <p className="text-[13px] font-bold text-text-dark/70 truncate uppercase mr-2">Revenue analysis</p>
               <button onClick={() => setShowInfo(!showInfo)} className="text-text-dark/40 hover:text-text-dark transition-colors">
                  <IconInfo className="w-4 h-4 text-gray-400 stroke-gray-400" />
               </button>
@@ -93,7 +97,6 @@ export default function SalesPerformance() {
           {/* SCROLLABLE CONTENT AREA */}
           <div className="flex-1 overflow-x-auto no-scrollbar overflow-y-visible pt-12">
             <div 
-              /* Added px-4 so bars at the start/end don't touch the edge (Overflow Reveal) */
               className="flex items-end justify-between gap-1 h-40 pb-6 relative overflow-visible px-4" 
               style={{ 
                 minWidth: range === 'day' ? '600px' : range === 'year' ? '500px' : '100%' 
@@ -135,7 +138,7 @@ export default function SalesPerformance() {
                       style={{ height: `${heightPerc}%`, minHeight: data.value > 0 ? '2px' : '0' }}
                     />
                     
-                    {/* X-Axis Label: Removed truncate, added whitespace-nowrap */}
+                    {/* X-Axis Label */}
                     <span className={`absolute -bottom-5 text-[10px] uppercase whitespace-nowrap w-full text-center px-0.5 
                       ${isActive ? 'text-text-dark font-bold' : 'text-text-dark/90'}`}>
                       {data.label}
