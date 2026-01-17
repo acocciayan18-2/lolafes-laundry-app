@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { signOut } from "firebase/auth"; // Added for logic
+import { auth } from "../services/firebase"; // Ensure your firebase path is correct
 import "../style/main-app.css";
 import "../style/sidebar.css";
 
@@ -11,7 +13,6 @@ import {
   IconShirt,
   IconUsers
 } from "./icons";
-
 
 const SIDEBAR_CONFIG = {
   menuItems: [
@@ -30,7 +31,17 @@ const SIDEBAR_CONFIG = {
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const [showConfirm, setShowConfirm] = useState(false);
- 
+  const navigate = useNavigate();
+
+  // --- LOGOUT LOGIC ---
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <>
@@ -43,20 +54,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       />
 
       {/* 2. SIDEBAR CONTAINER */}
-      {/* Changed fixed inset-y-0 to h-full to respect 100dvh parent */}
       <div className={`
         sidebar-container flex h-full fixed left-0 z-[50] transition-transform duration-300 ease-in-out
         lg:relative lg:translate-x-0 
         ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}>
-        {/* Changed h-screen to h-full */}
         <aside className="sidebar w-64 bg-app-light flex flex-col h-full shadow-2xl lg:shadow-none">
           <div className="flex-1 flex flex-col overflow-hidden">
             <Logo />
             
             <div className="flex-1 overflow-y-auto no-scrollbar">
               <div className="p-3">
-                <p className="text-[13px] font-medium  text-text-dark/70   uppercase px-2 py-2">Main Menu</p>
+                <p className="text-[13px] font-medium text-text-dark/70 uppercase px-2 py-2">Main Menu</p>
                 <nav>
                   <ul className="space-y-2">
                     {SIDEBAR_CONFIG.menuItems.map((item) => (
@@ -68,7 +77,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             </div>
           </div>
 
-          {/* Bottom Section stays pinned above Safari's bottom bar */}
           <div className="bg-app-light border-t border-gray-50 pb-safe"> 
             <LogoutButton onClick={() => setShowConfirm(true)} />
             <FooterCard />
@@ -79,7 +87,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       {showConfirm && (
         <LogoutConfirmationModal 
           onCancel={() => setShowConfirm(false)} 
-          onConfirm={() => {}} 
+          onConfirm={handleLogout} // Connected the handleLogout here
         />
       )}
     </>
@@ -99,7 +107,7 @@ const MenuItem = ({ to, icon, text, closeSidebar }) => {
   const isActive = location.pathname === to;
 
   return (
-    <li >
+    <li>
       <button
         onClick={handleNavigation}
         className={` 
@@ -126,13 +134,10 @@ const MenuItem = ({ to, icon, text, closeSidebar }) => {
     </li>
   );
 };
-// --- These helper components stay exactly as you designed them ---
-
-
 
 const Logo = () => (
   <div className="flex items-center gap-2.5 pl-5 pt-3.5 pb-3.5 w-full logo-con">
-    <div className="w-10 h-10 bg-app-dark p-1  rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+    <div className="w-10 h-10 bg-app-dark p-1 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
       <img
         src="/images/lolafeslaundry-logo-transparent.png"
         alt="Logo"
@@ -150,28 +155,27 @@ const Logo = () => (
   </div>
 );
 
-
 const LogoutButton = ({ onClick }) => (
   <div className="px-3 py-2.5">
     <div
       onClick={onClick}
-      className="rounded-xl p-2.5  cursor-pointer hover:bg-app-dark/5  transition-colors flex items-center gap-2 w-full active:scale-95"
+      className="rounded-xl p-2.5 cursor-pointer hover:bg-app-dark/5 transition-colors flex items-center gap-2 w-full active:scale-95"
     >
       <svg width="24" height="24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <path d="M13 12v.01"></path>
-  <path d="M3 21h18"></path>
-  <path d="M17 13.5V21"></path>
-  <path d="M5 21V5a2 2 0 0 1 2-2h7.5"></path>
-  <path d="M21 7h-7"></path>
-  <path d="m18 4 3 3-3 3"></path>
-</svg>
+        <path d="M13 12v.01"></path>
+        <path d="M3 21h18"></path>
+        <path d="M17 13.5V21"></path>
+        <path d="M5 21V5a2 2 0 0 1 2-2h7.5"></path>
+        <path d="M21 7h-7"></path>
+        <path d="m18 4 3 3-3 3"></path>
+      </svg>
       <p className="text-xs font-medium text-text-dark/90">Log out</p>
     </div>
   </div>
 );
 
 const FooterCard = () => (
-  <div className="bg-app-light rounded-xl p-2.5 border  cursor-pointer mx-3 mb-3  transition-colors">
+  <div className="bg-app-light rounded-xl p-2.5 border cursor-pointer mx-3 mb-3 transition-colors">
     <div className="flex items-center gap-2">
       <div className="w-8 h-8 bg-app-dark rounded-full flex items-center justify-center shadow-sm">
         <span className="text-text-light font-bold text-[10px]">LS</span>
@@ -185,22 +189,18 @@ const FooterCard = () => (
 );
 
 const LogoutConfirmationModal = ({ onCancel, onConfirm }) => (
-  // fixed inset-0 covers the whole screen
-  // z-[100] puts it above the sidebar (z-50)
   <div className="fixed inset-0 flex items-center justify-center bg-app-dark/10 backdrop-blur-md z-[100] p-4">
-    {/* Animation and max-width for mobile responsiveness */}
-    <div className="bg-app-light  rounded-3xl shadow-2xl p-6 w-full max-w-[340px] md:max-w-sm animate-in fade-in zoom-in duration-300">
+    <div className="bg-app-light rounded-3xl shadow-2xl p-6 w-full max-w-[340px] md:max-w-sm animate-in fade-in zoom-in duration-300">
       <div className="flex flex-col items-center text-center">
-        {/* Added a visual icon for better UX */}
         <div className="w-16 h-16 bg-app-dark rounded-full flex items-center justify-center mb-4">
-           <svg width="24" height="24" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <path d="M13 12v.01"></path>
-  <path d="M3 21h18"></path>
-  <path d="M17 13.5V21"></path>
-  <path d="M5 21V5a2 2 0 0 1 2-2h7.5"></path>
-  <path d="M21 7h-7"></path>
-  <path d="m18 4 3 3-3 3"></path>
-</svg>
+           <svg width="24" height="24" fill="none" stroke="#ffffff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 12v.01"></path>
+            <path d="M3 21h18"></path>
+            <path d="M17 13.5V21"></path>
+            <path d="M5 21V5a2 2 0 0 1 2-2h7.5"></path>
+            <path d="M21 7h-7"></path>
+            <path d="m18 4 3 3-3 3"></path>
+          </svg>
         </div>
         
         <h3 className="text-xl font-bold mb-2 text-text-dark">Confirm Logout</h3>
@@ -216,7 +216,7 @@ const LogoutConfirmationModal = ({ onCancel, onConfirm }) => (
             Cancel
           </button>
           <button
-            className="flex-1 order-1 sm:order-2 px-4 py-3 rounded-xl bg-app-dark text-text-light font-medium text-sm hover:bg-app-dark/90  active:scale-95 transition-all"
+            className="flex-1 order-1 sm:order-2 px-4 py-3 rounded-xl bg-app-dark text-text-light font-medium text-sm hover:bg-app-dark/90 active:scale-95 transition-all"
             onClick={onConfirm}
           >
             Log Out
