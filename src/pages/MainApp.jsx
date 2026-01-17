@@ -1,14 +1,14 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { useRef, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import "../style/index.css";
+import "../style/main-app.css";
+import Customers from "./Customers";
 import Dashboard from "./Dashboard";
+import NewOrder from "./NewOrder";
 import Orders from "./Orders";
 import Reports from "./Reports";
-import NewOrder from "./NewOrder";
-import Customers from "./Customers";
 import Services from "./Services";
-import "../style/main-app.css";
-import "../style/index.css";
 
 export default function MainApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

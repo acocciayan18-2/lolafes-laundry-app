@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // 1. Store & Tour Imports
-import { useOrderStore } from '../store/orders/useOrderStore';
 import { useActivityStore } from '../store/activities/useActivityStore';
+import { useOrderStore } from '../store/orders/useOrderStore';
 import { startGlobalTour } from '../tours/globalTours';
 
 // 2. Component Imports
-import { IconTrendingUp, IconClock, IconPackage, IconCheckCircle } from '../components/icons';
+import CompactIntelligence from '../components/dashboard/CompactIntelligence';
 import QuickActions from '../components/dashboard/QuickActions';
 import QuickStats from '../components/dashboard/QuickStats';
-import TodayOrders from '../components/dashboard/TodayOrders';
 import RecentActivity from '../components/dashboard/RecentActivity';
-import CompactIntelligence from '../components/dashboard/CompactIntelligence';
+import TodayOrders from '../components/dashboard/TodayOrders';
+import { IconCheckCircle, IconClock, IconPackage, IconTrendingUp } from '../components/icons';
 
 // --- ANIMATION VARIANTS ---
 const containerVariants = {
@@ -36,7 +36,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const { orders, isLoading, subscribeToOrders } = useOrderStore();
-  const activities = useActivityStore((state) => state.activities);
+  // const activities = useActivityStore((state) => state.activities);
 
   useEffect(() => {
     const unsubscribe = subscribeToOrders();
@@ -51,12 +51,7 @@ useEffect(() => {
 }, []);
 
   // --- TOUR HANDLER ---
-const handleStartTutorial = () => {
-  // Argument 1: navigate
-  // Argument 2: a function (even if it does nothing here)
-  // Argument 3: start index (0)
-  startGlobalTour(navigate, () => {}, 0); 
-};
+
   // --- CALCULATIONS ---
   const now = new Date();
   const todayOrders = orders.filter(order => isSameDay(new Date(order.created_date), now));

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  IconClock, IconPackage, IconCheckCircle, IconPhone, 
+import { IconPhone, 
   IconArrowRight, IconMapPin, IconInfo, IconShirt, IconStatusCompleted, IconStatusPending, IconStatusPickedUp, IconStatusProcessing, IconStatusReady
 } from "../icons";
 import "../../style/OrderCard.css";

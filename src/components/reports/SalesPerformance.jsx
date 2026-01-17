@@ -1,6 +1,6 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useReportStore } from "../../store/reports/useReportStore";
-import { IconTrendingUp, IconInfo } from "../icons";
+import { IconInfo, IconTrendingUp } from "../icons";
 
 export default function SalesPerformance() {
   const [range, setRange] = useState("day");
@@ -84,7 +84,7 @@ export default function SalesPerformance() {
         <div className="flex gap-2 h-52 overflow-visible">
           
           {/* FIXED Y-Axis Labels */}
-          <div className="flex flex-col justify-between h-40 pb-6 text-[9px] text-text-dark/90 text-right min-w-[45px] border-r border-app-dark/5 pr-2 mt-12">
+          <div className="flex flex-col justify-between h-40 pb-6 text-sm-text text-text-dark text-right min-w-[45px] border-r border-app-dark/5 pr-2 mt-12">
             <span>₱{Math.round(maxVal).toLocaleString()}</span>
             <span>₱{Math.round(maxVal / 2).toLocaleString()}</span>
             <span>0</span>
@@ -123,9 +123,9 @@ export default function SalesPerformance() {
                     <div className={`absolute -top-10 transition-all duration-200 z-[999] pointer-events-none
                       ${isActive ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}
                     `}>
-                      <div className="bg-gray-200 text-white shadow-2xl rounded-md px-2 py-1.5 whitespace-nowrap relative">
+                      <div className="bg-app-dark text-white shadow-2xl rounded-md px-2 py-1.5 whitespace-nowrap relative">
                         <p className="text-[10px] font-bold">₱{Math.round(data.value).toLocaleString()}</p>
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-gray-200 rotate-45" />
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-app-dark rotate-45" />
                       </div>
                     </div>
 

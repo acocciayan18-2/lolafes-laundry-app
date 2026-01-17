@@ -6,7 +6,7 @@ export default function CustomerMix({ range }) {
   const [showInfo, setShowInfo] = useState(false);
   const infoRef = useRef(null);
   
-  const orders = useReportStore(state => state.orders); 
+  // We keep getAnalytics as it is the function performing the calculation
   const getAnalytics = useReportStore(state => state.getAnalytics);
 
   useEffect(() => {
@@ -19,11 +19,14 @@ export default function CustomerMix({ range }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const stats = useMemo(() => getAnalytics(range), [orders, range, getAnalytics]);
+  /* FIX: Removed 'orders' from the dependency array. 
+     Since getAnalytics handles the data fetching internally, 
+     React only needs to know when 'range' or the function itself changes.
+  */
+  const stats = useMemo(() => getAnalytics(range), [range, getAnalytics]);
   const { newCount, returningCount, retentionRate } = stats;
 
   // HEATMAP COLOR LOGIC
-  // Low (<30%): Rose | Medium (30-70%): Amber | High (>70%): Emerald
   const heatmapColor = useMemo(() => {
     if (retentionRate < 30) return "text-rose-500";
     if (retentionRate < 70) return "text-amber-500";
@@ -35,10 +38,10 @@ export default function CustomerMix({ range }) {
       <div className="p-5">
         
         {/* Header Section */}
-        <div className="flex items-start justify-between gap-1  mb-4">
+        <div className="flex items-start justify-between gap-1 mb-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 mb-1">
-              <p className="text-[13px] mb-1 font-bold text-text-dark/70 truncate  uppercase">
+              <p className="text-[13px] mb-1 font-bold text-text-dark/70 truncate uppercase">
                 Customer Retention
               </p>
               
@@ -63,7 +66,6 @@ export default function CustomerMix({ range }) {
               </div>
             </div>
             
-            {/* Value also inherits heatmap color for visual emphasis */}
             <p className={`text-3xl font-bold leading-none truncate ${heatmapColor}`}>
               {retentionRate.toFixed(0)}%
             </p>
@@ -99,7 +101,7 @@ export default function CustomerMix({ range }) {
               >
                 {(returningCount).toLocaleString()}
               </span>
-              <span className="text-[10px] text-text-dark/40  mt-1">
+              <span className="text-micro text-text-dark mt-1">
                 Loyal
               </span>
             </div>
@@ -108,12 +110,12 @@ export default function CustomerMix({ range }) {
           {/* Detailed Counts */}
           <div className="grid grid-cols-2 w-full mt-6 gap-2">
             <div className="text-center p-2 rounded-lg bg-white border border-app-dark/50">
-              <p className="text-base  text-text-dark font-bold leading-tight">{newCount}</p>
-              <p className="text-[12px] text-text-dark/90">New Clients</p>
+              <p className="text-base text-text-dark font-bold leading-tight">{newCount}</p>
+              <p className="text-micro text-text-dark/90">New Clients</p>
             </div>
             <div className="text-center p-2 rounded-lg bg-transparent border border-app-dark/50 ">
-              <p className="text-base  text-text-dark font-bold leading-tight">{returningCount}</p>
-              <p className="text-[12px] text-text-dark/90">Returning</p>
+              <p className="text-base text-text-dark font-bold leading-tight">{returningCount}</p>
+              <p className="text-micro text-text-dark/90">Returning</p>
             </div>
           </div>
         </div>

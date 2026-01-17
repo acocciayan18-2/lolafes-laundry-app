@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { IconFilter, IconCalendar } from "../icons";
+import { useEffect, useRef, useState } from "react";
+import { IconFilter } from "../icons";
 
 export default function OrderFilters({ statusFilter, setStatusFilter, dateFilter, setDateFilter }) {
   const [openDropdown, setOpenDropdown] = useState(null); // 'status', 'date', or null

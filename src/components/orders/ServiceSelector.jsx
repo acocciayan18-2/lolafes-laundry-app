@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { IconPackage } from "../icons";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect } from "react";
 import { useServiceStore } from "../../store/services/useServiceStore";
+import { IconPackage } from "../icons";
 
 const SPRING_TRANSITION = {
   type: "spring", stiffness: 300, damping: 30, mass: 1, restDelta: 0.01

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { LoginPopup } from "../modal/LoginPopup"; 
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { IconGridPlus } from "../components/icons";
 import LoyaltySettings from "../components/services/LoyaltySettings";
 import ServiceCard from "../components/services/ServiceCard";
-import { IconGridPlus } from "../components/icons";
-import { useServiceStore } from "../store/services/useServiceStore";
+import { LoginPopup } from "../modal/LoginPopup";
 import { useActivityStore } from "../store/activities/useActivityStore";
+import { useServiceStore } from "../store/services/useServiceStore";
 
 const SMOOTH_TRANSITION = { type: "spring", stiffness: 300, damping: 30, mass: 1 };
 

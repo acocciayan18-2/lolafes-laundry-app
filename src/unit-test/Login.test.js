@@ -1,11 +1,10 @@
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom"; // ✅ FIX 1: Import this to fix "toBeInTheDocument" error
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import Login from "../pages/Login";
 
 import {
-  signInWithEmailAndPassword,
   setPersistence,
+  signInWithEmailAndPassword,
 } from "firebase/auth";
 
 // Navigation mock

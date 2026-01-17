@@ -1,4 +1,3 @@
-import React from "react";
 
 // Regex for email validation
 const EMAIL_VALIDATION_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

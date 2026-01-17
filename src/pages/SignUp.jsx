@@ -1,14 +1,14 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getDatabase, ref, get } from "firebase/database";
+import emailjs from "@emailjs/browser";
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
   fetchSignInMethodsForEmail,
+  sendEmailVerification,
 } from "firebase/auth";
-import { auth } from "../services/firebase";
-import emailjs from "@emailjs/browser";
+import { get, getDatabase, ref } from "firebase/database";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LoginPopup } from "../modal/LoginPopup";
+import { auth } from "../services/firebase";
 import "../style/signup.css";
 
 // ----------------------------------------------------------------------

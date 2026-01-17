@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useReportStore } from "../store/reports/useReportStore";
 
 // Component Imports
+import CustomerMix from "../components/reports/CustomerMix";
 import KpiCards from "../components/reports/KpiCards";
 import RushPulse from "../components/reports/RushPulse";
-import CustomerMix from "../components/reports/CustomerMix";
-import TopCustomers from "../components/reports/TopCustomers";
 import SalesPerformance from "../components/reports/SalesPerformance";
+import TopCustomers from "../components/reports/TopCustomers";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -31,7 +31,9 @@ const itemVariants = {
 
 export default function Reports() {
   const { subscribeToReports, isLoading } = useReportStore();
-  const [dateRange, setDateRange] = useState("7");
+  
+  // FIX: Removed setDateRange to clear 'assigned a value but never used' error
+  const [dateRange] = useState("7"); 
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -52,7 +54,6 @@ export default function Reports() {
           className="flex flex-col items-center gap-2"
         >
           <div className="w-6 h-6 border-2 border-app-dark/10 border-t-app-dark rounded-full animate-spin" />
-          {/* UPDATED: text-sm-text (13px) */}
           <p className="text-sm-text text-text-dark/70 font-medium">Loading reports...</p>
         </motion.div>
       </div>
@@ -70,12 +71,10 @@ export default function Reports() {
         {/* HEADER SECTION */}
         <motion.header variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
-            {/* MAIN TITLE: text-h1 (28px) */}
             <h1 className="text-h2 font-bold text-text-dark">Reports</h1>
             
-            <div className="flex items-center text-white py-0.5 gap-2">
-              {/* DATE: text-micro (11px) */}
-              <p className="text-text-dark text-micro font-medium  ">
+            <div className="flex items-center text-white py-1 gap-2">
+              <p className="text-text-dark text-micro font-medium">
                 {currentTime.toLocaleDateString('en-US', { 
                   weekday: 'short', 
                   month: 'short', 
@@ -84,11 +83,9 @@ export default function Reports() {
                 })}
               </p>
               
-              {/* SEPARATOR: text-sm-text (13px) for visibility */}
-              <span className=' text-sm-text text-text-dark/90'> | </span>
+              <span className='text-sm-text text-text-dark/20 font-light'>|</span>
               
-              {/* TIME: text-micro (11px) */}
-              <span className="text-micro font-medium text-text-dark uppercase ">
+              <span className="text-micro font-medium text-text-dark uppercase">
                 {currentTime.toLocaleTimeString([], { 
                   hour: '2-digit', 
                   minute: '2-digit', 
@@ -104,22 +101,22 @@ export default function Reports() {
           className="grid grid-cols-1 lg:grid-cols-4 gap-4"
           variants={containerVariants}
         >
-          {/* KPI CARDS: Highest priority view */}
+          {/* KPI CARDS */}
           <motion.div variants={itemVariants} className="lg:col-span-4">
             <KpiCards range={dateRange} />
           </motion.div>
 
-          {/* SALES PERFORMANCE: Trend line view */}
+          {/* SALES PERFORMANCE */}
           <motion.div variants={itemVariants} className="lg:col-span-4">
             <SalesPerformance range={dateRange} />
           </motion.div>
 
-          {/* OPERATIONAL PULSE: Heatmap/Rush hour view */}
+          {/* OPERATIONAL PULSE */}
           <motion.div variants={itemVariants} className="lg:col-span-4">
             <RushPulse range={dateRange} />
           </motion.div>
 
-          {/* BOTTOM ROW: Insights and Leaderboards */}
+          {/* BOTTOM ROW */}
           <motion.div variants={itemVariants} className="lg:col-span-2">
             <CustomerMix range={dateRange} />
           </motion.div>

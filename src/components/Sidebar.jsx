@@ -1,17 +1,15 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { signOut } from "firebase/auth";
-import { auth } from "../services/firebase";
-import "../style/sidebar.css";
+import { useLocation, useNavigate } from "react-router-dom";
 import "../style/main-app.css";
+import "../style/sidebar.css";
 
-import { 
-  IconDashboard, 
-  IconPlus, 
-  IconShirt, 
-  IconUsers, 
-  IconSettings, 
-  IconChart 
+import {
+  IconChart,
+  IconDashboard,
+  IconPlus,
+  IconSettings,
+  IconShirt,
+  IconUsers
 } from "./icons";
 
 
@@ -32,7 +30,7 @@ const SIDEBAR_CONFIG = {
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const [showConfirm, setShowConfirm] = useState(false);
-  const navigate = useNavigate();
+ 
 
   return (
     <>
@@ -159,7 +157,7 @@ const LogoutButton = ({ onClick }) => (
       onClick={onClick}
       className="rounded-xl p-2.5  cursor-pointer hover:bg-app-dark/5  transition-colors flex items-center gap-2 w-full active:scale-95"
     >
-      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
   <path d="M13 12v.01"></path>
   <path d="M3 21h18"></path>
   <path d="M17 13.5V21"></path>

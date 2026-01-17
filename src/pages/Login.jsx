@@ -1,14 +1,14 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { auth } from "../services/firebase";
 import {
-  signInWithEmailAndPassword,
   browserLocalPersistence,
-  setPersistence,
   sendPasswordResetEmail,
+  setPersistence,
+  signInWithEmailAndPassword,
 } from "firebase/auth";
-import { LoginPopup } from "../modal/LoginPopup";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import ForgotPassword from "../modal/ForgotPassword";
+import { LoginPopup } from "../modal/LoginPopup";
+import { auth } from "../services/firebase";
 import "../style/login.css";
 
 const LOGIN_ICONS = {

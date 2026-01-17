@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { IconSearch, IconShirt, IconAddNewOrder } from "../components/icons";
-import OrderFilters from "../components/orders/OrderFilters";
+import { IconAddNewOrder, IconSearch, IconShirt } from "../components/icons";
 import OrderCard from "../components/orders/OrderCard";
-import { useOrderStore } from "../store/orders/useOrderStore"; 
+import OrderFilters from "../components/orders/OrderFilters";
 import { useActivityStore } from "../store/activities/useActivityStore";
+import { useOrderStore } from "../store/orders/useOrderStore";
 
 const SPRING_TRANSITION = {
   type: "spring",
@@ -15,11 +15,11 @@ const SPRING_TRANSITION = {
   restDelta: 0.01
 };
 
-const Button = ({ children, className = "", ...props }) => (
-  <button className={`inline-flex items-center justify-center rounded-lg font-bold transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${className}`} {...props}>
-    {children}
-  </button>
-);
+// const Button = ({ children, className = "", ...props }) => (
+//   <button className={`inline-flex items-center justify-center rounded-lg font-bold transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${className}`} {...props}>
+//     {children}
+//   </button>
+// );
 
 const Input = ({ className, ...props }) => (
   <input

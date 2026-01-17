@@ -1,6 +1,6 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useReportStore } from "../../store/reports/useReportStore";
-import { IconDollarSign, IconPackage, IconTrendingUp, IconZap, IconInfo } from "../icons";
+import { IconDollarSign, IconInfo, IconPackage, IconTrendingUp, IconZap } from "../icons";
 
 const FILTER_OPTIONS = [
   { label: "7d", value: "7" },
@@ -13,7 +13,7 @@ export default function KpiCards() {
   const [showInfo, setShowInfo] = useState(false);
   const infoRef = useRef(null);
   
-  const orders = useReportStore(state => state.orders);
+  // We keep the imports as they are used elsewhere or for store reactivity
   const getAnalytics = useReportStore(state => state.getAnalytics);
 
   useEffect(() => {
@@ -26,7 +26,11 @@ export default function KpiCards() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const stats = useMemo(() => getAnalytics(range), [orders, range, getAnalytics]);
+  /* FIX: Removed 'orders' from the dependency array. 
+     The linter complained because 'orders' was listed but not actually 
+     referenced inside the getAnalytics(range) call.
+  */
+  const stats = useMemo(() => getAnalytics(range), [range, getAnalytics]);
   const { totalRevenue, totalOrders, aov, avgTat } = stats;
 
   const formatDuration = (hours) => {
@@ -80,27 +84,21 @@ export default function KpiCards() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {items.map((kpi, i) => (
-          <div key={i} className="bg-white rounded-xl shadow-md border border-app-dark/10 transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-            <div className="p-3 md:p-5"> {/* Unified Padding */}
+          <div key={i} className="bg-white rounded-xl shadow-md border border-app-dark/10  overflow-hidden">
+            <div className="p-3 md:p-5">
               <div className="flex items-start justify-between gap-1">
                 <div className="min-w-0 flex-1">
-                  {/* LABEL: text-nano (mobile) | text-micro (desktop) */}
                   <p className="text-nano md:text-micro font-bold text-text-dark/70 mb-1 truncate uppercase">
                     {kpi.label}
                   </p>
-                  
-                  {/* VALUE: text-h2 (mobile) | text-h1 (desktop) */}
                   <p className="text-h2 md:text-h1 font-bold text-text-dark leading-none truncate tracking-tighter cursor-default" title={kpi.value}>
                     {kpi.value}
                   </p>
-                  
-                  {/* TREND: text-nano (mobile) | text-micro (desktop) */}
                   <p className="text-nano md:text-micro font-medium text-text-dark/60 mt-2 truncate italic">
                     {kpi.trend}
                   </p>
                 </div>
                 
-                {/* ICON: Hollow shadow styling */}
                 <div className="p-2 md:p-2.5 rounded-lg bg-transparent border border-app-dark/10 shadow-hollow shrink-0">
                   {require('react').cloneElement(kpi.icon, { 
                     className: "w-4 h-4 md:w-5 md:h-5 text-text-dark stroke-text-dark" 

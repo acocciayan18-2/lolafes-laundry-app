@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
-import { IconGift, IconArrowUp } from "../icons"; 
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { useActivityStore } from "../../store/activities/useActivityStore";
 import { useLoyaltyStore } from "../../store/services/useLoyaltyStore";
 import { useServiceStore } from "../../store/services/useServiceStore";
-import { motion, AnimatePresence } from "framer-motion";
-import { useActivityStore } from "../../store/activities/useActivityStore";
+import { IconArrowUp, IconGift } from "../icons";
 
 // --- UI Helpers ---
 const Label = ({ children }) => (

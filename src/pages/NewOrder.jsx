@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { IconArrowLeft, IconAddNewOrder, IconTrash } from "../components/icons";
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { IconTrash } from "../components/icons";
 import { CustomerForm } from "../components/orders/CustomerForm";
 import { LoyaltyStatus } from "../components/orders/LoyaltyStatus";
-import { ServiceSelector } from "../components/orders/ServiceSelector";
 import { OrderSummary } from "../components/orders/OrderSummary";
-import { useServiceStore } from "../store/services/useServiceStore";
-import { useLoyaltyStore } from "../store/services/useLoyaltyStore";
-import { useNewOrderStore } from "../store/new-order/useNewOrderStore";
-import { useNotificationStore } from "../store/ui/useNotificationStore";
-import { useActivityStore } from "../store/activities/useActivityStore";
-import { startGlobalTour } from "../tours/globalTours";
-import { useCustomerStore } from "../store/customer/useCustomerStore";
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { ServiceSelector } from "../components/orders/ServiceSelector";
 import { db } from '../services/firebase';
+import { useActivityStore } from "../store/activities/useActivityStore";
+import { useCustomerStore } from "../store/customer/useCustomerStore";
+import { useNewOrderStore } from "../store/new-order/useNewOrderStore";
+import { useLoyaltyStore } from "../store/services/useLoyaltyStore";
+import { useServiceStore } from "../store/services/useServiceStore";
+import { useNotificationStore } from "../store/ui/useNotificationStore";
+import { startGlobalTour } from "../tours/globalTours";
 
 import "driver.js/dist/driver.css";
 
@@ -88,7 +88,7 @@ export default function NewOrder() {
   const navigate = useNavigate();
 
   // Stores
-  const checkPhoneExists = useCustomerStore((state) => state.checkPhoneExists);
+  // const checkPhoneExists = useCustomerStore((state) => state.checkPhoneExists);
   const customers = useCustomerStore((state) => state.customers);
   const { services, subscribeToServices } = useServiceStore();
   const { loyaltySettings, subscribeToLoyalty } = useLoyaltyStore();
@@ -110,17 +110,20 @@ export default function NewOrder() {
   const prevCustomerRef = useRef(customer);
 
   useEffect(() => {
-    const hasItems = selectedServices.length > 0;
-    const nameChanged = prevCustomerRef.current.name !== customer.name && prevCustomerRef.current.name !== "";
-    const phoneChanged = prevCustomerRef.current.phone !== customer.phone && prevCustomerRef.current.phone !== "";
+  const hasItems = selectedServices.length > 0;
+  
+  // Check if identity changed from a non-empty previous value
+  const nameChanged = prevCustomerRef.current.name !== customer.name && prevCustomerRef.current.name !== "";
+  const phoneChanged = prevCustomerRef.current.phone !== customer.phone && prevCustomerRef.current.phone !== "";
 
-    if (hasItems && (nameChanged || phoneChanged)) {
-      setShowClearWarning(true);
-    } else {
-      // If no items or first-time entry, just update the reference
-      prevCustomerRef.current = customer;
-    }
-  }, [customer]);
+  if (hasItems && (nameChanged || phoneChanged)) {
+    // Show the warning modal to prevent accidental data loss
+    setShowClearWarning(true);
+  } else {
+    prevCustomerRef.current = { ...customer };
+  }
+  
+}, [customer, selectedServices.length]);
 
   const handleConfirmClear = () => {
     setSelectedServices([]); // Empty the cart

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { IconUsers, IconSearch } from "../components/icons";
-import CustomerStats from "../components/customers/CustomerStats";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import CustomerCard from "../components/customers/CustomerCard";
+import CustomerStats from "../components/customers/CustomerStats";
+import { IconSearch, IconUsers } from "../components/icons";
 import { useCustomerStore } from "../store/customer/useCustomerStore";
 
 const SMOOTH_TRANSITION = {

@@ -1,9 +1,11 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  IconCalculator, IconWallet, IconCreditCard, IconGCash, 
-  IconCheckBlack, IconCheckWhite 
-} from "../icons"; 
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  IconCalculator,
+  IconCheckBlack, IconCheckWhite,
+  IconCreditCard, IconGCash,
+  IconWallet
+} from "../icons";
 
 const SPRING_TRANSITION = {
   type: "spring",

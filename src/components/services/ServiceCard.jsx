@@ -1,10 +1,15 @@
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  IconPackage, IconEdit2, IconCheckWhite, IconX, IconTrash, IconArrowUp, IconPlus 
-} from "../icons";
-import { Button, Badge, Input } from "../../pages/Services"; 
+import { useEffect, useRef, useState } from "react";
+import { Badge, Button, Input } from "../../pages/Services";
 import { useActivityStore } from "../../store/activities/useActivityStore";
+import {
+  IconArrowUp,
+  IconCheckWhite,
+  IconEdit2,
+  IconPackage,
+  IconPlus,
+  IconTrash,
+  IconX
+} from "../icons";
 
 const serviceTypeLabels = {
   wash_only: "Wash Only",

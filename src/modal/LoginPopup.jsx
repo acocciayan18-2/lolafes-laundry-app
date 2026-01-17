@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import "../style/modal-style/LoginPopup.css";
 
 // Configuration Constants

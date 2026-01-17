@@ -1,6 +1,5 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { IconAddNewOrder, IconPlus, IconUsers } from '../icons'; 
+import { IconAddNewOrder, IconUsers } from '../icons';
 
 export default function QuickActions() {
   // Common classes updated to use transition between your new specific tokens
