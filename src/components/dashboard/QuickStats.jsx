@@ -4,12 +4,12 @@ export default function QuickStats({ title, value, icon, trend }) {
   // We ignore the incoming 'bgColor' prop from the parent to enforce our B&W theme
   return (
     <div className="bg-white rounded-xl shadow-md border border-app-dark/10 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
-      <div className="p-3 md:p-5">
-        <div className="flex items-start justify-between gap-1 md:gap-2">
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2 ">
           <div className="min-w-0 flex-1">
             
             {/* TITLE: Using text-nano (mobile) and text-micro (desktop) */}
-            <p className="text-nano md:text-micro font-bold text-text-dark/70 mb-1 truncate uppercase ">
+            <p className="text-nano md:text-micro font-bold  mb-1 truncate uppercase ">
               {title}
             </p>
             
@@ -23,7 +23,7 @@ export default function QuickStats({ title, value, icon, trend }) {
             
             {/* TREND: Using text-nano (mobile) and text-micro (desktop) */}
             {trend && (
-              <p className="text-nano md:text-micro font-medium text-text-dark/70 mt-2 truncate italic">
+              <p className="text-micro font-medium text-text-dark/70 mt-2 truncate ">
                 {trend}
               </p>
             )}

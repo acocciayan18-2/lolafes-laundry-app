@@ -30,7 +30,7 @@ export const Button = ({ children, onClick, className = "", variant = "primary",
 
 export const Input = ({ className = "", ...props }) => (
   <input
-    className={`flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm-text placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-app-dark/70  ${className}`}
+    className={`flex h-10 w-full rounded-lg border font-medium border-slate-200 bg-white px-3 py-2 text-base-text placeholder:text-slate-400 focus:outline-none !focus:ring-1 focus:ring-app-dark/70  ${className}`}
     {...props}
   />
 );
@@ -133,7 +133,7 @@ export default function Services() {
           </div>
           <button 
             onClick={addNewService} 
-            className="group flex items-center justify-center w-9 shadow-md h-9 hover:bg-app-dark/5 active:bg-app-dark/5 bg-white rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200"
+            className="group flex items-center justify-center w-9 shadow-md h-9 hover:bg-app-dark/5  bg-white rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200"
             title="Add Service"
           >
             <IconGridPlus className="w-4 h-4 text-black stroke-black" strokeWidth={2.2} />

@@ -16,7 +16,8 @@ export const useReportStore = create((set, get) => ({
         return {
           id: doc.id,
           ...data,
-          created_at: data.created_at?.toDate?.() || new Date(data.created_at) || new Date(),
+          // Safety parsing for Firestore Timestamps
+          created_at: data.created_at?.toDate?.() || (data.created_at ? new Date(data.created_at) : new Date()),
           ready_at: data.ready_at?.toDate?.() || (data.ready_at ? new Date(data.ready_at) : null),
         };
       });
@@ -26,11 +27,11 @@ export const useReportStore = create((set, get) => ({
   },
 
   getAnalytics: (days) => {
-    const orders = get().orders;
-    
+    const orders = get().orders || [];
     const cutoff = new Date();
+    
     if (days !== 'year') {
-      cutoff.setDate(cutoff.getDate() - parseInt(days));
+      cutoff.setDate(cutoff.getDate() - parseInt(days || 7));
     } else {
       cutoff.setFullYear(cutoff.getFullYear() - 1);
     }
@@ -39,20 +40,12 @@ export const useReportStore = create((set, get) => ({
     const totalRevenue = filtered.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
     const aov = filtered.length > 0 ? totalRevenue / filtered.length : 0;
 
-    // --- ACCURATE TAT CALCULATION ---
-    // 1. Only include orders that have both timestamps and where ready_at is after created_at
     const completedOrders = filtered.filter(o => 
-      o.ready_at && 
-      o.created_at && 
-      o.ready_at.getTime() >= o.created_at.getTime()
+      o.ready_at && o.created_at && o.ready_at.getTime() >= o.created_at.getTime()
     );
 
     const avgTat = completedOrders.length > 0 
-      ? completedOrders.reduce((sum, o) => {
-          // Calculate difference in milliseconds
-          const diff = o.ready_at.getTime() - o.created_at.getTime();
-          return sum + diff;
-        }, 0) / completedOrders.length / 3600000 // Convert total millisecond average to hours
+      ? completedOrders.reduce((sum, o) => sum + (o.ready_at.getTime() - o.created_at.getTime()), 0) / completedOrders.length / 3600000 
       : 0;
 
     const customerMap = new Map();
@@ -74,7 +67,17 @@ export const useReportStore = create((set, get) => ({
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
-    return { totalRevenue, aov, avgTat, newCount, returningCount, retentionRate, topCustomers, totalOrders: filtered.length };
+    // Safety return to prevent .toLocaleString() errors in UI
+    return { 
+      totalRevenue: totalRevenue || 0, 
+      aov: aov || 0, 
+      avgTat: avgTat || 0, 
+      newCount: newCount || 0, 
+      returningCount: returningCount || 0, 
+      retentionRate: retentionRate || 0, 
+      topCustomers: topCustomers || [], 
+      totalOrders: filtered.length || 0 
+    };
   },
 
   getSalesTrend: (range) => {
@@ -82,53 +85,67 @@ export const useReportStore = create((set, get) => ({
     const now = new Date();
     let data = [];
 
+    // 1. TODAY: Hours 0-23 (UI will filter for 5am-12am)
     if (range === "day") {
-      data = Array(24).fill(0).map((_, i) => ({ label: `${i}h`, value: 0 }));
+      data = Array(24).fill(0).map((_, i) => ({ label: `${i}`, value: 0 }));
       orders.filter(o => o.created_at.toDateString() === now.toDateString())
-            .forEach(o => data[o.created_at.getHours()].value += Number(o.total_amount || 0));
-    } 
-    else if (range === "week") {
-      const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-      data = days.map(d => ({ label: d, value: 0 }));
-      const weekAgo = new Date();
-      weekAgo.setDate(now.getDate() - 7);
-      orders.filter(o => o.created_at >= weekAgo)
-            .forEach(o => data[o.created_at.getDay()].value += Number(o.total_amount || 0));
-    } 
-    else if (range === "month") {
-      data = [
-        { label: 'wk 1', value: 0 }, { label: 'wk 2', value: 0 }, 
-        { label: 'wk 3', value: 0 }, { label: 'wk 4', value: 0 }
-      ];
-      orders.filter(o => o.created_at.getMonth() === now.getMonth())
             .forEach(o => {
-              const weekNum = Math.floor((o.created_at.getDate() - 1) / 7);
-              if (data[weekNum]) data[weekNum].value += Number(o.total_amount || 0);
+              const hour = o.created_at.getHours();
+              if (data[hour]) data[hour].value += Number(o.total_amount || 0);
             });
     } 
-  // ... inside useReportStore getSalesTrend function
-else if (range === "year") {
-  // 1. Initialize 12 months with 3-letter abbreviations
-  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-  data = months.map(m => ({ label: m, value: 0 }));
-  
-  // 2. Filter for orders within the current calendar year
-  const currentYear = now.getFullYear();
-  
-  orders.forEach(o => {
-    const orderDate = o.created_at;
-    
-    // Check if the order belongs to the current year
-    if (orderDate instanceof Date && orderDate.getFullYear() === currentYear) {
-      const monthIndex = orderDate.getMonth(); // 0 for Jan, 11 for Dec
+
+    // 2. DAYS: Sun-Sat for the current week
+   else if (range === "days") {
+      // Get the number of days in the current month
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      // Initialize array for each day of the month (1 to 28/30/31)
+      data = Array(daysInMonth).fill(0).map((_, i) => ({ 
+        label: `${i + 1}`, 
+        value: 0 
+      }));
       
-      // 3. Accumulate the total amount into the correct month bucket
-      if (data[monthIndex]) {
-        data[monthIndex].value += Number(o.total_amount || 0);
-      }
+      orders.filter(o => 
+        o.created_at.getMonth() === month && 
+        o.created_at.getFullYear() === year
+      ).forEach(o => {
+        const dayOfMonth = o.created_at.getDate(); // Returns 1-31
+        // Subtract 1 because array is 0-indexed
+        if (data[dayOfMonth - 1]) {
+          data[dayOfMonth - 1].value += Number(o.total_amount || 0);
+        }
+      });
     }
-  });
-}
+
+    // 3. WEEK: Wk 1-4 for the current month
+    else if (range === "week") {
+      data = [
+        { label: 'Week 1', value: 0 }, { label: 'Week 2', value: 0 }, 
+        { label: 'Week 3', value: 0 }, { label: 'Week 4', value: 0 }
+      ];
+      orders.filter(o => 
+        o.created_at.getMonth() === now.getMonth() && 
+        o.created_at.getFullYear() === now.getFullYear()
+      ).forEach(o => {
+        const weekNum = Math.floor((o.created_at.getDate() - 1) / 7);
+        if (data[weekNum]) data[weekNum].value += Number(o.total_amount || 0);
+      });
+    } 
+
+    // 4. MONTH: Jan-Dec for the current year
+    else if (range === "month") {
+      const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      data = months.map(m => ({ label: m, value: 0 }));
+      
+      orders.filter(o => o.created_at.getFullYear() === now.getFullYear())
+            .forEach(o => {
+              const monthIndex = o.created_at.getMonth();
+              if (data[monthIndex]) data[monthIndex].value += Number(o.total_amount || 0);
+            });
+    }
 
     return data;
   },

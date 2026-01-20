@@ -61,7 +61,7 @@ export default function CompactIntelligence() {
   if (!current) return null;
 
   return (
-    <div className="flex items-center overflow-hidden px-2 h-8">
+    <div className="flex items-center overflow-hidden px-2">
       <AnimatePresence mode="wait">
         <motion.div
           key={`${current.label}-${current.val}`}
@@ -71,7 +71,7 @@ export default function CompactIntelligence() {
           transition={{ duration: 0.4 }}
           className="flex items-center gap-3 w-full"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0 ">
             <div className="flex items-center gap-2">
               
               {/* LABEL: Applied 'text-nano' for the tiny uppercase overline look */}

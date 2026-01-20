@@ -27,7 +27,7 @@ const CustomerCard = ({ customer }) => {
             {/* Phone - Using text-sm-text (13px) */}
             <div className="flex items-center gap-1 text-gray-600 shrink-0">
               <IconPhone className="w-3 h-3 text-gray-400 shrink-0" />
-              <span className="block cursor-default select-none pointer-events-none text-sm-text font-medium text-gray-600 lowercase">
+              <span className="block cursor-default select-none pointer-events-none text-sm-text font-medium text-gray-600 ">
                 {customer.phone || "no contact"}
               </span>
             </div>
@@ -36,7 +36,7 @@ const CustomerCard = ({ customer }) => {
             {customer.address && (
               <div className="flex items-start md:items-center gap-1 text-gray-600 min-w-0">
                 <IconMapPin className="w-3 h-3 text-gray-400 shrink-0 mt-0.5 md:mt-0" />
-                <span className="cursor-default select-none pointer-events-none text-sm-text font-medium text-gray-600 line-clamp-1 lowercase">
+                <span className="cursor-default select-none pointer-events-none text-sm-text font-medium text-gray-600 line-clamp-1 ">
                   {customer.address}
                 </span>
               </div>

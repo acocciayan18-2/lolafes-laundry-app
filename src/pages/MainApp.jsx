@@ -49,7 +49,7 @@ export default function MainApp() {
         
         {/* Header - Fixed but inside the flex-col */}
          <header 
-          className={`lg:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-app-light/80 backdrop-blur-lg border-b border-gray-100 shadow-sm z-40 transition-transform duration-300 ${
+          className={`lg:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-app-light border-b border-gray-100 shadow-sm z-40 transition-transform duration-300 ${
             showHeader ? "translate-y-0" : "-translate-y-full"
           }`}
         >

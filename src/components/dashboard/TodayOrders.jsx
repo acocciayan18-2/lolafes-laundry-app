@@ -35,7 +35,7 @@ const statusConfig = {
     color: "bg-status-picked/10 text-status-picked border-status-picked/30", 
     icon: IconStatusPickedUp, 
     label: "Picked Up"
-  }
+  }    
 };
 
 const formatTime = (dateString) => {
@@ -80,12 +80,12 @@ export default function TodayOrders({ orders = [], isLoading }) {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm-text font-bold text-text-dark truncate uppercase tracking-tight">
+                      <h3 className="text-sm-text font-bold text-text-dark truncate uppercase">
                         {order.customer_name}
                       </h3>
                       
-                      <div className="flex flex-wrap items-center gap-x-2 mt-0.5">
-                        <span className="font-mono text-nano font-bold text-text-dark border border-app-dark/10 px-1 py-0.5 rounded whitespace-nowrap bg-white/50">
+                      <div className="flex flex-wrap items-center gap-x-1  gap-y-1 mt-0.5">
+                        <span className="text-nano font-bold text-text-dark border border-app-dark/10 px-1 py-0.5 rounded whitespace-nowrap bg-white/50">
                           #{order.order_number || "--"}
                         </span>
 

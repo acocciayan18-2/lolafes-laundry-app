@@ -57,6 +57,10 @@ useEffect(() => {
   const inProgress = orders.filter(o => o.status === 'in_progress').length;
   const readyOrders = orders.filter(o => o.status === 'ready').length;
 
+  
+const hours = currentTime.getHours();
+const greeting = hours < 12 ? "Good morning" : hours < 18 ? "Good afternoon" : "Good evening";
+
   return (
     <div className="min-h-screen bg-app-light text-slate-900 p-2  transition-colors duration-500">
       
@@ -71,37 +75,41 @@ useEffect(() => {
               className="space-y-4"
             >
               {/* --- 1. HEADER & ACTIONS --- */}
-              <motion.div variants={itemVariants} className="flex flex-row  justify-between  gap-6">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-text-dark">Dashboard</h1>
-                  </div>
-                 <div>
- 
-    <div className="flex items-center justify-between text-white py-0.5 gap-2">
-      <p className="text-text-dark text-[12px] font-medium ">
-    {currentTime.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    })}
-  </p>
-  <span className='opacity-60 text-[13px]'> | </span>
-  <span className="text-[12px] font-medium">
-        {currentTime.toLocaleTimeString([], { 
-          hour: '2-digit', 
-          minute: '2-digit', 
-          hour12: true 
-        }).toUpperCase()}
-      </span>
+              {/* Logic to determine greeting based on currentTime */}
+
+<motion.div variants={itemVariants} className="flex flex-row justify-between gap-6">
+  <div>
+    <div className="flex items-center gap-3">
+      {/* Replaced "Dashboard" with the dynamic greeting */}
+      <h1 className="text-2xl font-bold text-text-dark capitalize">
+        {greeting}
+      </h1>
     </div>
-</div>
-                </div>
-                <div id="step-actions">
-                  <QuickActions />
-                </div>
-              </motion.div>
+    <div>
+      <div className="flex items-center justify-between text-white py-0.5 gap-2">
+        <p className="text-text-dark text-[12px] font-medium ">
+          {currentTime.toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+          })}
+        </p>
+        <span className='opacity-60 text-text-dark text-[13px]'> | </span>
+        <span className="text-text-dark text-[12px] font-medium">
+          {currentTime.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: true 
+          }).toUpperCase()}
+        </span>
+      </div>
+    </div>
+  </div>
+  <div id="step-actions">
+    <QuickActions />
+  </div>
+</motion.div>
 
               {/* --- 2. INTELLIGENCE TICKER --- */}
               <motion.div 

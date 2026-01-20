@@ -24,7 +24,7 @@ const statusConfig = {
 };
 
 const statusOptions = [
-  { value: "pending", label: "Pending", icon: IconStatusPending },
+  // { value: "pending", label: "Pending", icon: IconStatusPending },
   { value: "in_progress", label: "Processing", icon: IconStatusProcessing },
   { value: "ready", label: "Ready", icon: IconStatusReady },
   { value: "completed", label: "Completed", icon: IconStatusCompleted },
@@ -131,7 +131,7 @@ export default function OrderCard({ order }) {
             <div className="min-w-0 flex flex-col gap-1">
               <div className="flex flex-wrap items-center gap-2">
                 {/* NAME: text-base-text */}
-                <h3 className="font-bold text-text-dark text-sm-text uppercase tracking-tight">{order.customer_name}</h3>
+                <h3 className="font-bold text-text-dark text-sm-text  tracking-tight">{order.customer_name}</h3>
                 {/* TIMESTAMP: text-nano */}
                 <span className="text-nano font-bold text-text-dark/70 uppercase">
                   {dateStamp} <span className="mx-0.5 opacity-30">|</span> {timeStamp}

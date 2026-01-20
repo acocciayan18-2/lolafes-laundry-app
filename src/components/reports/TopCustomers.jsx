@@ -70,7 +70,7 @@ export default function TopCustomers({ range }) {
                 >
                   <div className="flex items-center gap-4 min-w-0 flex-1">
                     {/* RANK: text-nano (10px) */}
-                    <span className="font-mono text-nano font-medium text-text-dark/50 w-4 shrink-0">
+                    <span className=" text-nano font-medium text-text-dark/50 w-4 shrink-0">
                       {(i + 1).toString().padStart(2, '0')}
                     </span>
                     

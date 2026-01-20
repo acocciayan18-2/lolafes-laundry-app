@@ -145,10 +145,10 @@ const Logo = () => (
       />
     </div>
     <div className="flex flex-col items-start">
-      <h2 className="font-bold text-text-dark text-lg leading-none">
+      <h2 className="font-bold text-text-dark text-text-base leading-none">
         Lola Fe's Laundry
       </h2>
-      <p className="text-xxs text-text-dark/90 font-medium">
+      <p className="text-micro text-text-dark/90 font-medium">
         Manager System
       </p>
     </div>

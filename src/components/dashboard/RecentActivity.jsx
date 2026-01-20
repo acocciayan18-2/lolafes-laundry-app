@@ -2,13 +2,12 @@ import React from "react";
 import { useActivityStore } from '../../store/activities/useActivityStore'; 
 import { 
   IconNewOrder, 
-  IconOrdersList, 
-  IconServices, 
-  IconLoyalty, 
-  IconActivity 
-} from "../icons"; // Adjust path as necessary
+  IconOrdersList,
+  IconActivity,
+  IconLoyalty,
+  IconServices
+} from "../icons"; 
 
-// --- DATE HELPER ---
 const formatTimeAgo = (dateInput) => {
   if (!dateInput) return '';
   const date = new Date(dateInput);
@@ -31,13 +30,15 @@ export default function RecentActivity() {
 
     if (!item) return defaultConfig;
 
-    if (item.actionType === 'created') {
+    // 1. PRIORITY: Check for new order creation
+    if (item.actionType === 'created' || item.status?.toLowerCase() === 'pending') {
       return { 
-        title: item.customLabel || "New Order Created", 
+        title: "ORDER CREATED", 
         icon: <IconNewOrder className="w-5 h-5 text-text-dark" /> 
       };
     }
 
+    // 2. Loyalty Configuration/Updates
     if (item.customLabel?.toLowerCase().includes("loyalty") || item.order_number === "CONFIG") {
       return { 
         title: item.customLabel, 
@@ -45,13 +46,15 @@ export default function RecentActivity() {
       };
     }
 
-    if (item.order_number === "SERVICE" || item.order_number === "NEW" || item.order_number === "EDITED") {
+    // 3. Service Management
+    if (["SERVICE", "NEW", "EDITED"].includes(item.order_number)) {
       return { 
         title: item.customLabel, 
         icon: <IconServices className="w-5 h-5 text-text-dark" /> 
       };
     }
 
+    // 4. Default: Generic Status Updates
     return { 
       title: item.customLabel || "Status Updated", 
       icon: <IconOrdersList className="w-5 h-5 text-text-dark" /> 
@@ -84,7 +87,7 @@ export default function RecentActivity() {
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap justify-between items-baseline gap-x-2">
-                    <p className="text-sm-text text-text-dark uppercase font-bold truncate max-w-[70%]">
+                    <p className="text-sm-text text-text-dark capitalize font-bold truncate max-w-[70%]">
                       {config.title}
                     </p>
                     <p className="text-nano text-text-dark/40 font-bold whitespace-nowrap">
@@ -94,11 +97,11 @@ export default function RecentActivity() {
                   
                   <div className="flex flex-wrap items-center gap-1 mt-0.5">
                     <p className="text-micro text-text-dark/60 uppercase truncate">
-                      {item.customer_name}
+                      {item.customer_name || "System"}
                     </p>
                     <span className="hidden sm:block w-0.5 h-0.5 rounded-full bg-app-dark/10 shrink-0"></span>
-                    <p className="font-mono text-nano text-text-dark border border-app-dark/10 px-1 py-0.5 rounded whitespace-nowrap bg-white/50">
-                      #{item.order_number}
+                    <p className="text-nano text-text-dark border border-app-dark/10 px-1 py-0.5 rounded whitespace-nowrap bg-white/50">
+                      #{item.order_number || "LOG"}
                     </p>
                   </div>
                 </div>
@@ -108,7 +111,7 @@ export default function RecentActivity() {
         ) : (
           <div className="h-full flex flex-col items-center justify-center py-20 opacity-20 grayscale">
             <IconOrdersList className="w-11 h-11 mb-2 text-text-dark" />
-            <p className="text-sm-text text-text-dark  uppercase">No activity yet</p>
+            <p className="text-sm-text text-text-dark uppercase font-bold tracking-tight">No activity yet</p>
           </div>
         )}
       </div>

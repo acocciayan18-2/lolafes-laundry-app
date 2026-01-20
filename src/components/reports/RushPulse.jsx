@@ -91,7 +91,7 @@ export default function RushPulse() {
       <div className="p-5">
         
         {/* Header Section */}
-        <div className="flex items-start justify-between gap-1">
+        <div className="flex items-start justify-between gap-1 mb-2">
           <div className="min-w-0 flex-1 relative" ref={infoRef}>
             <div className="flex items-center gap-1.5 mb-1">
               {/* LABEL: text-micro (11px) */}
@@ -113,7 +113,7 @@ export default function RushPulse() {
           </div>
         </div>
 
-        <div className="flex gap-1 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-1 mb-8 overflow-x-auto pb-2 scrollbar-hide custom-scrollbar">
           <button onClick={() => setSelectedDay("all")} className={`px-3 py-1 rounded-full text-micro font-medium transition-all uppercase ${selectedDay === 'all' ? 'bg-app-dark text-white' : 'bg-app-dark/5 text-text-dark/90'}`}>All</button>
           {DAYS.map((day, i) => (
             <button key={day} onClick={() => setSelectedDay(i)} className={`px-3 py-1 rounded-full  text-micro font-medium transition-all uppercase ${selectedDay === i ? 'bg-app-dark text-white' : 'bg-app-dark/5 text-text-dark/90'}`}>{day}</button>
@@ -153,7 +153,7 @@ export default function RushPulse() {
         <div className="flex justify-between mt-4 px-1">
           {HOUR_LABELS.map((hour, i) => (
             <div key={i} className="flex flex-col items-center flex-1">
-              <span className="text-nano font-bold text-text-dark/40">{hour}</span>
+              <span className="text-nano font-bold text-text-dark/70">{hour}</span>
             </div>
           ))}
         </div>
@@ -161,8 +161,8 @@ export default function RushPulse() {
         {/* Real-time Insights */}
         <div className="mt-4 pt-4 border-t border-app-dark/5 flex justify-between items-center">
           <div className="flex flex-col">
-            <p className="text-nano font-bold text-text-dark/40 mb-0.5 uppercase tracking-widest">
-              {selectedDay === 'all' ? 'typical peak window' : `${DAYS[selectedDay]} peak window`}
+            <p className="text-nano font-bold text-text-dark/70 mb-0.5 uppercase">
+              {selectedDay === 'all' ? 'Typical peak window' : `${DAYS[selectedDay]} peak window`}
             </p>
             {/* VALUE: text-sm-text (13px) */}
             <p className="text-sm-text text-text-dark font-bold">

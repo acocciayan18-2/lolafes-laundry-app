@@ -20,7 +20,7 @@ const Input = ({ type, value, onChange, disabled, className, placeholder, inputM
     disabled={disabled}
     placeholder={placeholder}
     inputMode={inputMode}
-    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm-text font-medium transition-all focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 shadow-sm disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
+    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text font-medium  focus:outline-none focus:ring-1 focus:ring-gray-900 shadow-sm disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
   />
 );
 
@@ -55,7 +55,7 @@ const CustomSelect = ({ value, onChange, options, disabled }) => {
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex h-10 w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-sm-text font-medium transition-all focus:outline-none
+        className={`flex h-10 w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-base-text font-medium focus:outline-none
           ${isOpen ? "border-gray-900  ring-gray-900" : "border-slate-200 hover:border-gray-300"}
           ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50" : "cursor-pointer"}
         `}
@@ -67,7 +67,7 @@ const CustomSelect = ({ value, onChange, options, disabled }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl z-[999] overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute left-0 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl z-[999] overflow-hidden py-2 p-3 animate-in fade-in zoom-in-95 duration-100">
           <div className="max-h-60 custom-scrollbar overflow-y-auto">
             {options.map((option) => (
               <button
@@ -288,14 +288,14 @@ export default function LoyaltySettings() {
                   <div className="text-h3 font-black text-slate-900">FREE</div>
                   <div className="text-micro font-bold uppercase text-teal-600 truncate">{localSettings.free_service_type || "No Service"}</div>
                   <div className="h-px bg-slate-100 my-2" />
-                  <p className="text-nano text-slate-500 font-medium">After {localSettings.orders_required} visits</p>
+                  <p className="text-micro text-slate-500 font-medium">After {localSettings.orders_required} visits</p>
                 </div>
               </div>
 
               <button
                 onClick={handleSave}
                 disabled={!hasChanges || isSaving || !isValid}
-                className="mt-3 w-full h-10 flex items-center justify-center rounded-xl text-sm-text font-bold bg-slate-800 text-white disabled:opacity-50 transition-all active:scale-95 shadow-md uppercase "
+                className="mt-3 w-full h-10 flex items-center justify-center rounded-xl text-sm-text font-medium bg-slate-800 text-white disabled:opacity-50 transition-all active:scale-95 shadow-md "
               >
                 {isSaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Save Ticket"}
               </button>
