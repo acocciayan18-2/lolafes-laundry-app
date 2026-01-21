@@ -302,18 +302,17 @@ export default function NewOrder() {
         </div>
       </div>
 
-      {/* --- CUSTOMER CHANGE WARNING MODAL (GLASS EFFECT) --- */}
       <AnimatePresence>
         {showClearWarning && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-app-dark/20 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 bg-app-dark/20 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="bg-white backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white max-w-sm w-full text-center"
             >
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <IconTrash className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 bg-app-dark rounded-full flex items-center justify-center mx-auto mb-4">
+                <IconTrash className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-h3 font-bold text-text-dark ">Clear Cart?</h3>
               <p className="text-sm-text text-text-dark/70 mt-2 mb-6">

@@ -20,46 +20,42 @@ const formatTimeAgo = (dateInput) => {
 };
 
 export default function RecentActivity() {
-  const activities = useActivityStore((state) => state.activities);
+
+ const activities = useActivityStore((state) => state.activities);
+  const clearHistory = useActivityStore((state) => state.clearHistory);
 
   const getActivityConfig = (item) => {
-    const defaultConfig = { 
-      title: item?.customLabel || "Update Logged", 
-      icon: <IconOrdersList className="w-5 h-5 text-text-dark/50" /> 
-    };
-
-    if (!item) return defaultConfig;
-
-    // 1. PRIORITY: Check for new order creation
-    if (item.actionType === 'created' || item.status?.toLowerCase() === 'pending') {
-      return { 
-        title: "ORDER CREATED", 
-        icon: <IconNewOrder className="w-5 h-5 text-text-dark" /> 
-      };
-    }
-
-    // 2. Loyalty Configuration/Updates
-    if (item.customLabel?.toLowerCase().includes("loyalty") || item.order_number === "CONFIG") {
-      return { 
-        title: item.customLabel, 
-        icon: <IconLoyalty className="w-5 h-5 text-text-dark" /> 
-      };
-    }
-
-    // 3. Service Management
-    if (["SERVICE", "NEW", "EDITED"].includes(item.order_number)) {
-      return { 
-        title: item.customLabel, 
-        icon: <IconServices className="w-5 h-5 text-text-dark" /> 
-      };
-    }
-
-    // 4. Default: Generic Status Updates
-    return { 
-      title: item.customLabel || "Status Updated", 
-      icon: <IconOrdersList className="w-5 h-5 text-text-dark" /> 
-    };
+  const defaultConfig = { 
+    title: item?.customLabel || "Update Logged", 
+    icon: <IconOrdersList className="w-5 h-5 text-text-dark/50" /> 
   };
+
+  if (!item) return defaultConfig;
+
+  // 1. STRICT PRIORITY: Only show "ORDER CREATED" for the explicit creation action
+  if (item.actionType === 'created') {
+    return { 
+      title: "Order Created", 
+      icon: <IconNewOrder className="w-5 h-5 text-text-dark" /> 
+    };
+  }
+
+  // 2. Loyalty & Services (Keep your existing logic)
+  if (item.customLabel?.toLowerCase().includes("loyalty") || item.order_number === "CONFIG") {
+    return { title: item.customLabel, icon: <IconLoyalty className="w-5 h-5 text-text-dark" /> };
+  }
+
+  if (["SERVICE", "NEW", "EDITED"].includes(item.order_number)) {
+    return { title: item.customLabel, icon: <IconServices className="w-5 h-5 text-text-dark" /> };
+  }
+
+  // 3. FALLBACK: Any other log that isn't a "creation"
+  return { 
+    title: item.customLabel || "Status Updated", 
+    icon: <IconOrdersList className="w-5 h-5 text-text-dark/50" /> 
+  };
+};
+  
 
   return (
     <div className="bg-white rounded-2xl border border-app-dark/10 shadow-sm flex flex-col max-h-[450px] min-h-[300px] overflow-hidden">
@@ -72,6 +68,15 @@ export default function RecentActivity() {
           </div>
           <h2 className="text-base-text font-bold text-text-dark">Recent Activity</h2>
         </div>
+
+        {activities.length > 0 && (
+          <button 
+            onClick={clearHistory}
+            className="text-micro font-medium text-text-dark/40 hover:text-red-500  active:text-red-500 transition-colors px-2 py-1"
+          >
+            Clear All
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 !pl-5 mb-6 !pr-5 space-y-2.5 custom-scrollbar">
@@ -111,7 +116,7 @@ export default function RecentActivity() {
         ) : (
           <div className="h-full flex flex-col items-center justify-center py-20 opacity-20 grayscale">
             <IconOrdersList className="w-11 h-11 mb-2 text-text-dark" />
-            <p className="text-sm-text text-text-dark uppercase font-bold tracking-tight">No activity yet</p>
+            <p className="text-sm-text text-text-dark  font-medium ">No activity yet</p>
           </div>
         )}
       </div>

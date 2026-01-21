@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { IconUsers, IconSearch, IconUserPlus } from "../icons";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 import { useCustomerStore } from "../../store/customer/useCustomerStore";
+import { IconSearch, IconUserPlus, IconUsers } from "../icons";
 
 import "../../style/custom-scrollbar.css";
 

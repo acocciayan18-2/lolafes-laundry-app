@@ -222,7 +222,7 @@ export default function Orders() {
         <div className="w-20 h-20 flex items-center justify-center">
           <IconShirt className="w-10 h-10 text-text-dark/10" />
         </div>
-        <h3 className="text-h3 font-bold text-text-dark/70">No orders found</h3>
+        <h3 className="text-h3 font-medium text-text-dark/70">No orders found</h3>
         <p className="text-sm-text font-medium text-text-dark/50 mt-1">Try adjusting your filters or search term</p>
       </motion.div>
     )}

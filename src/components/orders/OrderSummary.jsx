@@ -36,6 +36,13 @@ export const OrderSummary = ({
   const dropdownRef = useRef(null);
   const [dropdownDirection, setDropdownDirection] = useState("bottom");
 
+
+// NEW: Validation check
+const isOrderInvalid = 
+  isProcessing || 
+  selectedServices.length === 0 || 
+  !customer.name; // Checks if a customer is selected
+
   // --- REFINED OBSERVER ---
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -228,15 +235,19 @@ export const OrderSummary = ({
           </div>
 
           {/* MAIN BUTTON WITH REF */}
-          <div ref={mainButtonRef}>
-            <Button
-              onClick={onSubmit}
-              disabled={isProcessing || selectedServices.length === 0} 
-              className="w-full h-12 text-base-text !font-medium shadow-md border-0 rounded-lg mt-2 transition-all bg-green-700 hover:bg-green-600 text-white"
-            >
-              {isProcessing ? "Processing..." : "Place Order"}
-            </Button>
-          </div>
+<div ref={mainButtonRef}>
+  <Button
+    onClick={onSubmit}
+    disabled={isOrderInvalid} 
+    className={`w-full h-12 text-base-text !font-medium shadow-md border-0 rounded-lg mt-2 transition-all text-white ${
+      isOrderInvalid 
+        ? "bg-gray-300 cursor-not-allowed  hover:bg-gray-300" // No hover classes here
+        : "bg-green-700 hover:bg-green-600 active:bg-green-800" // Hover classes only here
+    }`}
+  >
+    {isProcessing ? "Processing..." : "Place Order"}
+  </Button>
+</div>
         </div>
       </motion.div>
 

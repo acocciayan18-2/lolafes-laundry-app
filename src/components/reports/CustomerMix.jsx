@@ -79,21 +79,26 @@ export default function CustomerMix({ range }) {
         {/* Circular Progress with Heatmap Color */}
         <div className="flex flex-col items-center justify-center py-2">
           <div className="relative flex items-center justify-center w-28 h-28">
-            <svg className="w-full h-full transform -rotate-90">
-              <circle 
-                cx="50%" cy="50%" r="40%" 
-                stroke="currentColor" strokeWidth="8" fill="transparent" 
-                className="text-app-dark/5" 
-              />
-              <circle 
-                cx="50%" cy="50%" r="40%" 
-                stroke="currentColor" strokeWidth="8" fill="transparent" 
-                strokeDasharray="251.2" 
-                strokeDashoffset={251.2 - (251.2 * retentionRate) / 100}
-                className={`${heatmapColor} transition-all duration-1000 ease-out`} 
-                strokeLinecap="round"
-              />
-            </svg>
+           <svg className="w-full h-full transform -rotate-90">
+  {/* Background Circle */}
+  <circle 
+    cx="50%" cy="50%" r="40%" 
+    stroke="currentColor" strokeWidth="8" fill="transparent" 
+    className="text-app-dark/5" 
+  />
+  {/* Progress Circle */}
+  <circle 
+    cx="50%" cy="50%" r="40%" 
+    stroke="currentColor" strokeWidth="8" fill="transparent" 
+    // This makes the total length of the circle exactly 100 units
+    pathLength="100"
+    strokeDasharray="100" 
+    // Now the offset is simply 100 minus the percentage
+    strokeDashoffset={100 - retentionRate}
+    className={`${heatmapColor} transition-all duration-1000 ease-out`} 
+    strokeLinecap="round"
+  />
+</svg>
             <div className="absolute flex flex-col items-center w-20 px-1 pointer-events-none">
               <span 
                 className="w-full text-center text-lg text-text-dark font-bold leading-none truncate"

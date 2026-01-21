@@ -72,7 +72,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
               return (
                 <div 
                   key={order.id} 
-                  className="group relative rounded-xl p-2 transition-all duration-200 hover:bg-app-dark/5"
+                  className="group relative rounded-xl p-2"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-white border border-app-dark/10 shadow-hollow">
@@ -84,7 +84,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
                         {order.customer_name}
                       </h3>
                       
-                      <div className="flex flex-wrap items-center gap-x-1  gap-y-1 mt-0.5">
+                      <div className="flex flex-wrap items-center gap-x-1  gap-y-1 mt-1">
                         <span className="text-nano font-bold text-text-dark border border-app-dark/10 px-1 py-0.5 rounded whitespace-nowrap bg-white/50">
                           #{order.order_number || "--"}
                         </span>

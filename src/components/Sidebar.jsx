@@ -1,6 +1,6 @@
+import { signOut } from "firebase/auth"; // Added for logic
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { signOut } from "firebase/auth"; // Added for logic
 import { auth } from "../services/firebase"; // Ensure your firebase path is correct
 import "../style/main-app.css";
 import "../style/sidebar.css";
@@ -208,19 +208,22 @@ const LogoutConfirmationModal = ({ onCancel, onConfirm }) => (
           Are you sure you want to log out? Any unsaved changes might be lost.
         </p>
         
-        <div className="flex flex-col sm:flex-row gap-3 w-full">
-          <button
-            className="flex-1 order-2 sm:order-1 px-4 py-3 rounded-xl border border-1 border-app-dark/30 text-text-dark font-medium text-sm hover:bg-app-dark/10 active:scale-95 transition-all"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button
-            className="flex-1 order-1 sm:order-2 px-4 py-3 rounded-xl bg-app-dark text-text-light font-medium text-sm hover:bg-app-dark/90 active:scale-95 transition-all"
-            onClick={onConfirm}
-          >
-            Log Out
-          </button>
+       <div className="flex flex-row gap-3 w-full">
+  {/* CANCEL BUTTON: Styled exactly like the Clear Cart Cancel button */}
+  <button 
+    className="flex-1 order-1 px-4 py-2 md:text-sm text-sm-text font-medium !border !border-1 !border-app-dark rounded-lg transition-all"
+    onClick={onCancel}
+  >
+    Cancel
+  </button>
+  
+  {/* LOG OUT BUTTON: Styled exactly like the Clear Cart 'Clear' button but using the Log Out logic */}
+  <button 
+    className="flex-1 order-2  px-3 px-4 py-2 md:text-sm text-sm-text font-medium !bg-app-dark text-white rounded-lg transition-all"
+    onClick={onConfirm}
+  >
+    Log Out
+  </button>
         </div>
       </div>
     </div>

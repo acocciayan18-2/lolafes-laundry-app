@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { db } from '../../services/firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, deleteDoc, getDoc, setDoc, serverTimestamp
+ } from 'firebase/firestore';
 
 export const useCustomerStore = create((set, get) => ({
   customers: [],
@@ -30,6 +31,30 @@ export const useCustomerStore = create((set, get) => ({
 
     return unsubscribe; // Return the cleanup function
   },
+
+ deleteCustomer: async (customerId) => {
+  try {
+    const customerRef = doc(db, "customers", customerId);
+    const customerSnap = await getDoc(customerRef);
+
+    if (customerSnap.exists()) {
+      const customerData = customerSnap.data();
+
+      // 1. Move to archived collection
+      await setDoc(doc(db, "deleted_customers", customerId), {
+        ...customerData,
+        archivedAt: serverTimestamp(),
+        status: 'archived'
+      });
+
+      // 2. Delete from active collection
+      await deleteDoc(customerRef);
+    }
+  } catch (error) {
+    console.error("Archive Error:", error);
+    throw error; // Pass error to the component for the notification
+  }
+},
   
   // Basic checker for new orders
   checkPhoneExists: (phone) => {
