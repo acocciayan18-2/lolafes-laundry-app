@@ -139,7 +139,7 @@ export const IconCheckBlack = ({ className }) => (
 
 // Base component used for orders
 const IconLaundryBasket = ({ className }) => (
- <svg width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+ <svg width="24" height="24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
   <path d="M3 12h4l3 8 4-16 3 8h4"></path>
 </svg>
 );
@@ -499,7 +499,7 @@ export const IconGCash = ({ className = "w-10 h-10" }) => (
 );
 
 export const IconWallet = ({ className }) => (
-  <svg width="22" height="22" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <svg width="22" height="22" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
   <path d="M19 9H9a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2Z"></path>
   <path d="M14 16a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path>
   <path d="M17 9V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path>
