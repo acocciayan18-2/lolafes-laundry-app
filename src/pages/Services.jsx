@@ -3,10 +3,9 @@ import { useEffect, useState } from "react";
 import { IconGridPlus } from "../components/icons";
 import LoyaltySettings from "../components/services/LoyaltySettings";
 import ServiceCard from "../components/services/ServiceCard";
-import { LoginPopup } from "../modal/LoginPopup";
+import { ServicesSkeleton } from "../components/skeleton-loader";
 import { useActivityStore } from "../store/activities/useActivityStore";
 import { useServiceStore } from "../store/services/useServiceStore";
-import { ServicesSkeleton } from "../components/skeleton-loader";
 
 const SMOOTH_TRANSITION = { type: "spring", stiffness: 300, damping: 30, mass: 1 };
 
