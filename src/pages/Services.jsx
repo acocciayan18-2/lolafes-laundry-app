@@ -7,6 +7,9 @@ import { ServicesSkeleton } from "../components/skeleton-loader";
 import { useActivityStore } from "../store/activities/useActivityStore";
 import { useServiceStore } from "../store/services/useServiceStore";
 
+// 1. IMPORT THE POPUP COMPONENT
+import { LoginPopup } from "../modal/LoginPopup"; 
+
 const SMOOTH_TRANSITION = { type: "spring", stiffness: 300, damping: 30, mass: 1 };
 
 export const Button = ({ children, onClick, className = "", variant = "primary", ...props }) => {
@@ -45,22 +48,18 @@ export default function Services() {
   const { services, isLoading, addService, updateService, subscribeToServices, deleteServiceSafe } = useServiceStore();
   const logActivity = useActivityStore((state) => state.logActivity);
 
-  
-
   const [editingId, setEditingId] = useState(null);
   const [tempData, setTempData] = useState(null);
   const [popup, setPopup] = useState({ message: "", type: "info" });
   const [allowOverflow, setAllowOverflow] = useState(false);
-
-  
-    const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
+  const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
   useEffect(() => {
     const unsubscribe = subscribeToServices();
     return () => unsubscribe();
   }, [subscribeToServices]);
 
-    useEffect(() => {
+  useEffect(() => {
     let timer;
     if (isLoading) {
       timer = setTimeout(() => {
@@ -109,13 +108,13 @@ export default function Services() {
       setTempData(null);
     } catch (err) {
       console.error("Firebase Save Error:", err); 
+      triggerPopup("Failed to save service. Please check your connection.");
     }
   };
 
   const toggleStatus = async (id, currentStatus) => {
     const service = services.find(s => s.id === id);
     const newStatus = !currentStatus;
-    
     await updateService(id, { is_active: newStatus });
 
     logActivity({
@@ -132,21 +131,22 @@ export default function Services() {
     setTempData({ name: "", type: "wash_only", price_per_kg: 0, duration_hours: 24, is_active: true });
   };
 
-
-
-
-   // Loading state with debounce
   if (isLoading && shouldShowSkeleton) {
     return <ServicesSkeleton />;
   }
 
-  // Prevents "flicker" on fast connections
   if (isLoading && !shouldShowSkeleton) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-app-light p-2">
+      {/* 2. RENDER THE POPUP HERE */}
+      <LoginPopup 
+        message={popup.message} 
+        type={popup.type} 
+        onClose={() => setPopup({ ...popup, message: "" })} 
+      />
 
       <motion.div layoutRoot className="max-w-6xl mx-auto px-1 md:px-2">
         <div className="flex justify-between items-center mb-3">
@@ -156,7 +156,7 @@ export default function Services() {
           </div>
           <button 
             onClick={addNewService} 
-            className="group flex items-center justify-center w-9 shadow-md h-9 hover:bg-app-dark/5  bg-white rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200"
+            className="group flex items-center justify-center w-9 shadow-md h-9 hover:bg-app-dark/5 bg-white rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200"
             title="Add Service"
           >
             <IconGridPlus className="w-4 h-4 text-black stroke-black" strokeWidth={2.2} />
@@ -179,7 +179,7 @@ export default function Services() {
               >
                 <div className="flex items-center gap-2 mb-2 ml-1">
                   <div className="w-0.5 h-3 bg-app-dark/80 rounded-full" />
-                  <span className="text-sm-text font-medium text-text-dark/80 ">
+                  <span className="text-sm-text font-medium text-text-dark/80">
                     Add New Service
                   </span>
                 </div>
@@ -196,12 +196,10 @@ export default function Services() {
             )}
           </AnimatePresence>
 
-          {/* FIX: Set z-[40] so the Loyalty dropdown can overlap the items below */}
           <div className="relative z-[40] mb-3">
             <LoyaltySettings />
           </div>
 
-          {/* FIX: Set z-[10] so this container is "lower" than the settings above */}
           <div className="grid gap-3 relative z-[10]">
             <AnimatePresence mode="popLayout">
               {services.map((service) => (
