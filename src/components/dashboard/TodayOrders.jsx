@@ -112,7 +112,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-20 grayscale">
             <IconShirt className="w-10 h-10 mb-2" />
-            <p className="text-micro font-bold uppercase text-text-dark ">No orders for today.</p>
+            <p className="text-micro font-bold uppercase text-text-dark ">No order/s for today.</p>
           </div>
         )}
       </div>
