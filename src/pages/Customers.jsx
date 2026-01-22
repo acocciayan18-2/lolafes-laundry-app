@@ -4,6 +4,7 @@ import CustomerCard from "../components/customers/CustomerCard";
 import CustomerStats from "../components/customers/CustomerStats";
 import { IconSearch, IconUsers } from "../components/icons";
 import { useCustomerStore } from "../store/customer/useCustomerStore";
+import { CustomerListSkeleton } from "../components/skeleton-loader";
 
 const SMOOTH_TRANSITION = {
   type: "spring",
@@ -23,12 +24,32 @@ const Input = ({ className, ...props }) => (
 export default function Customers() {
   const { customers, isLoading, subscribeToCustomers } = useCustomerStore();
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // New state to control the delayed visibility of the skeleton
+  const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
+  // 1. Handle Firebase Subscription
   useEffect(() => {
     const unsubscribe = subscribeToCustomers();
     return () => unsubscribe();
   }, [subscribeToCustomers]);
 
+  // 2. SKELETON DELAY LOGIC:
+  // Only set shouldShowSkeleton to true if isLoading persists for more than 500ms
+  useEffect(() => {
+    let timer;
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setShouldShowSkeleton(true);
+      }, 400); // 0.5s delay
+    } else {
+      setShouldShowSkeleton(false);
+    }
+
+    return () => clearTimeout(timer); // Cleanup timer if data loads early
+  }, [isLoading]);
+
+  // 3. Global Search Keydown Handler
   useEffect(() => {
     const handleGlobalSearchFocus = (e) => {
       const activeElement = document.activeElement;
@@ -41,7 +62,6 @@ export default function Customers() {
 
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const searchInput = document.getElementById("customer-search-input");
-        
         if (searchInput) {
           searchInput.focus();
           setSearchTerm(prev => prev + e.key);
@@ -63,6 +83,18 @@ export default function Customers() {
     );
   });
 
+  // --- RENDERING LOGIC ---
+
+  // If we are loading and the 0.5s timer has passed, show skeleton
+  if (isLoading && shouldShowSkeleton) {
+    return <CustomerListSkeleton />;
+  }
+
+  // If we are loading but 0.5s hasn't passed, show nothing (prevents flicker)
+  if (isLoading && !shouldShowSkeleton) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-app-light p-2">
       <div className="max-w-6xl mx-auto px-1 md:px-2">
@@ -70,9 +102,7 @@ export default function Customers() {
         {/* Header */}
         <div className="flex justify-between items-center mb-3">
           <div>
-            {/* PAGE TITLE: text-h1 */}
             <h1 className="text-h2 font-bold text-text-dark">Customers</h1>
-            {/* SUBTITLE: text-sm-text */}
             <p className="text-sm-text text-gray-600 mt-0.5">Manage your customer database</p>
           </div>
         </div>
@@ -95,17 +125,7 @@ export default function Customers() {
         <LayoutGroup>
           <div className="grid">
             <AnimatePresence mode="popLayout" initial={false}>
-              {isLoading ? (
-                Array(4).fill(0).map((_, i) => (
-                  <motion.div 
-                    key={`skeleton-${i}`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="bg-white/60 rounded-xl h-24 animate-pulse shadow-sm mb-3" 
-                  />
-                ))
-              ) : filteredCustomers.length > 0 ? (
+              {filteredCustomers.length > 0 ? (
                 filteredCustomers.map((customer) => (
                   <motion.div
                     key={customer.id}
@@ -120,6 +140,7 @@ export default function Customers() {
                 ))
               ) : (
                 <motion.div 
+                  key="empty"
                   layout
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -128,11 +149,9 @@ export default function Customers() {
                   <div className="flex justify-center mb-4">
                     <IconUsers className="w-12 h-12 text-gray-200" />
                   </div>
-                  {/* EMPTY TITLE: text-h3 */}
                   <h3 className="text-h3 font-bold text-text-dark/70 mb-1">
                     {searchTerm ? "No customers found" : "No customers yet"}
                   </h3>
-                  {/* EMPTY SUBTEXT: text-sm-text */}
                   <p className="text-sm-text font-medium text-text-dark/40">
                     {searchTerm ? "Try adjusting your search term" : "Customers will appear here when you create orders"}
                   </p>

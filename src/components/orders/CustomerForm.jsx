@@ -59,11 +59,7 @@ export const CustomerForm = ({
   const focusClasses = "focus:outline-none focus:!ring-0 focus:!shadow-none focus:!border-app-dark/70 border-gray-300";
 
   return (
-    <motion.div 
-      layout 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden"
+    <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden"
     >
       <div className="p-4 pb-0 ">
         <div className="flex flex-wrap items-center gap-2">
@@ -163,13 +159,7 @@ export const CustomerForm = ({
                 </div>
               </motion.div>
             ) : (
-              <motion.div 
-                key="new"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-4 pt-1"
+              <div className="space-y-4 pt-1"
               >
                 <div className="grid md:grid-cols-2 gap-2">
                  <Input
@@ -267,11 +257,11 @@ export const CustomerForm = ({
       : focusClasses
   }`}
 />
-              </motion.div>
+              </div>
             )}
           </AnimatePresence>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

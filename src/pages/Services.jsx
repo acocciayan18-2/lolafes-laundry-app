@@ -6,6 +6,7 @@ import ServiceCard from "../components/services/ServiceCard";
 import { LoginPopup } from "../modal/LoginPopup";
 import { useActivityStore } from "../store/activities/useActivityStore";
 import { useServiceStore } from "../store/services/useServiceStore";
+import { ServicesSkeleton } from "../components/skeleton-loader";
 
 const SMOOTH_TRANSITION = { type: "spring", stiffness: 300, damping: 30, mass: 1 };
 
@@ -45,15 +46,32 @@ export default function Services() {
   const { services, isLoading, addService, updateService, subscribeToServices, deleteServiceSafe } = useServiceStore();
   const logActivity = useActivityStore((state) => state.logActivity);
 
+  
+
   const [editingId, setEditingId] = useState(null);
   const [tempData, setTempData] = useState(null);
   const [popup, setPopup] = useState({ message: "", type: "info" });
   const [allowOverflow, setAllowOverflow] = useState(false);
 
+  
+    const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
+
   useEffect(() => {
     const unsubscribe = subscribeToServices();
     return () => unsubscribe();
   }, [subscribeToServices]);
+
+    useEffect(() => {
+    let timer;
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setShouldShowSkeleton(true);
+      }, 400);
+    } else {
+      setShouldShowSkeleton(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   const triggerPopup = (message, type = "error") => setPopup({ message, type });
 
@@ -115,15 +133,21 @@ export default function Services() {
     setTempData({ name: "", type: "wash_only", price_per_kg: 0, duration_hours: 24, is_active: true });
   };
 
-  if (isLoading) return (
-    <div className="p-10 text-center">
-      <span className="text-micro font-bold uppercase  text-text-dark/40">Loading Cloud Services...</span>
-    </div>
-  );
+
+
+
+   // Loading state with debounce
+  if (isLoading && shouldShowSkeleton) {
+    return <ServicesSkeleton />;
+  }
+
+  // Prevents "flicker" on fast connections
+  if (isLoading && !shouldShowSkeleton) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-app-light p-2">
-      <LoginPopup message={popup.message} type={popup.type} onClose={() => setPopup({ ...popup, message: "" })} />
 
       <motion.div layoutRoot className="max-w-6xl mx-auto px-1 md:px-2">
         <div className="flex justify-between items-center mb-3">

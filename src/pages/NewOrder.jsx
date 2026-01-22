@@ -16,7 +16,9 @@ import { useServiceStore } from "../store/services/useServiceStore";
 import { useNotificationStore } from "../store/ui/useNotificationStore";
 import { startGlobalTour } from "../tours/globalTours";
 
-import "driver.js/dist/driver.css";
+import { NewOrderSkeleton } from "../components/skeleton-loader";
+
+// import "driver.js/dist/driver.css";
 
 // --- Helper Functions ---
 const generateUniqueOrderNumber = async () => {
@@ -83,6 +85,8 @@ const Badge = ({ children, className = "" }) => (
 );
 
 
+
+
 export default function NewOrder() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -90,11 +94,16 @@ export default function NewOrder() {
   // Stores
   // const checkPhoneExists = useCustomerStore((state) => state.checkPhoneExists);
   const customers = useCustomerStore((state) => state.customers);
-  const { services, subscribeToServices } = useServiceStore();
   const { loyaltySettings, subscribeToLoyalty } = useLoyaltyStore();
   const { submitOrder, createCustomer } = useNewOrderStore(); 
   const showNotification = useNotificationStore((state) => state.showNotification);
   const logActivity = useActivityStore((state) => state.logActivity);
+
+  // Combine all needed properties into one call
+const { services, isLoading, subscribeToServices } = useServiceStore();
+
+
+  const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
   // States
   const [isProcessing, setIsProcessing] = useState(false);
@@ -159,6 +168,18 @@ export default function NewOrder() {
     setSelectedServices([...selectedServices, freeService]);
     showNotification("Reward applied!", "success");
   };
+
+  useEffect(() => {
+    let timer;
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setShouldShowSkeleton(true);
+      }, 400);
+    } else {
+      setShouldShowSkeleton(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   // --- SUBMIT LOGIC ---
   const handleSubmit = async () => {
@@ -240,6 +261,16 @@ export default function NewOrder() {
       setTimeout(() => startGlobalTour(navigate, 3), 700);
     }
   }, [location.search, navigate]);
+
+   // Loading state with debounce
+    if (isLoading && shouldShowSkeleton) {
+      return <NewOrderSkeleton />;
+    }
+  
+    // Prevents "flicker" on fast connections
+    if (isLoading && !shouldShowSkeleton) {
+      return null;
+    }
 
   return (
     <div className="min-h-screen bg-app-light p-2">

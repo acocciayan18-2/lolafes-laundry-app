@@ -6,6 +6,7 @@ import OrderCard from "../components/orders/OrderCard";
 import OrderFilters from "../components/orders/OrderFilters";
 import { useActivityStore } from "../store/activities/useActivityStore";
 import { useOrderStore } from "../store/orders/useOrderStore";
+import { OrderListSkeleton } from "../components/skeleton-loader";
 
 const SPRING_TRANSITION = {
   type: "spring",
@@ -14,12 +15,6 @@ const SPRING_TRANSITION = {
   mass: 1,
   restDelta: 0.01
 };
-
-// const Button = ({ children, className = "", ...props }) => (
-//   <button className={`inline-flex items-center justify-center rounded-lg font-bold transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${className}`} {...props}>
-//     {children}
-//   </button>
-// );
 
 const Input = ({ className, ...props }) => (
   <input
@@ -33,14 +28,6 @@ const Input = ({ className, ...props }) => (
   />
 );
 
-const LaundryLoader = () => (
-  <div className="flex flex-col items-center justify-center space-y-2">
-    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-    {/* Applied text-micro for meta-loading state */}
-    <p className="text-micro font-bold uppercase  text-gray-400">Loading orders...</p>
-  </div>
-);
-
 export default function Orders() {
   const { orders, isLoading, subscribeToOrders, updateOrderStatus } = useOrderStore();
   const logActivity = useActivityStore((state) => state.logActivity);
@@ -50,6 +37,29 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("today");
 
+  // Logic to control the delayed visibility of the skeleton
+  const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
+
+  // 1. Firebase Subscription
+  useEffect(() => {
+    const unsubscribe = subscribeToOrders();
+    return () => unsubscribe(); 
+  }, [subscribeToOrders]);
+
+  // 2. SKELETON DELAY LOGIC (0.5s)
+  useEffect(() => {
+    let timer;
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setShouldShowSkeleton(true);
+      }, 400);
+    } else {
+      setShouldShowSkeleton(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  // 3. Global Search Keydown Handler
   useEffect(() => {
     const handleGlobalSearchFocus = (e) => {
       const activeElement = document.activeElement;
@@ -73,12 +83,6 @@ export default function Orders() {
     window.addEventListener("keydown", handleGlobalSearchFocus);
     return () => window.removeEventListener("keydown", handleGlobalSearchFocus);
   }, [setSearchTerm]);
-
-
-  useEffect(() => {
-    const unsubscribe = subscribeToOrders();
-    return () => unsubscribe(); 
-  }, [subscribeToOrders]);
 
   const handleStatusUpdate = useCallback(async (orderId, newStatus) => {
     try {
@@ -140,25 +144,31 @@ export default function Orders() {
     filterOrders();
   }, [filterOrders]);
 
+  // --- RENDERING LOGIC ---
+
+  if (isLoading && shouldShowSkeleton) {
+    return <OrderListSkeleton />;
+  }
+
+  if (isLoading && !shouldShowSkeleton) {
+    return null; // Prevents the flicker on fast loads
+  }
+
   return (
-    <div className="min-h-screen bg-app-light p-2 ">
+    <div className="min-h-screen bg-app-light p-2">
       <motion.div layoutRoot className="max-w-6xl mx-auto px-1 md:px-2">
         <LayoutGroup>
           
           <motion.div layout className="flex flex-row items-center mb-3 gap-4">
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                {/* Main Page Title: text-h1 */}
                 <h1 className="text-h2 text-text-dark">All Orders</h1>
-                
-                {/* ORDER COUNT BADGE: text-micro for meta clarity */}
                 {!isLoading && (
                   <span className="flex items-center justify-center bg-app-dark/5 px-2 py-0.5 rounded-lg text-micro font-bold text-text-dark/70 uppercase tracking-tighter min-w-[24px]">
                     {filteredOrders.length}
                   </span>
                 )}
               </div>
-              {/* Description: text-sm-text */}
               <p className="text-sm-text text-gray-600 mt-0.5">Manage and track orders</p>
             </div>
             
@@ -185,49 +195,39 @@ export default function Orders() {
             />
           </motion.div>
 
-          {/* Orders List */}
-          {/* Orders List Container */}
-<motion.div 
-  layout 
-  className="flex flex-col overflow-visible" // Removed min-h-[400px] and gap-1
->
-  <AnimatePresence mode="popLayout">
-    {isLoading ? (
-      <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-20 flex justify-center">
-        <LaundryLoader />
-      </motion.div>
-    ) : filteredOrders.length > 0 ? (
-      filteredOrders.map((order, index) => (
-        <motion.div
-          key={order.id}
-          layout
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ ...SPRING_TRANSITION, delay: index * 0.02 }}
-        >
-          {/* Note: OrderCard already has mb-3, so we don't need container gap */}
-          <OrderCard order={order} onStatusUpdate={handleStatusUpdate} />
-        </motion.div>
-      ))
-    ) : (
-      <motion.div 
-        key="empty-state"
-        layout
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="flex flex-col items-center text-center py-20" // Increased padding for empty state only
-      >
-        <div className="w-20 h-20 flex items-center justify-center">
-          <IconShirt className="w-10 h-10 text-text-dark/10" />
-        </div>
-        <h3 className="text-h3 font-medium text-text-dark/70">No orders found</h3>
-        <p className="text-sm-text font-medium text-text-dark/50 mt-1">Try adjusting your filters or search term</p>
-      </motion.div>
-    )}
-  </AnimatePresence>
-</motion.div>
+          <motion.div layout className="flex flex-col overflow-visible">
+            <AnimatePresence mode="popLayout">
+               {filteredOrders.length > 0 ? (
+                 filteredOrders.map((order, index) => (
+                   <motion.div
+                     key={order.id}
+                     layout
+                     initial={{ opacity: 0, y: 10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     exit={{ opacity: 0, scale: 0.98 }}
+                     transition={{ ...SPRING_TRANSITION, delay: index * 0.02 }}
+                   >
+                     <OrderCard order={order} onStatusUpdate={handleStatusUpdate} />
+                   </motion.div>
+                 ))
+               ) : (
+                 <motion.div 
+                   key="empty-state"
+                   layout
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   exit={{ opacity: 0 }}
+                   className="flex flex-col items-center text-center py-20"
+                 >
+                   <div className="w-20 h-20 flex items-center justify-center">
+                     <IconShirt className="w-10 h-10 text-text-dark/10" />
+                   </div>
+                   <h3 className="text-h3 font-medium text-text-dark/70">No orders found</h3>
+                   <p className="text-sm-text font-medium text-text-dark/50 mt-1">Try adjusting your filters or search term</p>
+                 </motion.div>
+               )}
+            </AnimatePresence>
+          </motion.div>
         </LayoutGroup>
       </motion.div>
     </div>

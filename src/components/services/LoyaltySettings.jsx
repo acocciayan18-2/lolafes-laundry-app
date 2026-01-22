@@ -192,9 +192,10 @@ export default function LoyaltySettings() {
         {showConfirmDialog ? (
           <motion.div
             key="confirm"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
+            // REMOVED SCALE: Now only fades in/out
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="w-full bg-red-50 border border-red-200 shadow-sm rounded-xl p-6 flex flex-col items-center text-center"
           >
             <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3 text-red-600">
@@ -229,9 +230,10 @@ export default function LoyaltySettings() {
         ) : (
           <motion.div
             key="settings"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
+            // REMOVED SCALE: Now only fades in/out
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="flex flex-col md:flex-row bg-white border border-slate-200 shadow-sm rounded-xl"
           >
             {/* LEFT SECTION */}

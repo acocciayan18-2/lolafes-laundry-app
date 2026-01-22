@@ -93,10 +93,7 @@ export const ServiceSelector = ({
   });
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white shadow-md rounded-xl border border-gray-100 overflow-hidden"
+    <div  className="bg-white shadow-md rounded-xl border border-gray-100 overflow-hidden"
     >
       <div className="p-4 pb-2 border-b border-gray-50 bg-white">
         {/* HEADER: text-h3 */}
@@ -215,6 +212,6 @@ export const ServiceSelector = ({
           )}
         </AnimatePresence>
       </div>
-    </motion.div>
+    </div>
   );
 };

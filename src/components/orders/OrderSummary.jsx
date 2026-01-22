@@ -99,9 +99,7 @@ const isOrderInvalid =
 
   return (
     <>
-      <motion.div 
-        layout
-        className="bg-white rounded-2xl shadow-md border border-gray-200 lg:sticky lg:top-6 z-30"
+      <div className="bg-white rounded-2xl shadow-md border border-gray-200 lg:sticky lg:top-6 z-30"
       >
         <div className="p-4 !pb-0">
           <h3 className="text-h3 font-bold text-text-dark flex items-center gap-2">
@@ -249,7 +247,7 @@ const isOrderInvalid =
   </Button>
 </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* FLOATING ACTION BAR - Ensure it is FIXED and has a high Z-Index */}
       <AnimatePresence>
