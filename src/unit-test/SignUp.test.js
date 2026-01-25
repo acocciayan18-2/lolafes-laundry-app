@@ -1,9 +1,8 @@
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { BrowserRouter } from "react-router-dom";
-import "@testing-library/jest-dom"; // ✅ FIX 1: Import matchers like toBeDisabled
-import SignUp from "../pages/SignUp";
 import emailjs from "@emailjs/browser"; // Import this so we can spy on it
+import "@testing-library/jest-dom"; // ✅ FIX 1: Import matchers like toBeDisabled
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { BrowserRouter } from "react-router-dom";
+import SignUp from "../pages/SignUp";
 
 // ✅ FIX 2: Move Mocks to the top to ensure they apply before imports run
 jest.mock("../services/firebase", () => ({

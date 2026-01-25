@@ -1,14 +1,14 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { useRef, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import "../style/index.css";
+import "../style/main-app.css";
+import Customers from "./Customers";
 import Dashboard from "./Dashboard";
+import NewOrder from "./NewOrder";
 import Orders from "./Orders";
 import Reports from "./Reports";
-import NewOrder from "./NewOrder";
-import Customers from "./Customers";
 import Services from "./Services";
-import "../style/main-app.css";
-import "../style/index.css";
 
 export default function MainApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -28,36 +28,38 @@ export default function MainApp() {
     setLastScrollY(currentScrollY);
   };
 
-  return (
-    /* h-[100dvh] is vital for mobile to ignore the browser address bar height */
-    <div className="flex h-[100dvh] w-full bg-gray-50 mainapp-con relative overflow-hidden">
+ return (
+    <div className="flex h-[100dvh] w-full bg-app-light mainapp-con relative overflow-hidden">
       
-      {/* 1. SIDEBAR: Ensure this is rendered with a high z-index (z-50) inside its file */}
+      {/* Sidebar now uses h-full to match this 100dvh container */}
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
-      {/* 2. OVERLAY BACKDROP: Only visible on mobile when sidebar is open */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[45] lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+      {/* Glass Overlay */}
+      <div 
+        className={`fixed inset-0 z-[45] transition-all duration-300 lg:hidden ${
+          isSidebarOpen 
+            ? "bg-white/30 backdrop-blur-[0px] visible opacity-100" 
+            : "bg-transparent backdrop-blur-0 invisible opacity-0"
+        }`}
+        onClick={() => setIsSidebarOpen(false)}
+      />
 
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
         
-        {/* MOBILE HEADER: z-40 so it stays below the Sidebar (z-50) */}
-        <header 
-          className={`lg:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-white border-b border-gray-100 shadow-sm z-40 transition-transform duration-300 ${
+        {/* Header - Fixed but inside the flex-col */}
+         <header 
+          className={`lg:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-app-light border-b border-gray-100 shadow-sm z-40 transition-transform duration-300 ${
             showHeader ? "translate-y-0" : "-translate-y-full"
           }`}
         >
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-                <img src="/images/lolafeslaundry-logo.png" alt="Logo" className="w-7 h-7 object-contain" />
+            <div className="w-9 h-9 bg-app-dark rounded-xl flex items-center justify-center shadow-md">
+                <img src="/images/lolafeslaundry-logo-transparent.png" alt="Logo" className="w-7 h-7 object-contain" />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-gray-900 text-sm leading-none">Lola Fe's</span>
-              <span className="text-[10px] text-blue-600 font-medium uppercase tracking-tighter">Manager</span>
+              <span className="font-bold text-text-dark text-sm leading-none ">Lola Fe's Laundry</span>
+              <span className="text-[11px] text-text-dark/90 font-medium">Laundry Shop</span>
             </div>
           </div>
           
@@ -71,10 +73,13 @@ export default function MainApp() {
           </button>
         </header>
 
+        {/* Scrollable area - h-full ensures it doesn't slide under browser tabs */}
         <main 
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto no-scrollbar pt-16 lg:pt-0"
+          className={`flex-1 overflow-y-auto no-scrollbar bg-app-light pt-16 lg:pt-0 h-full transition-all duration-300 ${
+            isSidebarOpen && "scale-[0.98] origin-right"
+          }`}
         >
           <Routes>
             <Route path="/" element={<Navigate to="/main/dashboard" replace />} />
@@ -89,4 +94,11 @@ export default function MainApp() {
       </div>
     </div>
   );
+
 }
+
+
+
+
+
+

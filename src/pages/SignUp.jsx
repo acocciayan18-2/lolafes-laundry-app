@@ -1,14 +1,14 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getDatabase, ref, get } from "firebase/database";
+import emailjs from "@emailjs/browser";
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
   fetchSignInMethodsForEmail,
+  sendEmailVerification,
 } from "firebase/auth";
-import { auth } from "../services/firebase";
-import emailjs from "@emailjs/browser";
+import { get, getDatabase, ref } from "firebase/database";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LoginPopup } from "../modal/LoginPopup";
+import { auth } from "../services/firebase";
 import "../style/signup.css";
 
 // ----------------------------------------------------------------------
@@ -224,24 +224,24 @@ export default function SignUp() {
 
       <div className="signup-card">
         {/* Logo */}
-        <div className="flex justify-center items-center w-full mb-3">
-          <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl overflow-hidden flex items-center justify-center">
+         <div className="flex justify-center items-center w-full">
+          <div className="mb-3 flex justify-center items-center w-14 h-14 bg-app-dark rounded-xl overflow-hidden">
             <img
               src="/images/lolafeslaundry-logo-transparent.png"
-              alt="Logo"
-              className="max-w-full max-h-full"
+              alt="Lola Fe's Laundry Logo"
+              className="max-w-full max-h-full w-12 h-12"
             />
           </div>
         </div>
 
         <h3 className="text-center text-3xl font-extrabold text-gray-800 mb-1">Create Admin Account</h3>
-        <p className="text-center text-gray-600 mb-6">Sign up with a secure password and OTP verification.</p>
+        <p className="text-center !text-text-dark/70 mb-6">Sign up with a secure password and OTP verification.</p>
 
         <form onSubmit={handleSignup}>
 
           {/* Email Field */}
           <div className="mb-3 text-start">
-            <label htmlFor="email" className="form-label">
+            <label htmlFor="email" className="form-label text-text-dark">
               Admin Email
             </label>
             <div className="inputForm">
@@ -262,7 +262,7 @@ export default function SignUp() {
 
           {/* Password Field */}
           <div className="mb-2 text-start">
-            <label htmlFor="password" className="form-label">
+            <label htmlFor="password" className="form-label text-text-dark">
               Password
             </label>
             <div className="inputForm pwd-signup-con">
@@ -311,11 +311,11 @@ export default function SignUp() {
           {/* OTP Field (Conditionally Rendered) */}
           {isOtpSent && (
             <div className="mb-2 animate-fade-in">
-              <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">Enter the OTP sent to the registered admin email.</label>
+              <label htmlFor="otp" className="block text-sm font-normal text-text-dark mb-3">Enter the OTP sent to the registered admin email.</label>
               <input
                 type="text"
                 id="otp"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-center tracking-widest text-lg"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3  tracking-[0.5em] focus:ring-1 focus:ring-app-dark focus:outline-none text-center tracking-widest text-lg !font-bold"
                 placeholder="000000"
                 value={enteredOtp}
                 onChange={(e) => setEnteredOtp(e.target.value)}
@@ -330,8 +330,8 @@ export default function SignUp() {
           {/* Action Button */}
           <button
             type="submit"
-            className={`w-full mb-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium py-2 rounded-lg shadow transition-all ${
-              !isPasswordValid || isLoading ? "opacity-50 cursor-not-allowed" : "hover:shadow-lg hover:scale-[1.01]"
+            className={`w-full mb-2 bg-app-dark text-white font-medium py-2 rounded-lg shadow transition-all ${
+              !isPasswordValid || isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-app-dark/95"
             }`}
             disabled={!isPasswordValid || isLoading}
           >

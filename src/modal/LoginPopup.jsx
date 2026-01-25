@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import "../style/modal-style/LoginPopup.css";
 
 // Configuration Constants
@@ -56,47 +56,54 @@ export function LoginPopup({ message, type = "info", onClose }) {
   if (!message) return null;
 
   return (
-    <div
-      className="position-fixed top-0 start-50 translate-middle-x mt-3 flex-row login-popup-con"
-      style={{ zIndex: 9999999 }}
-    >
-      <div
-        className="toast show bg-white shadow-sm border-1 rounded overflow-hidden position-relative"
-        role="alert"
-        style={{ borderColor: themeColor }}
+  <div
+    /* FIXED POSITIONING: Centers at top-6 and handles its own width */
+    className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999999] w-full max-w-[360px] px-4 pointer-events-none bg-transparent"
+  >
+   <div
+  className={`pointer-events-auto relative bg-white/70 backdrop-blur-md shadow-lg border rounded-xl overflow-hidden transition-all duration-300 ${
+    type === "success" 
+      ? "border-status-ready/50" // Softened border opacity for better glass blending
+      : "border-red-600/50"
+  }`}
+  role="alert"
+>
+      
+      {/* --- CLOSE BUTTON: Absolute positioned in the corner --- */}
+      <button
+        className="absolute top-2 right-2 p-1 rounded-lg hover:bg-black/5 transition-colors focus:outline-none"
+        aria-label="Close"
+        onClick={onClose}
       >
-        
-        {/* Close Button */}
-        <p
-          className="position-absolute top-0 end-0 m-1 login-btn-close-popup focus-ring-0"
-          aria-label="Close"
-          onClick={onClose}
-          style={{ cursor: 'pointer' }}
-        >
-          {POPUP_ICONS.close(themeColor)}
-        </p>
+        {POPUP_ICONS.close(themeColor)}
+      </button>
 
-        {/* Message Content */}
-        <div className="toast-body d-flex align-items-center justify-content-center login-pop-up-icon">
+      {/* --- MESSAGE CONTENT: Flex centered with padding --- */}
+      <div className="px-6 py-3 flex items-center justify-center gap-3">
+        <div className="shrink-0">
           {type === "success" ? POPUP_ICONS.success(themeColor) : POPUP_ICONS.error(themeColor)}
-          <span style={{ color: themeColor }} className="text-base pr-2">
-            {message}
-          </span>
         </div>
+        <span 
+          style={{ color: themeColor }} 
+          className="font-normal text-md leading-tight !mr-3"
+        >
+          {message}
+        </span>
+      </div>
 
-        {/* Progress Bar Animation */}
+      {/* --- PROGRESS BAR: Pinned to the very bottom --- */}
+      <div className="w-full bg-app-light h-[3px]">
         <div
-          className="progress-bar"
+          className="h-full transition-all ease-linear"
           style={{
-            height: "2px",
-            background: "none",
             backgroundColor: themeColor,
             width: `${progress}%`,
-            transition: "width 40ms linear",
+            transitionDuration: `${PROGRESS_INTERVAL_MS}ms`,
           }}
         ></div>
-
       </div>
+
     </div>
-  );
+  </div>
+);
 }

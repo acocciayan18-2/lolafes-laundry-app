@@ -3,11 +3,12 @@ import { db } from '../../services/firebase';
 import { 
   collection, 
   doc, 
-  addDoc,
   writeBatch, 
   serverTimestamp, 
-  increment 
+  increment, 
+  addDoc 
 } from 'firebase/firestore';
+import { useActivityStore } from '../activities/useActivityStore';
 
 export const useNewOrderStore = create((set) => ({
   isSubmitting: false,
@@ -35,37 +36,31 @@ export const useNewOrderStore = create((set) => ({
     const batch = writeBatch(db);
     
     try {
-      // 1. Create Order
+      // 1. Prepare Order Data
       const orderRef = doc(collection(db, "orders"));
-      
-      batch.set(orderRef, {
-        ...orderPayload, // Spreads customer info, loyalty_points_to_deduct, etc.
+      const orderData = {
+        ...orderPayload,
         created_at: serverTimestamp(),
-        status: 'pending',
-      });
+        status: 'pending', // Use lowercase for consistent logic checks
+      };
 
-      // 2. Update Customer Counters
+      // 2. Set the Order in Firestore
+      batch.set(orderRef, orderData);
+
+      // 3. Update Customer Stats if customer exists
       if (orderPayload.customer_id) {
         const customerRef = doc(db, "customers", orderPayload.customer_id);
         
+        // Calculate loyalty adjustments
         const rewardsUsedCount = orderPayload.services.filter(s => s.is_reward).length;
         const pointsToSpend = orderPayload.loyalty_points_to_deduct || 0; 
-        
-        // --- LOGIC: CONDITIONAL EARNING ---
-        // If spending points (redeeming), earn 0 points.
-        // If NOT spending points (regular order), earn 1 point.
         const pointsEarned = pointsToSpend > 0 ? 0 : 1; 
-
-        // Net Change logic:
-        // Redemption: 0 - 10 = -10
-        // Regular:    1 - 0  = +1
         const netPointsChange = pointsEarned - pointsToSpend; 
 
         batch.update(customerRef, {
-          order_count: increment(1), // Always track lifetime stats
+          order_count: increment(1),
           rewards_claimed: increment(rewardsUsedCount), 
-          loyalty_points: increment(netPointsChange), // Apply strict math
-          
+          loyalty_points: increment(netPointsChange),
           last_order_at: serverTimestamp(),
           name: orderPayload.customer_name,
           phone: orderPayload.customer_phone,
@@ -73,7 +68,21 @@ export const useNewOrderStore = create((set) => ({
         });
       }
 
+      // 4. Commit to Firebase
       await batch.commit();
+
+      // 5. Explicitly Log Activity
+      // We pass 'created' and 'ORDER CREATED' to ensure the Activity Feed identifies this correctly.
+      useActivityStore.getState().logActivity(
+        { 
+          ...orderData, 
+          order_number: orderPayload.order_number,
+          customer_name: orderPayload.customer_name 
+        },
+        'pending',
+        { action: 'created', label: 'ORDER CREATED' }
+      );
+
       set({ isSubmitting: false });
       return orderRef.id;
       

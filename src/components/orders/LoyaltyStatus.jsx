@@ -27,21 +27,12 @@ export const LoyaltyStatus = ({
 
   if (!loyaltySettings?.is_enabled || !customer) return null;
 
-  // --- LOGIC UPDATE: USE LOYALTY POINTS ---
-  // Default to 0 if field doesn't exist yet (for old customers)
   const currentPoints = customer.loyalty_points !== undefined ? customer.loyalty_points : (customer.order_count || 0);
   const required = loyaltySettings.orders_required || 10;
-
-  // Calculate Available Rewards
-  // Simple Division: If I have 21 points and need 10, I have 2 rewards available.
   const availableRewards = Math.floor(currentPoints / required);
-
-  // Calculate Progress
   const progressToNext = currentPoints % required;
   const neededForNext = required - progressToNext;
-
   const isRewardInCart = selectedServices?.some((s) => s.is_reward) || false;
-  // ----------------------------------------
 
   return (
     <>
@@ -71,7 +62,7 @@ export const LoyaltyStatus = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div
-                className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                   availableRewards > 0 ? "bg-yellow-50" : "bg-blue-50"
                 }`}
               >
@@ -82,10 +73,12 @@ export const LoyaltyStatus = ({
                 )}
               </div>
               <div>
-                <h3 className="font-bold text-[10px] uppercase tracking-wider text-gray-400 leading-none">
+                {/* HEADER: text-nano */}
+                <h3 className="text-nano font-bold uppercase tracking-widest text-text-dark/40 leading-none">
                   {availableRewards > 0 ? `${availableRewards} Reward${availableRewards > 1 ? 's' : ''} Ready` : "Loyalty Progress"}
                 </h3>
-                <p className="text-sm font-medium text-gray-800">
+                {/* STATUS TEXT: text-sm-text */}
+                <p className="text-sm-text font-bold text-text-dark mt-1">
                   {availableRewards > 0
                     ? isRewardInCart 
                         ? "Voucher applied to cart" 
@@ -95,11 +88,12 @@ export const LoyaltyStatus = ({
               </div>
             </div>
 
+            {/* PROGRESS BADGE: text-nano */}
             <Badge
-              className={`text-[10px] px-2 py-0.5 font-mono ${
+              className={`text-micro px-2 py-0.5 tracking-tighter ${
                 availableRewards > 0
-                  ? "bg-yellow-100 text-yellow-800"
-                  : "bg-blue-100 text-blue-800"
+                  ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                  : "bg-blue-100 text-blue-800 border-blue-200"
               }`}
             >
               {progressToNext}/{required}
@@ -111,13 +105,13 @@ export const LoyaltyStatus = ({
               onClick={onApplyFreeService}
               disabled={isRewardInCart}
               size="sm"
-              className={`w-full mt-3 !h-9 font-bold shadow-sm border-none text-xs transition-all duration-200 ${
+              className={`w-full mt-2 !h-9 text-micro font-bold shadow-sm border-none transition-all duration-200  tracking-widest ${
                 isRewardInCart 
                   ? "!bg-gray-100 !text-gray-400 cursor-not-allowed" 
-                  : "!bg-yellow-500 hover:!bg-yellow-600 !text-white"
+                  : "!bg-yellow-500 hover:!bg-yellow-600 !text-white active:scale-95"
               }`}
             >
-              <IconAward className={`w-4 h-4 mr-1 ${isRewardInCart ? "!stroke-gray-400" : "!stroke-white"}`} />
+              <IconAward className={`w-4 h-4 mr-1.5 ${isRewardInCart ? "!stroke-gray-400" : "!stroke-white"}`} />
               {isRewardInCart ? "Reward Applied" : "Apply Reward"}
             </Button>
           )}

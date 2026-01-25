@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { IconPackage } from "../icons";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect } from "react";
 import { useServiceStore } from "../../store/services/useServiceStore";
+import { IconPackage } from "../icons";
 
 const SPRING_TRANSITION = {
   type: "spring", stiffness: 300, damping: 30, mass: 1, restDelta: 0.01
@@ -20,7 +20,6 @@ export const ServiceSelector = ({
     return () => unsubscribe();
   }, [subscribeToServices]);
 
-  // --- 1. DEFINED ORDER: The object keys determine the rank ---
   const serviceTypeLabels = {
     wash_only: "Wash Only",
     dry_only: "Dry Only",
@@ -39,7 +38,6 @@ export const ServiceSelector = ({
     add_on: "Add-ons & Supplies"
   };
 
-  // Helper to find current quantity of a service in the cart
   const getQuantity = (serviceId) => {
     const item = selectedServices.find(s => s.id === serviceId && !s.is_reward);
     return item ? item.quantity : 0;
@@ -53,10 +51,8 @@ export const ServiceSelector = ({
       const newQty = updatedServices[existingIndex].quantity + delta;
 
       if (newQty <= 0) {
-        // Remove if quantity hits 0
         setSelectedServices(selectedServices.filter((_, i) => i !== existingIndex));
       } else {
-        // Update existing
         updatedServices[existingIndex] = {
           ...updatedServices[existingIndex],
           quantity: newQty,
@@ -65,7 +61,6 @@ export const ServiceSelector = ({
         setSelectedServices(updatedServices);
       }
     } else if (delta > 0) {
-      // Add new
       setSelectedServices([...selectedServices, {
         id: service.id,
         service_name: service.name,
@@ -78,7 +73,6 @@ export const ServiceSelector = ({
     }
   };
 
-  // Group services by their type
   const groupedServices = services
     .filter(s => s.is_active)
     .reduce((acc, service) => {
@@ -88,43 +82,35 @@ export const ServiceSelector = ({
       return acc;
     }, {});
 
-  // --- 2. SORTING LOGIC: Force the groups to follow the label order ---
-  // This creates an array of keys (e.g. ['wash_only', 'dry_only'...])
-  // sorted by their position in the serviceTypeLabels object.
   const serviceOrder = Object.keys(serviceTypeLabels);
   
   const sortedServiceTypes = Object.keys(groupedServices).sort((a, b) => {
     const indexA = serviceOrder.indexOf(a);
     const indexB = serviceOrder.indexOf(b);
-    
-    // If a type isn't in our list (e.g. 'other'), push it to the end
     if (indexA === -1) return 1;
     if (indexB === -1) return -1;
-    
     return indexA - indexB;
   });
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white/80 shadow-md rounded-xl border border-gray-100 overflow-hidden"
+    <div  className="bg-white shadow-md rounded-xl border border-gray-100 overflow-hidden"
     >
       <div className="p-4 pb-2 border-b border-gray-50 bg-white">
-        <h3 className="flex items-center gap-2 text-xl font-bold text-gray-900">
-          <IconPackage className="w-6 h-6 !text-[#2d79f3] !stroke-[#2d79f3]" />
+        {/* HEADER: text-h3 */}
+        <h3 className="flex items-center gap-2 text-h3 font-bold text-text-dark">
+          <IconPackage className="w-6 h-6 !text-btn-primary !stroke-btn-primary" />
           Services
         </h3>
       </div>
 
-      <div className="p-4 pt-0 space-y-8">
+      <div className="p-4 pt-0 space-y-8 bg-white">
         {isLoading ? (
-          <div className="py-10 text-center text-sm text-gray-400 italic">Syncing with cloud...</div>
+          <div className="py-10 text-center text-sm-text text-gray-400 italic">Syncing with cloud...</div>
         ) : (
-          // --- 3. RENDER LOOP: Iterate over the SORTED keys ---
           sortedServiceTypes.map((type) => (
             <div key={type} className="space-y-2 !mt-4">
-              <h4 className="text-xs uppercase font-bold text-blue-600 ml-1">
+              {/* CATEGORY LABEL: text-nano uppercase */}
+              <h4 className="text-sm-text uppercase font-bold text-btn-primary ml-1">
                 {serviceTypeLabels[type] || type.replace('_', ' ')}
               </h4>
               
@@ -136,17 +122,17 @@ export const ServiceSelector = ({
                       key={service.id} 
                       className={`flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
                         qty > 0 
-                          ? "border-1 border-gray-600 shadow-sm" 
+                          ? " border border-app-dark shadow-md scale-[1.0]" 
                           : "bg-gray-50/50 border border-gray-100 hover:border-gray-300"
                       }`}
                     >
- 
                       <div className="flex-1">
-                        <h5 className="font-bold text-gray-900 text-[16px]">{service.name}</h5>
-                        <Badge className="text-xs font-bold text-gray-600"> ₱{Number(service.price_per_kg).toFixed(2)}</Badge>
+                        {/* SERVICE NAME: text-base-text */}
+                        <h5 className="font-bold text-gray-900 text-base-text">{service.name}</h5>
+                        {/* PRICE BADGE: text-micro */}
+                        <Badge className="text-micro font-bold text-gray-600"> ₱{Number(service.price_per_kg).toFixed(2)}</Badge>
                       </div>
 
-                      {/* QUANTITY CONTROLS */}
                       <div className="flex items-center gap-2 p-1 rounded-lg">
                         <button
                           type="button"
@@ -154,19 +140,20 @@ export const ServiceSelector = ({
                           disabled={qty === 0}
                           className="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer transition-all active:scale-90 hover:bg-gray-50 disabled:opacity-20 disabled:border-gray-300 disabled:cursor-not-allowed"
                         >
-                          <p className="text-xl font-medium text-gray-800">–</p>
+                          <p className="text-h3 font-medium text-gray-800 leading-none">–</p>
                         </button>
                         
-                        <div className="w-8 text-center font-bold text-sm text-gray-800">
+                        {/* QTY DISPLAY: text-sm-text */}
+                        <div className="w-8 text-center font-bold text-sm-text text-gray-800">
                           {qty}
                         </div>
 
                         <button
                           onClick={() => updateQuantity(service, 1)}
                           aria-label={`Add ${service.name}`}
-                          className="w-8 h-8 flex items-center justify-center rounded-md bg-blue-500 text-white hover:bg-blue-700 transition-colors"
+                          className="w-10 h-8 flex items-center justify-center rounded-md bg-btn-primary text-white hover:bg-btn-primary/80 transition-colors"
                         >
-                          <span className="text-xl font-medium text-white">+</span>
+                          <span className="text-h3 font-medium text-white leading-none">+</span>
                         </button>
                       </div>
                     </div>
@@ -177,16 +164,15 @@ export const ServiceSelector = ({
           ))
         )}
 
-        {/* SUMMARY OF SELECTED ITEMS */}
         <AnimatePresence>
           {selectedServices.length > 0 && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="!pt-0 border-t border-gray-100"
             >
-              <h3 className="text-sm font-bold text-gray-700 mb-3 ml-1">Current Selection</h3>
+              {/* SELECTION HEADER: text-micro uppercase */}
+              <h3 className="text-micro font-bold text-gray-700 mb-3 ml-1 uppercase tracking-wider">Current Selection</h3>
               <div className="space-y-3">
                 {selectedServices.map((service, index) => (
                   <motion.div 
@@ -197,22 +183,25 @@ export const ServiceSelector = ({
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex flex-row gap-1 items-center justify-center">
-                         <span className="text-[12px] font-medium text-gray-700 leading-none">x</span>
-                         <span className="text-sm font-bold text-gray-700 leading-none">{service.quantity}</span>
+                         <span className="text-nano font-medium text-gray-700 leading-none">x</span>
+                         <span className="text-sm-text font-bold text-gray-700 leading-none">{service.quantity}</span>
                       </div>
 
                       <div className="flex flex-col">
-                        <span className="text-[16px] font-bold text-gray-900 leading-tight">
+                        {/* ITEM NAME: text-base-text */}
+                        <span className="text-base-text font-bold text-gray-900 leading-tight">
                           {service.service_name}
                         </span>
-                        <span className="text-[12px] font-bold text-blue-600 uppercase tracking-tight">
-                           ₱{Number(service.price_per_kg).toFixed(2)}
+                        {/* ITEM PRICE: text-nano */}
+                        <span className="text-micro font-bold text-text-dark/90 uppercase tracking-tight">
+                            ₱{Number(service.price_per_kg).toFixed(2)}
                         </span>
                       </div>
                     </div>
 
-                    <div className="px-3 py-1.5 ">
-                      <span className="text-[17px] font-mono font-medium text-gray-900">
+                    <div className=" py-1.5 ">
+                      {/* ITEM TOTAL: text-base-text */}
+                      <span className="font-bold text-text-dark text-base-text">
                         ₱{service.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                     </div>
@@ -223,6 +212,6 @@ export const ServiceSelector = ({
           )}
         </AnimatePresence>
       </div>
-    </motion.div>
+    </div>
   );
-}
+};

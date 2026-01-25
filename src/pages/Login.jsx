@@ -1,14 +1,14 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { auth } from "../services/firebase";
 import {
-  signInWithEmailAndPassword,
   browserLocalPersistence,
-  setPersistence,
   sendPasswordResetEmail,
+  setPersistence,
+  signInWithEmailAndPassword,
 } from "firebase/auth";
-import { LoginPopup } from "../modal/LoginPopup";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import ForgotPassword from "../modal/ForgotPassword";
+import { LoginPopup } from "../modal/LoginPopup";
+import { auth } from "../services/firebase";
 import "../style/login.css";
 
 const LOGIN_ICONS = {
@@ -127,31 +127,31 @@ export default function Login() {
       <div className="login-card">
         {/* Logo Section */}
         <div className="flex justify-center items-center w-full">
-          <div className="mb-3 flex justify-center items-center w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl overflow-hidden">
+          <div className="mb-3 flex justify-center items-center w-14 h-14 bg-app-dark rounded-xl overflow-hidden">
             <img
               src="/images/lolafeslaundry-logo-transparent.png"
               alt="Lola Fe's Laundry Logo"
-              className="max-w-full max-h-full"
+              className="max-w-full max-h-full w-12 h-12"
             />
           </div>
         </div>
 
-        <h3 className="text-center text-3xl font-extrabold text-gray-800 mb-1">
+        <h3 className="text-center text-3xl font-extrabold text-text-dark mb-1">
           Welcome to Lola Fe's Laundry&nbsp;Shop
           
         </h3>
-        <p className="text-center">Log in to continue</p>
+        <p className="text-center !text-text-dark/70">Log in to continue</p>
 
         <form onSubmit={handleLogin}>
           
           <div className="mb-3 text-start">
-            <label htmlFor="login-email" className="form-label">Email</label>
+            <label htmlFor="login-email" className="form-label text-text-dark">Email</label>
             <div className="inputForm mb-3 text-start">
               {LOGIN_ICONS.atSymbol}
               <input
                 type="email"
                 id="login-email"
-                className="input"
+                className="input text-text-dark"
                 placeholder="Enter your Email"
                 required
                 autoComplete="off"
@@ -162,13 +162,13 @@ export default function Login() {
           </div>
 
           <div className="mb-3 text-start">
-            <label htmlFor="login-password" className="form-label">Password</label>
+            <label htmlFor="login-password" className="form-label text-text-dark">Password</label>
             <div className="inputForm pwd-login-con">
               {LOGIN_ICONS.lock}
               <input
                 type={showPassword ? "text" : "password"}
                 id="login-password"
-                className="input"
+                className="input text-text-dark"
                 placeholder="********"
                 required
                 autoComplete="off"
@@ -189,7 +189,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setShowForgotPopup(true)}
-                className="text-sm text-blue-600 hover:text-blue-800 bg-transparent border-none cursor-pointer"
+                className="text-xs text-blue-600 hover:text-blue-800 bg-transparent border-none cursor-pointer"
               >
                 Forgot Password?
               </button>
@@ -199,7 +199,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoginLoading}
-            className={`w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium px-4 py-2 rounded shadow cursor-pointer transition-opacity ${
+            className={`w-full bg-app-dark text-white font-medium px-4 py-2 rounded-lg shadow cursor-pointer transition-opacity ${
               isLoginLoading ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"
             }`}
           >

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Shirt } from 'lucide-react';
 
 const ANIMATION_CONFIG = {

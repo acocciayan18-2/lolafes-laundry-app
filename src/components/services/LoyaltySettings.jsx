@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
-import { IconGift, IconArrowUp, IconAlertTriangle } from "../icons"; // Assuming you have an alert icon, or use SVG
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { useActivityStore } from "../../store/activities/useActivityStore";
 import { useLoyaltyStore } from "../../store/services/useLoyaltyStore";
 import { useServiceStore } from "../../store/services/useServiceStore";
-import { motion, AnimatePresence } from "framer-motion";
+import { IconArrowUp, IconGift } from "../icons";
 
 // --- UI Helpers ---
 const Label = ({ children }) => (
-  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1.5 ml-1 tracking-wider">
+  <label className="text-micro font-medium text-text-dark/60 block mb-1.5 ml-1 ">
     {children}
   </label>
 );
@@ -19,7 +20,7 @@ const Input = ({ type, value, onChange, disabled, className, placeholder, inputM
     disabled={disabled}
     placeholder={placeholder}
     inputMode={inputMode}
-    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium transition-all focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 shadow-sm disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
+    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text font-medium  focus:outline-none focus:ring-1 focus:ring-gray-900 shadow-sm disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
   />
 );
 
@@ -33,7 +34,7 @@ const Switch = ({ checked, onCheckedChange }) => (
   </button>
 );
 
-// --- CUSTOM POP-OUT SELECT COMPONENT ---
+// --- UPDATED CUSTOM SELECT: High Stacking Priority ---
 const CustomSelect = ({ value, onChange, options, disabled }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -49,25 +50,25 @@ const CustomSelect = ({ value, onChange, options, disabled }) => {
   }, []);
 
   return (
-    <div className="relative w-full" ref={containerRef}>
+    <div className={`  relative w-full ${isOpen ? 'z-[100]' : 'z-auto'}`} ref={containerRef}>
       <button
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex h-10 w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-sm font-medium transition-all focus:outline-none
-          ${isOpen ? "border-gray-900 ring-1 ring-gray-900" : "border-slate-200 hover:border-gray-300"}
+        className={`flex h-10 w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-base-text font-medium focus:outline-none
+          ${isOpen ? "border-gray-900  ring-gray-900" : "border-slate-200 hover:border-gray-300"}
           ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50" : "cursor-pointer"}
         `}
       >
-        <span className={value ? "text-sm text-slate-800" : "text-sm text-slate-400"}>
+        <span className={value ? "text-slate-800" : "text-slate-400"}>
           {value || "Select Service"}
         </span>
         <IconArrowUp className={`w-4 h-4 text-slate-800 transition-transform duration-200 ${isOpen ? 'rotate-0' : 'rotate-180'}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl z-[999] overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100">
-          <div className="max-h-60 overflow-y-auto">
+        <div className="absolute left-0 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl z-[999] overflow-hidden py-2 p-3 animate-in fade-in zoom-in-95 duration-100">
+          <div className="max-h-60 custom-scrollbar overflow-y-auto">
             {options.map((option) => (
               <button
                 key={option.id}
@@ -76,7 +77,7 @@ const CustomSelect = ({ value, onChange, options, disabled }) => {
                   onChange(option.name);
                   setIsOpen(false);
                 }}
-                className="w-full px-3 py-2.5 text-left text-sm flex items-center justify-between transition-colors hover:bg-gray-50 font-medium text-slate-700"
+                className="w-full px-3 py-2.5 text-left text-base-text flex items-center justify-between transition-colors hover:bg-gray-50 font-medium text-text-dark"
               >
                 {option.name}
                 {value === option.name && (
@@ -87,7 +88,7 @@ const CustomSelect = ({ value, onChange, options, disabled }) => {
               </button>
             ))}
             {options.length === 0 && (
-              <div className="px-3 py-3 text-center text-[11px] font-bold text-slate-400 uppercase">
+              <div className="px-3 py-3 text-center text-nano font-bold text-slate-400 uppercase ">
                 No Active Services Found
               </div>
             )}
@@ -101,7 +102,8 @@ const CustomSelect = ({ value, onChange, options, disabled }) => {
 export default function LoyaltySettings() {
   const { loyaltySettings, saveLoyaltySettings, subscribeToLoyalty, isLoading } = useLoyaltyStore();
   const { services, subscribeToServices } = useServiceStore();
-  
+  const logActivity = useActivityStore((state) => state.logActivity);
+
   const [localSettings, setLocalSettings] = useState(loyaltySettings);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -110,7 +112,7 @@ export default function LoyaltySettings() {
     const unsubL = subscribeToLoyalty();
     const unsubS = subscribeToServices();
     return () => { unsubL(); unsubS(); };
-  }, []);
+  }, [subscribeToLoyalty, subscribeToServices]);
 
   useEffect(() => {
     if (!isLoading) setLocalSettings(loyaltySettings);
@@ -122,10 +124,18 @@ export default function LoyaltySettings() {
     setLocalSettings({ ...localSettings, [field]: val });
   };
 
-  const executeStatusChange = (newStatus) => {
+  const executeStatusChange = async (newStatus) => {
     const updated = { ...localSettings, is_enabled: newStatus };
     setLocalSettings(updated);
-    saveLoyaltySettings(updated);
+    await saveLoyaltySettings(updated);
+    logActivity({
+        customer_name: "Loyalty Program",
+        order_number: "SETTINGS",
+        total_amount: 0
+    }, newStatus ? 'ready' : 'picked_up', {
+        action: 'status_update',
+        label: newStatus ? "Loyalty Program Enabled" : "Loyalty Program Disabled"
+    });
   };
 
   const handleToggle = (checked) => {
@@ -144,10 +154,28 @@ export default function LoyaltySettings() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const changes = [];
+      if (localSettings.free_service_type !== loyaltySettings.free_service_type) changes.push("Reward Service");
+      if (Number(localSettings.orders_required) !== Number(loyaltySettings.orders_required)) changes.push("Visit Threshold");
+
+      const descriptiveLabel = changes.length > 0 ? `${changes.join(" & ")} Updated` : "Loyalty Settings Updated";
+
       await saveLoyaltySettings({
         ...localSettings,
         orders_required: Number(localSettings.orders_required)
       });
+
+      logActivity({
+          customer_name: "Loyalty Program", 
+          order_number: "CONFIG",
+          total_amount: 0
+      }, 'in_progress', {
+          action: 'status_update',
+          label: descriptiveLabel
+      });
+
+    } catch (err) {
+      console.error("Save failed", err);
     } finally {
       setIsSaving(false);
     }
@@ -161,72 +189,65 @@ export default function LoyaltySettings() {
   return (
     <div className="w-full relative z-10">
       <AnimatePresence mode="wait">
-        
-        {/* --- STATE 1: CONFIRMATION WARNING (Replaces Settings) --- */}
         {showConfirmDialog ? (
           <motion.div
             key="confirm"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
+            // REMOVED SCALE: Now only fades in/out
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="w-full bg-red-50 border border-red-200 shadow-sm rounded-xl p-6 flex flex-col items-center text-center"
           >
-            <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3">
-              {/* Alert Icon */}
-             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-  
-  <circle cx="9" cy="10" r="1" fill="currentColor"/>
-  <circle cx="15" cy="10" r="1" fill="currentColor"/>
-  
-  <path d="M16 16C16 16 14.5 14 12 14C9.5 14 8 16 8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3 text-red-600">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="9" cy="10" r="1" fill="currentColor"/>
+                <circle cx="15" cy="10" r="1" fill="currentColor"/>
+                <path d="M16 16C16 16 14.5 14 12 14C9.5 14 8 16 8 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
             
-            <h3 className="text-lg font-bold text-red-900 mb-1">Disable Loyalty Program?</h3>
-            <p className="text-sm text-red-700 max-w-sm leading-relaxed mb-6">
+            <h3 className="text-h3 font-bold text-red-900 mb-1">Disable Loyalty Program?</h3>
+            <p className="text-sm-text text-red-700 max-w-sm leading-relaxed mb-6">
               This will <span className="font-bold">reset all customer points to zero</span>. Customers will lose their progress towards free rewards.
             </p>
 
             <div className="flex w-full max-w-xs gap-3">
               <button
                 onClick={() => setShowConfirmDialog(false)}
-                className="flex-1 h-10 rounded-lg border border-red-200 bg-white text-slate-700 font-medium text-sm hover:bg-slate-50 transition-colors"
+                className="flex-1 h-10 rounded-lg border border-red-200 bg-white text-slate-700 font-bold text-sm-text hover:bg-slate-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDisable}
-                className="flex-1 h-10 rounded-lg bg-red-600 text-white font-medium text-sm hover:bg-red-700 transition-colors shadow-sm"
+                className="flex-1 h-10 rounded-lg bg-red-600 text-white font-bold text-sm-text hover:bg-red-700 transition-colors shadow-sm"
               >
                 Yes, Disable
               </button>
             </div>
           </motion.div>
         ) : (
-
-        /* --- STATE 2: NORMAL SETTINGS UI --- */
           <motion.div
             key="settings"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
+            // REMOVED SCALE: Now only fades in/out
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="flex flex-col md:flex-row bg-white border border-slate-200 shadow-sm rounded-xl"
           >
-            {/* LEFT SECTION (Settings) */}
-            <div className="flex-1 p-4 rounded-t-xl md:rounded-l-xl md:rounded-tr-none bg-white">
+            {/* LEFT SECTION */}
+            <div className="flex-1 p-4 rounded-t-xl md:rounded-l-xl bg-white">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${localSettings.is_enabled ? 'bg-sky-200' : 'bg-slate-100'}`}>
+                  <div className={`border w-9 h-9 rounded-lg flex items-center justify-center shadow-hollow transition-colors ${localSettings.is_enabled ? 'bg-app-light' : 'bg-slate-100'}`}>
                     <IconGift className={`w-5 h-5 ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-400'}`} />
                   </div>
                   <div>
-                    <h3 className="text-md font-bold text-slate-900 leading-tight">Customer Loyalty</h3>
+                    <h3 className="text-h3 font-bold text-slate-900 ">Customer Loyalty</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
                         <span className={`w-1.5 h-1.5 rounded-full ${localSettings.is_enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
-                        <span className={`text-[10px] font-bold uppercase tracking-tighter ${localSettings.is_enabled ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        <span className={`text-nano font-bold uppercase  ${localSettings.is_enabled ? 'text-emerald-600' : 'text-slate-400'}`}>
                           {localSettings.is_enabled ? 'Promo Active' : 'Promo Inactive'}
                         </span>
                     </div>
@@ -249,7 +270,6 @@ export default function LoyaltySettings() {
                   <Input 
                     type="text"
                     inputMode="numeric" 
-                    placeholder="Ex: 5"
                     value={localSettings.orders_required}
                     onChange={(e) => handleInputChange('orders_required', e.target.value)}
                   />
@@ -259,46 +279,27 @@ export default function LoyaltySettings() {
 
             {/* PERFORATION */}
             <div className="relative flex items-center justify-center bg-white md:bg-transparent">
-                <div className="w-[calc(100%-2rem)] mx-auto h-px md:w-px md:h-[calc(100%-2rem)] border-t-2 md:border-t-0 md:border-l-2 border-dashed border-slate-300" />
+                <div className="w-[calc(100%-2rem)] mx-auto h-px md:w-px md:h-[calc(100%-2rem)] border-t-2 md:border-l-2 border-dashed border-slate-300" />
             </div>
 
             {/* RIGHT SECTION (Visual Ticket) */}
-            <div className={`w-full md:w-60 p-4 flex flex-col justify-between rounded-b-xl md:rounded-r-xl md:rounded-bl-none ${localSettings.is_enabled ? 'bg-sky-100/60' : 'bg-slate-50'}`}>
-              <div className="space-y-3">
-                <h4 className="text-[9px] font-black uppercase tracking-widest text-teal-600 text-center">Reward Summary</h4>
-                <div className="relative group">
-                  <div className={`p-3 bg-white rounded-lg border border-dashed text-center shadow-sm ${localSettings.is_enabled ? 'border-sky-300' : 'border-slate-300 grayscale'}`}>
-                    <div className="text-md font-black leading-tight text-slate-900">
-                      FREE
-                    </div>
-                    <div className="text-[11px] font-bold uppercase tracking-tight mb-1 text-teal-600 truncate px-1">
-                       {localSettings.free_service_type || "No Service"}
-                    </div>
-                    <div className="h-px bg-slate-100 my-2" />
-                    <p className="text-[10px] text-slate-500 font-medium tracking-tight">After {localSettings.orders_required} visits</p>
-                  </div>
-
-                  {!localSettings.is_enabled && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-100/40 rounded-lg backdrop-blur-[1px]">
-                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter bg-white px-2 py-1 rounded-md border border-slate-200 shadow-sm">
-                        Inactive
-                      </span>
-                    </div>
-                  )}
+            <div className={`w-full md:w-60 p-4 flex flex-col justify-between rounded-b-xl md:rounded-r-xl ${localSettings.is_enabled ? 'bg-app-light' : 'bg-slate-50'}`}>
+              <div className="space-y-3 text-center">
+                <h4 className="text-nano font-black uppercase  text-teal-600">Reward Summary</h4>
+                <div className="p-3 bg-white rounded-lg border border-dashed border-sky-300 shadow-sm">
+                  <div className="text-h3 font-black text-slate-900">FREE</div>
+                  <div className="text-micro font-bold uppercase text-teal-600 truncate">{localSettings.free_service_type || "No Service"}</div>
+                  <div className="h-px bg-slate-100 my-2" />
+                  <p className="text-micro text-slate-500 font-medium">After {localSettings.orders_required} visits</p>
                 </div>
               </div>
 
               <button
                 onClick={handleSave}
                 disabled={!hasChanges || isSaving || !isValid}
-                className={`mt-3 w-full h-10 flex items-center justify-center rounded-xl text-sm font-bold transition-all shadow-md active:scale-95 disabled:opacity-50 
-                  ${hasChanges && isValid ? 'bg-green-700 text-white' : 'bg-slate-800 text-white'}`}
+                className="mt-3 w-full h-10 flex items-center justify-center rounded-xl text-sm-text font-medium bg-slate-800 text-white disabled:opacity-50 transition-all active:scale-95 shadow-md "
               >
-                {isSaving ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <span className="text-white font-normal text-sm">Save Ticket</span>
-                )}
+                {isSaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Save Ticket"}
               </button>
             </div>
           </motion.div>

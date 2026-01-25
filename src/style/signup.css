@@ -54,14 +54,14 @@ body {
   
   height: 50px;
   padding-left: 10px;
-  
+  margin-top: 5px;
   border: 1.5px solid #ecedec;
   border-radius: 10px;
   transition: 0.2s ease-in-out;
 }
 
 .inputForm:focus-within {
-  border: .5px solid #2d79f3;
+  border: .5px solid #1E1e1e;
 }
 
 /* Actual Input Field */

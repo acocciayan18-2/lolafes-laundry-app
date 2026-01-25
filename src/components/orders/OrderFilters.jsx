@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { IconFilter, IconCalendar } from "../icons"; // Added IconCalendar if available
+import { useEffect, useRef, useState } from "react";
+import { IconFilter } from "../icons";
 
 export default function OrderFilters({ statusFilter, setStatusFilter, dateFilter, setDateFilter }) {
   const [openDropdown, setOpenDropdown] = useState(null); // 'status', 'date', or null
@@ -48,12 +48,13 @@ export default function OrderFilters({ statusFilter, setStatusFilter, dateFilter
           onClick={() => setOpenDropdown(openDropdown === "status" ? null : "status")}
           className={`
             w-40 h-10 px-3 flex items-center justify-between
-            bg-white border transition-all rounded-xl text-gray-900
-            ${openDropdown === "status" ? "border-black ring-0" : "border-gray-200"}
-            hover:border-gray-400 focus:outline-none focus:border-black
+            bg-white border transition-all rounded-xl text-text-dark
+            ${openDropdown === "status" ? "border-black " : "border-gray-200"}
+            focus:outline-none focus:border-black
           `}
         >
-          <span className="truncate text-sm font-medium">{currentStatusLabel}</span>
+          {/* UPDATED: text-sm-text font-bold */}
+          <span className="truncate text-base-text font-normal tracking-tight">{currentStatusLabel}</span>
           <svg 
             className={`h-3.5 w-3.5 transition-transform duration-200 ${openDropdown === "status" ? "rotate-180" : ""}`} 
             fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -71,7 +72,9 @@ export default function OrderFilters({ statusFilter, setStatusFilter, dateFilter
                   setStatusFilter(option.value);
                   setOpenDropdown(null);
                 }}
-                className="w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors hover:bg-gray-50"
+                className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors tracking-tight hover:bg-gray-50
+                  ${statusFilter === option.value ? " font-bold" : "text-text-dark font-normal"}
+                `}
               >
                 {option.label}
                 {statusFilter === option.value && (
@@ -85,18 +88,19 @@ export default function OrderFilters({ statusFilter, setStatusFilter, dateFilter
         )}
       </div>
 
-      {/* DATE FILTER (Newly Added) */}
+      {/* DATE FILTER */}
       <div className="relative">
         <button
           onClick={() => setOpenDropdown(openDropdown === "date" ? null : "date")}
           className={`
             w-40 h-10 px-3 flex items-center justify-between
-            bg-white border transition-all rounded-xl text-gray-900
-            ${openDropdown === "date" ? "border-black ring-0" : "border-gray-200"}
-            hover:border-gray-400 focus:outline-none focus:border-black
+            bg-white border transition-all rounded-xl text-text-dark
+            ${openDropdown === "date" ? "border-black " : "border-gray-200"}
+             focus:outline-none focus:border-black
           `}
         >
-          <span className="truncate text-sm font-medium">{currentDateLabel}</span>
+          {/* UPDATED: text-sm-text font-bold */}
+          <span className="truncate text-base-text font-normal  tracking-tight">{currentDateLabel}</span>
           <svg 
             className={`h-3.5 w-3.5 transition-transform duration-200 ${openDropdown === "date" ? "rotate-180" : ""}`} 
             fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -114,7 +118,9 @@ export default function OrderFilters({ statusFilter, setStatusFilter, dateFilter
                   setDateFilter(option.value);
                   setOpenDropdown(null);
                 }}
-                className="w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors hover:bg-gray-50"
+                className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors tracking-tight hover:bg-gray-50
+                  ${(dateFilter || "all") === option.value ? " font-bold" : "text-text-dark font-normal"}
+                `}
               >
                 {option.label}
                 {(dateFilter || "all") === option.value && (

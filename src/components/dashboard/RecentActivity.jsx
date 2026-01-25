@@ -1,106 +1,122 @@
 import React from "react";
+import { useActivityStore } from '../../store/activities/useActivityStore'; 
+import { 
+  IconNewOrder, 
+  IconOrdersList,
+  IconActivity,
+  IconLoyalty,
+  IconServices
+} from "../icons"; 
 
-// --- NATIVE HELPERS (No date-fns needed) ---
-const formatTimeAgo = (date) => {
+const formatTimeAgo = (dateInput) => {
+  if (!dateInput) return '';
+  const date = new Date(dateInput);
   const now = new Date();
-  const diffInSeconds = Math.floor((now - new Date(date)) / 1000);
-  
-  if (diffInSeconds < 60) return 'just now';
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours}h ago`;
-  const diffInDays = Math.floor(diffInHours / 24);
-  return `${diffInDays}d ago`;
+  const diff = Math.floor((now - date) / 1000);
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 };
 
-// --- EXPLICIT SVG ICONS ---
-const IconActivity = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-  </svg>
-);
+export default function RecentActivity() {
 
-const IconPlus = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 5v14M5 12h14" /></svg>
-);
+ const activities = useActivityStore((state) => state.activities);
+  const clearHistory = useActivityStore((state) => state.clearHistory);
 
-const IconPackage = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="m7.5 4.27 9 5.15m-9 5.15 9 5.14m-9-5.14V4.27m9 5.15V19.71m-9-5.14L2.36 12l5.14-2.86m9 5.14L21.64 12l-5.14-2.86" />
-  </svg>
-);
-
-const IconCheck = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 6 9 17l-5-5" /></svg>
-);
-
-const IconClock = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-);
-
-export default function RecentActivity({ orders = [] }) {
-  const activities = [...orders]
-    .sort((a, b) => new Date(b.updated_date || b.created_date) - new Date(a.updated_date || a.created_date))
-    .slice(0, 8);
-
-  const getActivityStyle = (type) => {
-    switch(type) {
-      case 'pending': return { icon: <IconPlus className="w-3.5 h-3.5" />, color: 'text-amber-600 bg-amber-50 border-amber-100', text: 'New order created' };
-      case 'in_progress': return { icon: <IconPackage className="w-3.5 h-3.5" />, color: 'text-blue-600 bg-blue-50 border-blue-100', text: 'Order in progress' };
-      case 'ready': return { icon: <IconCheck className="w-3.5 h-3.5" />, color: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'Ready for pickup' };
-      case 'picked_up': return { icon: <IconCheck className="w-3.5 h-3.5" />, color: 'text-slate-600 bg-slate-50 border-slate-100', text: 'Order completed' };
-      default: return { icon: <IconClock className="w-3.5 h-3.5" />, color: 'text-slate-500 bg-slate-50 border-slate-100', text: 'Order updated' };
-    }
+  const getActivityConfig = (item) => {
+  const defaultConfig = { 
+    title: item?.customLabel || "Update Logged", 
+    icon: <IconOrdersList className="w-5 h-5 text-text-dark/50" /> 
   };
 
+  if (!item) return defaultConfig;
+
+  // 1. STRICT PRIORITY: Only show "ORDER CREATED" for the explicit creation action
+  if (item.actionType === 'created') {
+    return { 
+      title: "Order Created", 
+      icon: <IconNewOrder className="w-5 h-5 text-text-dark" /> 
+    };
+  }
+
+  // 2. Loyalty & Services (Keep your existing logic)
+  if (item.customLabel?.toLowerCase().includes("loyalty") || item.order_number === "CONFIG") {
+    return { title: item.customLabel, icon: <IconLoyalty className="w-5 h-5 text-text-dark" /> };
+  }
+
+  if (["SERVICE", "NEW", "EDITED"].includes(item.order_number)) {
+    return { title: item.customLabel, icon: <IconServices className="w-5 h-5 text-text-dark" /> };
+  }
+
+  // 3. FALLBACK: Any other log that isn't a "creation"
+  return { 
+    title: item.customLabel || "Status Updated", 
+    icon: <IconOrdersList className="w-5 h-5 text-text-dark/50" /> 
+  };
+};
+  
+
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-        <div className="p-1.5 bg-indigo-50 rounded-lg">
-          <IconActivity className="w-5 h-5 text-indigo-600" />
+    <div className="bg-white rounded-2xl border border-app-dark/10 shadow-sm flex flex-col max-h-[450px] min-h-[300px] overflow-hidden">
+      
+      {/* HEADER */}
+      <div className="px-5 py-3.5 border-b border-app-dark/5 flex justify-between items-center bg-white">
+        <div className="flex items-center gap-3 pl-5">
+          <div className="p-1.5 bg-white border border-app-dark/10 rounded-lg text-text-dark shadow-hollow">
+            <IconActivity className="w-5 h-5" />
+          </div>
+          <h2 className="text-base-text font-bold text-text-dark">Recent Activity</h2>
         </div>
-        <h2 className="font-bold text-slate-800 text-[16px]">Recent Activity</h2>
+
+        {activities.length > 0 && (
+          <button 
+            onClick={clearHistory}
+            className="text-micro font-medium text-text-dark/40 hover:text-red-500  active:text-red-500 transition-colors px-2 py-1"
+          >
+            Clear All
+          </button>
+        )}
       </div>
 
-      {/* List Area */}
-      <div className="p-2 flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-3 !pl-5 mb-6 !pr-5 space-y-2.5 custom-scrollbar">
         {activities.length > 0 ? (
-          <div className="space-y-1">
-            {activities.map((order) => {
-              const style = getActivityStyle(order.status);
-              return (
-                <div key={order.id} className="flex items-start gap-3 p-3 hover:bg-slate-50 rounded-xl transition-all group">
-                  <div className={`w-8 h-8 rounded-full border shrink-0 flex items-center justify-center ${style.color}`}>
-                    {style.icon}
+          activities.map((item) => {
+            const config = getActivityConfig(item);
+            
+            return (
+              <div key={item.activity_id} className="flex items-start gap-3.5 group py-1.5">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-white border border-app-dark/10 shadow-hollow">
+                  {config.icon}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap justify-between items-baseline gap-x-2">
+                    <p className="text-sm-text text-text-dark capitalize font-bold truncate max-w-[70%]">
+                      {config.title}
+                    </p>
+                    <p className="text-nano text-text-dark/40 font-bold whitespace-nowrap">
+                      {formatTimeAgo(item.timestamp)}
+                    </p>
                   </div>
                   
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-bold text-slate-900 leading-tight">
-                      {style.text}
+                  <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                    <p className="text-micro text-text-dark/60 uppercase truncate">
+                      {item.customer_name || "System"}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-                      {order.customer_name} • <span className="font-mono">{order.id.split('-')[0]}</span>
-                    </p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1">
-                      {formatTimeAgo(order.updated_date || order.created_date)}
-                    </p>
-                  </div>
-
-                  <div className="text-right shrink-0">
-                    <p className="text-[13px] font-black text-slate-900">
-                      ₱{order.total_amount?.toLocaleString()}
+                    <span className="hidden sm:block w-0.5 h-0.5 rounded-full bg-app-dark/10 shrink-0"></span>
+                    <p className="text-nano text-text-dark border border-app-dark/10 px-1 py-0.5 rounded whitespace-nowrap bg-white/50">
+                      #{item.order_number || "LOG"}
                     </p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-            <IconClock className="w-10 h-10 mb-2 opacity-10" />
-            <p className="text-sm font-medium">No recent activity</p>
+          <div className="h-full flex flex-col items-center justify-center py-20 opacity-20 grayscale">
+            <IconOrdersList className="w-11 h-11 mb-2 text-text-dark" />
+            <p className="text-sm-text text-text-dark  font-medium ">No activity yet</p>
           </div>
         )}
       </div>
