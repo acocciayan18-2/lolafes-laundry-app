@@ -32,10 +32,14 @@ export const useOrderStore = create((set, get) => ({
   isLoading: true,
 
   // --- 1. CENTRALIZED UTILITIES ---
-  parseTimestamp: (ts) => {
-    if (!ts) return null;
-    return ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
-  },
+ parseTimestamp: (ts) => {
+  if (!ts) return null;
+  // Handle ISO strings (which we created in the map above)
+  if (typeof ts === 'string') return new Date(ts);
+  // Handle raw Firestore Timestamps (if called elsewhere)
+  if (ts.seconds) return new Date(ts.seconds * 1000);
+  return new Date(ts);
+},
 
   isOrderStuck: (order) => {
     if (!order || !order.updated_at || order.status === 'picked_up') return false;
@@ -70,14 +74,27 @@ export const useOrderStore = create((set, get) => ({
     
     return onSnapshot(qOrders, (snapshot) => {
       const ordersList = snapshot.docs.map(docSnap => {
-        const data = docSnap.data();
-        return {
-          id: docSnap.id,
-          ...data,
-          created_date: data.created_at?.toDate().toISOString() || new Date().toISOString(),
-          updated_at: data.updated_at?.toDate().toISOString() || null
-        };
-      });
+    const data = docSnap.data();
+    
+    // Helper to safely convert Firestore Timestamps to ISO strings
+    const safeDate = (field) => {
+      if (!field) return null;
+      // If it's a Firestore Timestamp, it has a .toDate() method
+      if (typeof field.toDate === 'function') {
+        return field.toDate().toISOString();
+      }
+      // If it's already a string or Date object
+      return new Date(field).toISOString();
+    };
+
+    return {
+      id: docSnap.id,
+      ...data,
+      created_date: safeDate(data.created_at) || new Date().toISOString(),
+      updated_at: safeDate(data.updated_at),
+      picked_up_at: safeDate(data.picked_up_at) // This will now return null safely if missing
+    };
+  });
 
       // Financials & Volume
       const salesToday = ordersList
@@ -139,22 +156,32 @@ export const useOrderStore = create((set, get) => ({
   },
 
   updateOrderStatus: async (order, newStatus) => {
-    try {
-      const orderRef = doc(db, "orders", order.id); 
-      const updateData = { status: newStatus, updated_at: serverTimestamp() };
+  try {
+    const orderRef = doc(db, "orders", order.id); 
+    
+    // Standard update for all status changes
+    const updateData = { 
+      status: newStatus, 
+      updated_at: serverTimestamp() 
+    };
 
-      if (newStatus === 'picked_up') { 
-        updateData.is_paid = true; 
-        updateData.picked_up_at = new Date().toISOString();
-      }
-
-      await updateDoc(orderRef, updateData);
-    } catch (e) { 
-      console.error("Firebase Update Error:", e);
-      throw e; 
+    // --- ACCURATE HANDOVER LOGIC ---
+    if (newStatus === 'picked_up') { 
+      // 1. Ensure order is marked as paid upon handover
+      updateData.is_paid = true; 
+      
+      // 2. Lock in the handover time using Server Time for 100% accuracy
+      updateData.picked_up_at = serverTimestamp();
+      
+      
     }
-  },
 
+    await updateDoc(orderRef, updateData);
+  } catch (e) { 
+    console.error("Firebase Update Error:", e);
+    throw e; 
+  }
+},
   cancelOrder: async (orderId) => {
     try {
       const orderRef = doc(db, "orders", orderId);

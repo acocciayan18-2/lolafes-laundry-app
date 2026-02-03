@@ -7,7 +7,10 @@ import "../../style/OrderCard.css";
 import {
   IconArrowRight, IconCreditCard, IconGCash, IconInfo, IconMapPin, IconPhone,
   IconShirt, IconStatusCompleted, IconStatusPending, IconStatusPickedUp,
-  IconStatusProcessing, IconStatusReady, IconWallet
+  IconStatusProcessing, IconStatusReady, IconWallet, IconCheck,
+  IconCheckWhite,
+  IconCheckStroke,
+  IconDoubleCheck
 } from "../icons";
 import CancelOrderModal from "./CancelOrderModal";
 
@@ -19,7 +22,6 @@ const statusConfig = {
   picked_up: { banner: "bg-status-picked", theme: "bg-status-picked/10 text-status-picked border border-status-picked", icon: IconStatusPickedUp, label: "Picked Up", nextStatus: null }
 };
 
-// Selection options for the Update dropdown
 const statusOptions = [
   { value: "in_progress", label: "Processing", icon: IconStatusProcessing },
   { value: "ready", label: "Ready", icon: IconStatusReady },
@@ -48,6 +50,12 @@ export default function OrderCard({ order }) {
   const status = statusConfig[order.status] || statusConfig.pending;
   const isStuck = isOrderStuck(order);
   const isLocked = isOrderLocked(order);
+
+  // --- Handover Logic ---
+  const createdDate = parseTimestamp(order.created_at || order.created_date) || new Date();
+  const handoverDate = order.status === 'picked_up' 
+    ? parseTimestamp(order.picked_up_at || order.updated_at) 
+    : null;
 
   const handlePaymentClick = (e) => {
     e.stopPropagation();
@@ -104,10 +112,6 @@ export default function OrderCard({ order }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isOpen, showPaymentPopover]);
 
-  const createdDate = parseTimestamp(order.created_at || order.created_date) || new Date();
-  const dateStamp = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const timeStamp = createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
   return (
     <>
       <div
@@ -125,7 +129,7 @@ export default function OrderCard({ order }) {
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-hollow bg-white">
                   <status.icon className="w-5 h-5" />
                 </div>
-                {isStuck && (
+                {isStuck && order.status !== 'picked_up' && (
                   <span className="absolute -top-1 -right-1 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
@@ -135,12 +139,25 @@ export default function OrderCard({ order }) {
               <div className="min-w-0 flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-text-dark text-sm-text uppercase truncate max-w-[150px]">{order.customer_name}</h3>
-                  <span className="text-nano font-bold text-text-dark/70 uppercase">{dateStamp} | {timeStamp}</span>
+                  <span className="text-nano font-bold text-text-dark/50 uppercase  px-1.5 py-0.5 rounded">
+                   {createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} | {createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-nano font-bold px-2 py-0.5 rounded border bg-white/50">#{order.order_number}</span>
                   <span className={`text-nano font-bold uppercase px-2 py-0.5 rounded border ${status.theme}`}>{status.label}</span>
-                  {isStuck && <span className="text-nano font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100 uppercase">Stuck</span>}
+                  
+                  {/* Accurate Handover Badge */}
+                  {handoverDate && (
+                    <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md animate-in fade-in slide-in-from-left-2 duration-500">
+                      <IconDoubleCheck className="w-3 h-3 text-green-700 stroke-green-700" />
+                      <span className="text-nano font-bold uppercase">
+                        {handoverDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} | {handoverDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  )}
+
+                  {isStuck && order.status !== 'picked_up' && <span className="text-nano font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100 uppercase">Stuck</span>}
                 </div>
               </div>
             </div>
@@ -171,7 +188,6 @@ export default function OrderCard({ order }) {
                 </AnimatePresence>
               </div>
 
-              {/* Status Update Section */}
               <div className="flex items-center gap-1.5" ref={dropdownRef}>
                 <div className="relative">
                   <button 
@@ -218,30 +234,76 @@ export default function OrderCard({ order }) {
           </div>
 
           <AnimatePresence>
-            {isExpanded && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="px-4 mb-4 overflow-hidden">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-100 pt-4">
-                  <div className="space-y-2">
-                    <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5"><IconShirt className="w-3.5 h-3.5" /> Services</h4>
-                    <div className="flex flex-wrap gap-1.5">{order.services?.map((s, idx) => (<div key={idx} className="bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-lg flex items-center"><span className="text-sm-text font-medium text-text-dark">{s.service_name}</span><span className="ml-2 text-micro font-black text-btn-primary">x{s.quantity || s.weight_kg}</span></div>))}</div>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5"><IconInfo className="w-3.5 h-3.5" /> Contact Details</h4>
-                    <div className="space-y-1.5 text-sm-text font-medium text-text-dark"><div className="flex items-center gap-2"><IconPhone className="w-3.5 h-3.5 opacity-60" /> {order.customer_phone || "No phone"}</div>{order.customer_address && <div className="flex items-start gap-2"><IconMapPin className="w-3.5 h-3.5 mt-0.5 opacity-60" /> {order.customer_address}</div>}</div>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-micro font-bold text-text-dark/50 uppercase">Notes</h4>
-                    <p className="text-sm-text font-medium text-amber-700 leading-snug italic bg-amber-50/50 p-2 rounded-lg border border-amber-100/50">{order.special_instructions || order.notes || "No notes provided."}</p>
-                  </div>
-                </div>
-                {order.status === 'pending' && (
-                  <div className="mt-6 flex justify-end">
-                    <button onClick={(e) => { e.stopPropagation(); setShowCancelModal(true); }} className="flex items-center gap-1.5 px-4 py-2 text-micro font-bold text-red-500 hover:bg-red-50 rounded-xl border border-red-100 transition-all ">Cancel Order</button>
-                  </div>
-                )}
-              </motion.div>
+  {isExpanded && (
+    <motion.div 
+      initial={{ height: 0, opacity: 0 }} 
+      animate={{ height: "auto", opacity: 1 }} 
+      exit={{ height: 0, opacity: 0 }} 
+      className="px-4 mb-4 overflow-hidden"
+    >
+      {/* 3 Columns on Laptop (md and up), 1 Column on CP */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-100 pt-4">
+        
+        {/* Column 1: Services */}
+        <div className="space-y-2">
+          <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5">
+            <IconShirt className="w-3.5 h-3.5" /> Services
+          </h4>
+          <div className="flex flex-wrap gap-1.5">
+            {order.services?.map((s, idx) => (
+              <div key={idx} className="bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-lg flex items-center">
+                <span className="text-sm-text font-medium text-text-dark">{s.service_name}</span>
+                <span className="ml-2 text-micro font-black text-btn-primary">x{s.quantity || s.weight_kg}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Column 2: Contact Details */}
+        <div className="space-y-2">
+          <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5">
+            <IconInfo className="w-3.5 h-3.5" /> Contact Details
+          </h4>
+          <div className="space-y-1.5 text-sm-text font-medium text-text-dark">
+            <div className="flex items-center gap-2">
+              <IconPhone className="w-3.5 h-3.5 opacity-60" /> 
+              {order.customer_phone || "No phone"}
+            </div>
+            {order.customer_address && (
+              <div className="flex items-start gap-2">
+                <IconMapPin className="w-3.5 h-3.5 mt-0.5 opacity-60" /> 
+                <span className="break-words">{order.customer_address}</span>
+              </div>
             )}
-          </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Column 3: Notes & Action */}
+        <div className="flex flex-col justify-between space-y-4">
+          <div className="space-y-2">
+            <h4 className="text-micro font-bold text-text-dark/50 uppercase">Notes</h4>
+            <p className="text-sm-text font-medium text-amber-700 leading-snug italic bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/50">
+              {order.special_instructions || order.notes || "No notes provided."}
+            </p>
+          </div>
+
+          {/* Cancel button stays at the bottom of the 3rd column */}
+          {order.status === 'pending' && (
+            <div className="flex justify-end pt-2">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowCancelModal(true); }} 
+                className="flex items-center gap-1.5 px-4 py-2 text-micro font-bold text-red-500 hover:bg-red-50 rounded-xl border border-red-100 transition-all active:scale-95"
+              >
+                Cancel Order
+              </button>
+            </div>
+          )}
+        </div>
+
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
         </div>
       </div>
       <CancelOrderModal isOpen={showCancelModal} onClose={() => setShowCancelModal(false)} onConfirm={handleConfirmCancel} orderNumber={order.order_number} />

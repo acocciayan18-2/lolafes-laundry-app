@@ -15,7 +15,7 @@ export default function ExportOrdersButton() {
       // Flatten the order objects for Excel compatibility
       const dataForExcel = orders.map(order => ({
         "Order Number": `#${order.order_number}`,
-        "Date": new Date(order.created_at).toLocaleDateString(),
+        "Date Created": new Date(order.created_at).toLocaleDateString(),
         "Customer Name": order.customer_name?.toUpperCase(),
         "Phone": order.customer_phone || "N/A",
         "Address": order.customer_address || "N/A",
@@ -24,7 +24,16 @@ export default function ExportOrdersButton() {
         "Total Amount": Number(order.total_amount || 0),
         "Payment Status": order.is_paid ? "PAID" : "UNPAID",
         "Payment Method": order.payment_method || "N/A",
-        
+        // --- ADDED PICKED UP DATE LOGIC ---
+        "Picked Up Date": order.picked_up_at 
+          ? new Date(order.picked_up_at).toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            }) 
+          : "PENDING PICKUP"
       }));
 
       await exportToExcel(dataForExcel, "Lola_Fe's_Laundry_Reports");
@@ -43,7 +52,7 @@ export default function ExportOrdersButton() {
         flex items-center gap-2 px-3 h-9 mt-1 border rounded-xl font-medium text-micro shadow-md transition-all active:scale-95
         ${isExporting 
           ? 'bg-slate-100 text-text-dark cursor-not-allowed' 
-          : 'text-text-dark  active:scale-95'
+          : 'text-text-dark active:scale-95'
         }
       `}
     >
