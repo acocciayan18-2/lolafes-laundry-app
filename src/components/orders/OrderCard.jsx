@@ -5,12 +5,11 @@ import { useOrderStore } from "../../store/orders/useOrderStore";
 import { useNotificationStore } from "../../store/ui/useNotificationStore";
 import "../../style/OrderCard.css";
 import {
-  IconArrowRight, IconCreditCard, IconGCash, IconInfo, IconMapPin, IconPhone,
+  IconArrowRight, IconCreditCard,
+  IconDoubleCheck,
+  IconGCash, IconInfo, IconMapPin, IconPhone,
   IconShirt, IconStatusCompleted, IconStatusPending, IconStatusPickedUp,
-  IconStatusProcessing, IconStatusReady, IconWallet, IconCheck,
-  IconCheckWhite,
-  IconCheckStroke,
-  IconDoubleCheck
+  IconStatusProcessing, IconStatusReady, IconWallet
 } from "../icons";
 import CancelOrderModal from "./CancelOrderModal";
 
