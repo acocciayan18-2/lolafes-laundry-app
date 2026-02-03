@@ -1,0 +1,102 @@
+import { useRef, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+
+// --- IMPORTS ---
+import Sidebar from "../components/Sidebar";
+import { NetworkToast } from "../components/NetworkToast";
+import "../style/index.css";
+import "../style/main-app.css";
+
+// --- PAGES ---
+import Customers from "./Customers";
+import Dashboard from "./Dashboard";
+import NewOrder from "./NewOrder";
+import Orders from "./Orders";
+import Reports from "./Reports";
+import Services from "./Services";
+import Settings from "./Settings";
+
+export default function MainApp() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showHeader, setShowHeader] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const scrollContainerRef = useRef(null);
+
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const currentScrollY = scrollContainerRef.current.scrollTop;
+
+    if (currentScrollY < lastScrollY) {
+      setShowHeader(true);
+    } else if (currentScrollY > lastScrollY && currentScrollY > 50) {
+      setShowHeader(false);
+    }
+    setLastScrollY(currentScrollY);
+  };
+
+  return (
+    <div className="flex h-[100dvh] w-full bg-app-light mainapp-con relative overflow-hidden">
+      
+      {/* 1. NETWORK TOAST (Imported) */}
+      <NetworkToast />
+
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+
+      {/* Glass Overlay */}
+      <div 
+        className={`fixed inset-0 z-[45] transition-all duration-300 lg:hidden ${
+          isSidebarOpen 
+            ? "bg-white/30 backdrop-blur-[0px] visible opacity-100" 
+            : "bg-transparent backdrop-blur-0 invisible opacity-0"
+        }`}
+        onClick={() => setIsSidebarOpen(false)}
+      />
+
+      <div className="flex-1 flex flex-col min-w-0 h-full relative">
+         <header 
+          className={`lg:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-app-light border-b border-gray-100 shadow-sm z-40 transition-transform duration-300 ${
+            showHeader ? "translate-y-0" : "-translate-y-full"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 bg-app-dark rounded-xl flex items-center justify-center shadow-md">
+                <img src="/images/lolafeslaundry-logo-transparent.png" alt="Logo" className="w-7 h-7 object-contain" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-text-dark text-sm leading-none ">Lola Fe's Laundry</span>
+              <span className="text-[11px] text-text-dark/90 font-medium">Laundry Shop</span>
+            </div>
+          </div>
+          
+          <button 
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
+            </svg>
+          </button>
+        </header>
+
+        <main 
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className={`flex-1 overflow-y-auto no-scrollbar bg-app-light pt-16 lg:pt-0 h-full transition-all duration-300 ${
+            isSidebarOpen && "scale-[0.98] origin-right"
+          }`}
+        >
+          <Routes>
+            <Route path="/" element={<Navigate to="/main/dashboard" replace />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/neworder" element={<NewOrder />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/services" element={<Services />} />
+             <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </main>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,22 @@
+name: Android CI  # Change this based on your project type
+
+on:
+  push:
+    branches: [ "Karen" ]
+  pull_request:
+    branches: [ "Karen" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug
