@@ -49,16 +49,22 @@ export default function Reports() {
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
 //Tour Logic 
-    useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    if (searchParams.get('tour') === 'active' && !isLoading) {
-      const timer = setTimeout(() => {
-        // Dash: 0 | Orders: 6 | Cust: 8 | Serv: 10 | Rep: 12
-        startGlobalTour(navigate, null, 17); 
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [location.search, isLoading, navigate]);
+useEffect(() => {
+  const searchParams = new URLSearchParams(location.search);
+  const isTourActive = searchParams.get('tour') === 'active';
+  
+  // Also check if the store is still loading
+  if (isTourActive && !isLoading) {
+    // INCREASE the timeout. 400ms is often too fast for 
+    // Framer Motion + Firebase data fetching.
+    const timer = setTimeout(() => {
+      console.log("Tour Triggered!"); // Check your console to see if this fires
+      startGlobalTour(navigate);
+    }, 1200); 
+
+    return () => clearTimeout(timer);
+  }
+}, [location.search, isLoading]); // Added isLoading as a dependency
   
 
   useEffect(() => {

@@ -44,20 +44,24 @@ export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
-  // 4. TOUR RECEIVER LOGIC
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    // Runs if URL has ?tour=active OR if no tour has ever been completed
-    const hasCompletedTour = localStorage.getItem('lola_tour_done');
-    
-    if ((searchParams.get('tour') === 'active' || !hasCompletedTour) && !isLoading) {
-      const timer = setTimeout(() => {
-        // Start from index 0 for Dashboard
-        startGlobalTour(navigate, null, 0); 
-      }, 1200); // 1.2s delay to allow Framer Motion animations to settle
-      return () => clearTimeout(timer);
-    }
-  }, [location.search, isLoading, navigate]);
+  //Tour Logic 
+
+ useEffect(() => {
+  const searchParams = new URLSearchParams(location.search);
+  const isTourActive = searchParams.get('tour') === 'active';
+  
+  // Also check if the store is still loading
+  if (isTourActive && !isLoading) {
+    // INCREASE the timeout. 400ms is often too fast for 
+    // Framer Motion + Firebase data fetching.
+    const timer = setTimeout(() => {
+      console.log("Tour Triggered!"); // Check your console to see if this fires
+      startGlobalTour(navigate);
+    }, 1200); 
+
+    return () => clearTimeout(timer);
+  }
+}, [location.search, isLoading]); // Added isLoading as a dependency
 
   // 5. FIREBASE SUBSCRIPTION
   useEffect(() => {

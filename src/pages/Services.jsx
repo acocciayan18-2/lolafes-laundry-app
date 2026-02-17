@@ -57,17 +57,23 @@ export default function Services() {
  
   const { services, isLoading, addService, updateService, subscribeToServices, deleteServiceSafe } = useServiceStore();
   const logActivity = useActivityStore((state) => state.logActivity);
-
-    useEffect(() => {
+//Tour Logic
+ useEffect(() => {
   const searchParams = new URLSearchParams(location.search);
-  if (searchParams.get('tour') === 'active' && !isLoading) {
+  const isTourActive = searchParams.get('tour') === 'active';
+  
+  // Also check if the store is still loading
+  if (isTourActive && !isLoading) {
+    // INCREASE the timeout. 400ms is often too fast for 
+    // Framer Motion + Firebase data fetching.
     const timer = setTimeout(() => {
-      // Dash: 0 | Orders: 6 | Cust: 8 | Serv: 10 | Rep: 12
-    startGlobalTour(navigate, null, 17);   
-   }, 1000);
+      console.log("Tour Triggered!"); // Check your console to see if this fires
+      startGlobalTour(navigate);
+    }, 1200); 
+
     return () => clearTimeout(timer);
   }
-}, [location.search, isLoading, navigate]);
+}, [location.search, isLoading]); // Added isLoading as a dependency
 
 
   const [editingId, setEditingId] = useState(null);

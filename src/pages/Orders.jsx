@@ -48,18 +48,22 @@ export default function Orders() {
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
   // 4. TOUR RECEIVER LOGIC
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    
-    // We only trigger if the URL has ?tour=active and data has finished loading
-    if (searchParams.get('tour') === 'active' && !isLoading) {
-      const timer = setTimeout(() => {
-        // Start Global Tour at Index 10 (based on your updated globalTours.js)
-        startGlobalTour(navigate, null, 10); 
-      }, 1200); // 1.2s delay to wait for animations and DOM settling
-      return () => clearTimeout(timer);
-    }
-  }, [location.search, isLoading, navigate]);
+ useEffect(() => {
+  const searchParams = new URLSearchParams(location.search);
+  const isTourActive = searchParams.get('tour') === 'active';
+  
+  // Also check if the store is still loading
+  if (isTourActive && !isLoading) {
+    // INCREASE the timeout. 400ms is often too fast for 
+    // Framer Motion + Firebase data fetching.
+    const timer = setTimeout(() => {
+      console.log("Tour Triggered!"); // Check your console to see if this fires
+      startGlobalTour(navigate);
+    }, 1200); 
+
+    return () => clearTimeout(timer);
+  }
+}, [location.search, isLoading]); // Added isLoading as a dependency
 
   // 5. FIREBASE SUBSCRIPTION
   useEffect(() => {

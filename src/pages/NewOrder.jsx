@@ -109,19 +109,26 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
 
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
+//Tour
   useEffect(() => {
-  const searchParams = new URLSearchParams(location.search);
-  if (searchParams.get('tour') === 'active' && !isLoading) {
-    // UNIQUE: We trigger the reveal state specifically for this page
-    setForceReveal(true); 
+  // We check if this specific page's tour has been done
+  // Using a unique key for each page like 'tour_dashboard_done'
+  const pageKey = location.pathname.split('/').pop() || 'dashboard';
+  const hasDoneThisPage = localStorage.getItem(`tour_${pageKey}_done`);
 
+  if (!hasDoneThisPage) {
     const timer = setTimeout(() => {
-      // Start at index 3 for New Order
-      startGlobalTour(navigate, setForceReveal, 3); 
-    }, 1000);
+      startGlobalTour(); 
+      setForceReveal(true); 
+      // Mark this specific page as done so it doesn't pop up every time
+      localStorage.setItem(`tour_${pageKey}_done`, 'true');
+    }, 1000); 
+    
     return () => clearTimeout(timer);
   }
-}, [location.search, isLoading, navigate]);
+}, [location.pathname]);
+
+ 
 
   // States
   const [isProcessing, setIsProcessing] = useState(false);
