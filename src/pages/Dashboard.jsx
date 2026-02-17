@@ -1,6 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+// Store & Tour Imports
 import { useOrderStore } from '../store/orders/useOrderStore';
+import { startGlobalTour } from '../tours/globalTours';
 
 // Component Imports
 import CompactIntelligence from '../components/dashboard/CompactIntelligence';
@@ -29,31 +33,49 @@ const isSameDay = (d1, d2) => {
 };
 
 export default function Dashboard() {
+  // 1. ROUTING HOOKS
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // 2. STORE DATA (Initialized before the useEffect to avoid ReferenceErrors)
   const { orders, isLoading, subscribeToOrders } = useOrderStore();
-  const [currentTime, setCurrentTime] = useState(new Date());
   
-  // State to control the delayed visibility of the skeleton
+  // 3. LOCAL STATE
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
-  // 1. Firebase Subscription
+  // 4. TOUR RECEIVER LOGIC
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    // Runs if URL has ?tour=active OR if no tour has ever been completed
+    const hasCompletedTour = localStorage.getItem('lola_tour_done');
+    
+    if ((searchParams.get('tour') === 'active' || !hasCompletedTour) && !isLoading) {
+      const timer = setTimeout(() => {
+        // Start from index 0 for Dashboard
+        startGlobalTour(navigate, null, 0); 
+      }, 1200); // 1.2s delay to allow Framer Motion animations to settle
+      return () => clearTimeout(timer);
+    }
+  }, [location.search, isLoading, navigate]);
+
+  // 5. FIREBASE SUBSCRIPTION
   useEffect(() => {
     const unsubscribe = subscribeToOrders();
     return () => unsubscribe && unsubscribe();
   }, [subscribeToOrders]);
 
-  // 2. Clock Timer
+  // 6. CLOCK TIMER
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // 3. SKELETON DELAY LOGIC (0.5s)
+  // 7. SKELETON DELAY LOGIC (400ms)
   useEffect(() => {
     let timer;
     if (isLoading) {
-      timer = setTimeout(() => {
-        setShouldShowSkeleton(true);
-      }, 400);
+      timer = setTimeout(() => setShouldShowSkeleton(true), 400);
     } else {
       setShouldShowSkeleton(false);
     }
@@ -77,14 +99,12 @@ export default function Dashboard() {
 
   // --- RENDERING LOGIC ---
 
-  // Loading state with debounce
   if (isLoading && shouldShowSkeleton) {
     return <DashboardSkeleton />;
   }
 
-  // Prevents "flicker" on fast connections
   if (isLoading && !shouldShowSkeleton) {
-    return null;
+    return null; 
   }
 
   return (
@@ -101,30 +121,26 @@ export default function Dashboard() {
             {/* --- 1. HEADER & ACTIONS --- */}
             <motion.div variants={itemVariants} className="flex flex-row justify-between gap-6">
               <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-text-dark capitalize">
-                    {greeting}
-                  </h1>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between text-white py-0.5 gap-2">
-                    <p className="text-text-dark text-[12px] font-medium ">
-                      {currentTime.toLocaleDateString('en-US', { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })}
-                    </p>
-                    <span className='opacity-60 text-text-dark text-[13px]'> | </span>
-                    <span className="text-text-dark text-[12px] font-medium">
-                      {currentTime.toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        hour12: true 
-                      }).toUpperCase()}
-                    </span>
-                  </div>
+                <h1 className="text-2xl font-bold text-text-dark capitalize">
+                  {greeting}
+                </h1>
+                <div className="flex items-center text-white py-0.5 gap-2">
+                  <p className="text-text-dark text-[12px] font-medium ">
+                    {currentTime.toLocaleDateString('en-US', { 
+                      weekday: 'short', 
+                      month: 'short', 
+                      day: 'numeric', 
+                      year: 'numeric' 
+                    })}
+                  </p>
+                  <span className='opacity-60 text-text-dark text-[13px]'> | </span>
+                  <span className="text-text-dark text-[12px] font-medium">
+                    {currentTime.toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit', 
+                      hour12: true 
+                    }).toUpperCase()}
+                  </span>
                 </div>
               </div>
               <div id="step-actions">
@@ -139,10 +155,10 @@ export default function Dashboard() {
 
             {/* --- 3. QUICK STATS --- */}
             <motion.div variants={itemVariants} id="step-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <QuickStats title="Today's Sales" value={`₱${todayRevenue.toLocaleString()}`} icon={<IconTrendingUp />} bgColor="from-emerald-400 to-green-500 shadow-emerald-200" trend={`${todayOrders.length} orders`} />
-              <QuickStats title="Pending" value={pendingOrders} icon={<IconClock />} bgColor="from-amber-400 to-orange-500 shadow-orange-200" trend="Needs attention" />
-              <QuickStats title="In Progress" value={inProgress} icon={<IconPackage />} bgColor="from-blue-400 to-indigo-500 shadow-blue-200" trend="Being washed"/>
-              <QuickStats title="Ready" value={readyOrders} icon={<IconCheckCircle />} bgColor="from-purple-400 to-pink-500 shadow-purple-200" trend="Notify users"/>
+              <QuickStats title="Today's Sales" value={`₱${todayRevenue.toLocaleString()}`} icon={<IconTrendingUp />} trend={`${todayOrders.length} orders`} />
+              <QuickStats title="Pending" value={pendingOrders} icon={<IconClock />} trend="Needs attention" />
+              <QuickStats title="In Progress" value={inProgress} icon={<IconPackage />} trend="Being washed"/>
+              <QuickStats title="Ready" value={readyOrders} icon={<IconCheckCircle />} trend="Notify users"/>
             </motion.div>
 
             {/* --- 4. DATA GRIDS --- */}

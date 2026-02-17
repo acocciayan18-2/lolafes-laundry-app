@@ -10,6 +10,11 @@ import SalesPerformance from "../components/reports/SalesPerformance";
 import TopCustomers from "../components/reports/TopCustomers";
 import { ReportsSkeleton } from "../components/skeleton-loader";
 
+//TOUR
+import { useLocation, useNavigate } from 'react-router-dom';
+import { startGlobalTour } from '../tours/globalTours';
+
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -31,6 +36,10 @@ const itemVariants = {
 };
 
 export default function Reports() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+
   const { subscribeToReports, isLoading } = useReportStore();
   
   const [dateRange] = useState("7"); 
@@ -38,6 +47,19 @@ export default function Reports() {
   
   // NEW: State to control delayed skeleton visibility
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
+
+//Tour Logic 
+    useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('tour') === 'active' && !isLoading) {
+      const timer = setTimeout(() => {
+        // Dash: 0 | Orders: 6 | Cust: 8 | Serv: 10 | Rep: 12
+        startGlobalTour(navigate, null, 17); 
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.search, isLoading, navigate]);
+  
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -112,7 +134,7 @@ export default function Reports() {
           className="grid grid-cols-1 lg:grid-cols-4 gap-4"
           variants={containerVariants}
         >
-          <motion.div variants={itemVariants} className="lg:col-span-4">
+          <motion.div id="step-reports-kpi"  variants={itemVariants} className="lg:col-span-4">
             <KpiCards range={dateRange} />
           </motion.div>
 
@@ -128,7 +150,7 @@ export default function Reports() {
             <CustomerMix range={dateRange} />
           </motion.div>
 
-          <motion.div variants={itemVariants} className="lg:col-span-2">
+          <motion.div id="step-reports-top" variants={itemVariants} className="lg:col-span-2">
             <TopCustomers range={dateRange} />
           </motion.div>
         </motion.div>

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom"; // Added routing hooks
 import Sidebar from "../components/Sidebar";
 import "../style/index.css";
 import "../style/main-app.css";
@@ -11,10 +11,22 @@ import Reports from "./Reports";
 import Services from "./Services";
 
 export default function MainApp() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const scrollContainerRef = useRef(null);
+
+  // --- TOUR TRIGGER LOGIC ---
+  const handleStartTour = () => {
+    // We clear the 'done' flag so the tour can restart
+    localStorage.removeItem('lola_tour_done');
+    
+    // Navigate to the current path but add the tour trigger
+    // This works regardless of which page you are currently on!
+    navigate(`${location.pathname}?tour=active`);
+  };
 
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
@@ -28,10 +40,9 @@ export default function MainApp() {
     setLastScrollY(currentScrollY);
   };
 
- return (
+  return (
     <div className="flex h-[100dvh] w-full bg-app-light mainapp-con relative overflow-hidden">
       
-      {/* Sidebar now uses h-full to match this 100dvh container */}
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
       {/* Glass Overlay */}
@@ -47,8 +58,8 @@ export default function MainApp() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
         
-        {/* Header - Fixed but inside the flex-col */}
-         <header 
+        {/* Mobile Header */}
+        <header 
           className={`lg:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-app-light border-b border-gray-100 shadow-sm z-40 transition-transform duration-300 ${
             showHeader ? "translate-y-0" : "-translate-y-full"
           }`}
@@ -73,7 +84,7 @@ export default function MainApp() {
           </button>
         </header>
 
-        {/* Scrollable area - h-full ensures it doesn't slide under browser tabs */}
+        {/* Scrollable area */}
         <main 
           ref={scrollContainerRef}
           onScroll={handleScroll}
@@ -91,14 +102,24 @@ export default function MainApp() {
             <Route path="/services" element={<Services />} />
           </Routes>
         </main>
+
+        {/* --- FLOATING HELP BUTTON --- */}
+        <button
+          onClick={handleStartTour}
+          className="fixed bottom-6 right-6 z-[100] group flex items-center gap-2 bg-app-dark text-white p-3 md:px-4 md:py-3 rounded-2xl shadow-2xl hover:bg-slate-800 active:scale-95 transition-all duration-300 border border-white/10"
+          title="Start App Tour"
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="w-6 h-6 text-emerald-400 group-hover:rotate-12 transition-transform" 
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span className="hidden md:block font-bold text-sm">Need Help?</span>
+        </button>
+
       </div>
     </div>
   );
-
 }
-
-
-
-
-
-

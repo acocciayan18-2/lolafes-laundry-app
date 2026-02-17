@@ -7,6 +7,11 @@ import { ServicesSkeleton } from "../components/skeleton-loader";
 import { useActivityStore } from "../store/activities/useActivityStore";
 import { useServiceStore } from "../store/services/useServiceStore";
 
+//TOUR
+import { useLocation, useNavigate } from 'react-router-dom';
+import { startGlobalTour } from '../tours/globalTours';
+
+
 // 1. IMPORT THE POPUP COMPONENT
 import { LoginPopup } from "../modal/LoginPopup"; 
 
@@ -45,8 +50,25 @@ export const Badge = ({ children, className }) => (
 );
 
 export default function Services() {
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+ 
   const { services, isLoading, addService, updateService, subscribeToServices, deleteServiceSafe } = useServiceStore();
   const logActivity = useActivityStore((state) => state.logActivity);
+
+    useEffect(() => {
+  const searchParams = new URLSearchParams(location.search);
+  if (searchParams.get('tour') === 'active' && !isLoading) {
+    const timer = setTimeout(() => {
+      // Dash: 0 | Orders: 6 | Cust: 8 | Serv: 10 | Rep: 12
+    startGlobalTour(navigate, null, 17);   
+   }, 1000);
+    return () => clearTimeout(timer);
+  }
+}, [location.search, isLoading, navigate]);
+
 
   const [editingId, setEditingId] = useState(null);
   const [tempData, setTempData] = useState(null);
@@ -154,7 +176,7 @@ export default function Services() {
             <h1 className="text-h2 font-bold text-text-dark">Services</h1>
             <p className="text-sm-text text-gray-600 mt-0.5">Manage your shop's offering</p>
           </div>
-          <button 
+          <button id="step-add-service" 
             onClick={addNewService} 
             className="group flex items-center justify-center w-9 shadow-md h-9 hover:bg-app-dark/5 bg-white rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200"
             title="Add Service"
@@ -196,7 +218,7 @@ export default function Services() {
             )}
           </AnimatePresence>
 
-          <div className="relative z-[40] mb-3">
+          <div id="step-loyalty-config" className="relative z-[40] mb-3">
             <LoyaltySettings />
           </div>
 

@@ -1,7 +1,6 @@
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { IconTrash } from "../components/icons";
 import { CustomerForm } from "../components/orders/CustomerForm";
 import { LoyaltyStatus } from "../components/orders/LoyaltyStatus";
@@ -14,7 +13,10 @@ import { useNewOrderStore } from "../store/new-order/useNewOrderStore";
 import { useLoyaltyStore } from "../store/services/useLoyaltyStore";
 import { useServiceStore } from "../store/services/useServiceStore";
 import { useNotificationStore } from "../store/ui/useNotificationStore";
-import { startGlobalTour } from "../tours/globalTours";
+
+//TOUR
+import { useLocation, useNavigate } from 'react-router-dom';
+import { startGlobalTour } from '../tours/globalTours';
 
 import { NewOrderSkeleton } from "../components/skeleton-loader";
 
@@ -91,6 +93,8 @@ export default function NewOrder() {
   const location = useLocation();
   const navigate = useNavigate();
 
+ 
+
   // Stores
   // const checkPhoneExists = useCustomerStore((state) => state.checkPhoneExists);
   const customers = useCustomerStore((state) => state.customers);
@@ -104,6 +108,20 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
 
 
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
+
+  useEffect(() => {
+  const searchParams = new URLSearchParams(location.search);
+  if (searchParams.get('tour') === 'active' && !isLoading) {
+    // UNIQUE: We trigger the reveal state specifically for this page
+    setForceReveal(true); 
+
+    const timer = setTimeout(() => {
+      // Start at index 3 for New Order
+      startGlobalTour(navigate, setForceReveal, 3); 
+    }, 1000);
+    return () => clearTimeout(timer);
+  }
+}, [location.search, isLoading, navigate]);
 
   // States
   const [isProcessing, setIsProcessing] = useState(false);

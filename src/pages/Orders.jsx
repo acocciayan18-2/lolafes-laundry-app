@@ -1,12 +1,15 @@
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom"; // Added routing hooks
 import { IconAddNewOrder, IconSearch, IconShirt } from "../components/icons";
 import OrderCard from "../components/orders/OrderCard";
 import OrderFilters from "../components/orders/OrderFilters";
 import { useActivityStore } from "../store/activities/useActivityStore";
 import { useOrderStore } from "../store/orders/useOrderStore";
 import { OrderListSkeleton } from "../components/skeleton-loader";
+
+// TOUR
+import { startGlobalTour } from '../tours/globalTours';
 
 const SPRING_TRANSITION = {
   type: "spring",
@@ -29,24 +32,42 @@ const Input = ({ className, ...props }) => (
 );
 
 export default function Orders() {
+  // 1. ROUTING HOOKS
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // 2. INITIALIZE STORE DATA (Crucial: Define isLoading before using it in Effects)
   const { orders, isLoading, subscribeToOrders, updateOrderStatus } = useOrderStore();
   const logActivity = useActivityStore((state) => state.logActivity);
-  
+
+  // 3. LOCAL STATE
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("today");
-
-  // Logic to control the delayed visibility of the skeleton
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
-  // 1. Firebase Subscription
+  // 4. TOUR RECEIVER LOGIC
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    
+    // We only trigger if the URL has ?tour=active and data has finished loading
+    if (searchParams.get('tour') === 'active' && !isLoading) {
+      const timer = setTimeout(() => {
+        // Start Global Tour at Index 10 (based on your updated globalTours.js)
+        startGlobalTour(navigate, null, 10); 
+      }, 1200); // 1.2s delay to wait for animations and DOM settling
+      return () => clearTimeout(timer);
+    }
+  }, [location.search, isLoading, navigate]);
+
+  // 5. FIREBASE SUBSCRIPTION
   useEffect(() => {
     const unsubscribe = subscribeToOrders();
     return () => unsubscribe(); 
   }, [subscribeToOrders]);
 
-  // 2. SKELETON DELAY LOGIC (0.5s)
+  // 6. SKELETON DELAY LOGIC
   useEffect(() => {
     let timer;
     if (isLoading) {
@@ -59,7 +80,7 @@ export default function Orders() {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  // 3. Global Search Keydown Handler
+  // 7. GLOBAL SEARCH KEYDOWN HANDLER
   useEffect(() => {
     const handleGlobalSearchFocus = (e) => {
       const activeElement = document.activeElement;
@@ -84,6 +105,7 @@ export default function Orders() {
     return () => window.removeEventListener("keydown", handleGlobalSearchFocus);
   }, [setSearchTerm]);
 
+  // --- HANDLERS ---
   const handleStatusUpdate = useCallback(async (orderId, newStatus) => {
     try {
       const orderToLog = orders.find(o => o.id === orderId);
@@ -145,13 +167,12 @@ export default function Orders() {
   }, [filterOrders]);
 
   // --- RENDERING LOGIC ---
-
   if (isLoading && shouldShowSkeleton) {
     return <OrderListSkeleton />;
   }
 
   if (isLoading && !shouldShowSkeleton) {
-    return null; // Prevents the flicker on fast loads
+    return null;
   }
 
   return (
@@ -180,7 +201,7 @@ export default function Orders() {
           </motion.div>
 
           <motion.div layout className="flex flex-col lg:flex-row gap-2 mb-3">
-            <div className="relative w-full lg:flex-1">
+            <div id="step-search" className="relative w-full lg:flex-1">
               <IconSearch className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10" />
               <Input
                 placeholder="Search name, phone, address, or order #..."
@@ -189,10 +210,12 @@ export default function Orders() {
                 className="!pl-10 bg-white/80 border-slate-200"
               />
             </div>
-            <OrderFilters 
-              statusFilter={statusFilter} setStatusFilter={setStatusFilter}
-              dateFilter={dateFilter} setDateFilter={setDateFilter}
-            />
+            <div id="step-filters">
+              <OrderFilters 
+                statusFilter={statusFilter} setStatusFilter={setStatusFilter}
+                dateFilter={dateFilter} setDateFilter={setDateFilter}
+              />
+            </div>
           </motion.div>
 
           <motion.div layout className="flex flex-col overflow-visible">

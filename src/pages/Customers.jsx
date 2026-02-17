@@ -6,6 +6,11 @@ import { IconSearch, IconUsers } from "../components/icons";
 import { useCustomerStore } from "../store/customer/useCustomerStore";
 import { CustomerListSkeleton } from "../components/skeleton-loader";
 
+//TOUR
+import { useLocation, useNavigate } from 'react-router-dom';
+import { startGlobalTour } from '../tours/globalTours';
+
+
 const SMOOTH_TRANSITION = {
   type: "spring",
   stiffness: 300,
@@ -22,11 +27,29 @@ const Input = ({ className, ...props }) => (
 );
 
 export default function Customers() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+
+
+
   const { customers, isLoading, subscribeToCustomers } = useCustomerStore();
   const [searchTerm, setSearchTerm] = useState("");
   
   // New state to control the delayed visibility of the skeleton
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
+
+  //Tour logic 
+     useEffect(() => {
+  const searchParams = new URLSearchParams(location.search);
+  if (searchParams.get('tour') === 'active' && !isLoading) {
+    const timer = setTimeout(() => {
+      // Dash: 0 | Orders: 6 | Cust: 8 | Serv: 10 | Rep: 12
+      startGlobalTour(navigate, null, 8); 
+    }, 1000);
+    return () => clearTimeout(timer);
+  }
+}, [location.search, isLoading, navigate]);
 
   // 1. Handle Firebase Subscription
   useEffect(() => {
@@ -108,7 +131,7 @@ export default function Customers() {
         </div>
 
         {/* Search */}
-        <div className="relative w-full mb-3">
+        <div id="step-cust-search" className="relative w-full mb-3">
           <IconSearch className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
           <Input
             id="customer-search-input"
@@ -120,7 +143,9 @@ export default function Customers() {
         </div>
 
         {/* Stats */}
+        <div id="step-cust-stats">
         <CustomerStats customers={customers} />
+        </div>
 
         <LayoutGroup>
           <div className="grid">

@@ -36,23 +36,24 @@ export const OrderSummary = ({
   const dropdownRef = useRef(null);
   const [dropdownDirection, setDropdownDirection] = useState("bottom");
 
-
-// NEW: Validation check
-const isOrderInvalid = 
-  isProcessing || 
-  selectedServices.length === 0 || 
-  !customer.name; // Checks if a customer is selected
+  // --- LOGIC: Validation check ---
+  const isPhoneValid = customer?.phone?.length === 11 && customer?.phone?.startsWith("09");
+  
+  const isOrderInvalid = 
+    isProcessing || 
+    selectedServices.length === 0 || 
+    !customer.name ||
+    !isPhoneValid; 
 
   // --- REFINED OBSERVER ---
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Debug: console.log("Button is visible:", entry.isIntersecting);
         setIsButtonVisible(entry.isIntersecting);
       },
       { 
         threshold: 0, 
-        rootMargin: "-10px 0px 0px 0px" // Trigger slightly before it fully leaves
+        rootMargin: "-10px 0px 0px 0px" 
       } 
     );
 
@@ -99,8 +100,7 @@ const isOrderInvalid =
 
   return (
     <>
-      <div className="bg-white rounded-2xl shadow-md border border-gray-200 lg:sticky lg:top-6 z-30"
-      >
+      <div className="bg-white rounded-2xl shadow-md border border-gray-200 lg:sticky lg:top-6 z-30">
         <div className="p-4 !pb-0">
           <h3 className="text-h3 font-bold text-text-dark flex items-center gap-2">
             <IconCalculator className="w-6 h-6 !text-green-700 !stroke-green-600" />
@@ -115,9 +115,17 @@ const isOrderInvalid =
             {customer.name ? (
               <div className="space-y-1">
                 <p className="text-base-text font-bold text-gray-900 leading-tight">{customer.name}</p>
-                <p className="text-sm-text font-medium text-text-dark flex items-center gap-1">
-                  {customer.phone || customer.contact_number || "No contact number"}
-                </p>
+                <div className="flex flex-col">
+                   <p className={`text-sm-text font-medium flex items-center gap-1 ${!isPhoneValid ? "text-red-500 font-bold" : "text-text-dark"}`}>
+                    {customer.phone || customer.contact_number || "No contact number"}
+                  </p>
+                  {/* RED WARNING TEXT */}
+                  {!isPhoneValid && (
+                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">
+                      Invalid or missing 11-digit number (09XXXXXXXXX)
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm-text text-gray-600 leading-snug">
                   {customer.address || "No address provided"}
                 </p>
@@ -232,24 +240,24 @@ const isOrderInvalid =
             </div>
           </div>
 
-          {/* MAIN BUTTON WITH REF */}
-<div ref={mainButtonRef}>
-  <Button
-    onClick={onSubmit}
-    disabled={isOrderInvalid} 
-    className={`w-full h-12 text-base-text !font-medium shadow-md border-0 rounded-lg mt-2 transition-all text-white ${
-      isOrderInvalid 
-        ? "bg-gray-300 cursor-not-allowed  hover:bg-gray-300" // No hover classes here
-        : "bg-green-700 hover:bg-green-600 active:bg-green-800" // Hover classes only here
-    }`}
-  >
-    {isProcessing ? "Processing..." : "Place Order"}
-  </Button>
-</div>
+          {/* MAIN BUTTON */}
+          <div ref={mainButtonRef}>
+            <Button
+              onClick={onSubmit}
+              disabled={isOrderInvalid} 
+              className={`w-full h-12 text-base-text !font-medium shadow-md border-0 rounded-lg mt-2 transition-all text-white ${
+                isOrderInvalid 
+                  ? "bg-gray-300 cursor-not-allowed hover:bg-gray-300" 
+                  : "bg-green-700 hover:bg-green-600 active:bg-green-800" 
+              }`}
+            >
+              {isProcessing ? "Processing..." : "Place Order"}
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* FLOATING ACTION BAR - Ensure it is FIXED and has a high Z-Index */}
+      {/* FLOATING ACTION BAR */}
       <AnimatePresence>
         {!isButtonVisible && selectedServices.length > 0 && (
           <motion.div
@@ -268,8 +276,12 @@ const isOrderInvalid =
               </div>
               <button
                 onClick={onSubmit}
-                disabled={isProcessing}
-                className="flex-1 h-12  text-base-text !font-medium shadow-md border-0 rounded-lg transition-all bg-green-700 hover:bg-green-600 text-white"
+                disabled={isOrderInvalid}
+                className={`flex-1 h-12 text-base-text !font-medium shadow-md border-0 rounded-lg transition-all text-white ${
+                    isOrderInvalid 
+                      ? "bg-gray-300 cursor-not-allowed" 
+                      : "bg-green-700 hover:bg-green-600"
+                  }`}
               >
                 {isProcessing ? "..." : "Place Order"}
               </button>
