@@ -8,7 +8,9 @@ export const useUnclaimedStore = create((set, get) => ({
   
   computeUnclaimed: (allOrders) => {
     const now = new Date();
-    const OVERDUE_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000; 
+    //const OVERDUE_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000; // Change this temporarily to see your current orders
+const OVERDUE_THRESHOLD_MS = 0;
+    
 
     const overdue = allOrders.filter((order) => {
       // Ensure we are checking the correct status ('ready' or 'completed')
