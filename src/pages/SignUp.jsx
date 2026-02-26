@@ -10,9 +10,16 @@ import { useNavigate } from "react-router-dom";
 import { LoginPopup } from "../modal/LoginPopup";
 import { auth } from "../services/firebase";
 import "../style/signup.css";
+<<<<<<< HEAD
 
 // ----------------------------------------------------------------------
 // CONSTANTS & ICONSs
+=======
+import { IconAtSymbol, IconLock, IconEyeOpen, IconEyeClosed, IconCheck } from "../components/icons";
+
+// ----------------------------------------------------------------------
+// CONSTANTS & ICONS
+>>>>>>> Karen2.0
 // ----------------------------------------------------------------------
 
 const EMAILJS_CONFIG = {
@@ -21,6 +28,7 @@ const EMAILJS_CONFIG = {
   PUBLIC_KEY: process.env.REACT_APP_EMAILJS_PUBLIC_KEY,
 };
 
+<<<<<<< HEAD
 const SIGNUP_ICONS = {
   atSymbol: (
     <svg xmlns="http://www.w3.org/2000/svg" width="1.4rem" height="1.4rem" fill="currentColor" className="bi bi-at" viewBox="0 0 16 16">
@@ -58,6 +66,8 @@ const SIGNUP_ICONS = {
     </svg>
   ),
 };
+=======
+>>>>>>> Karen2.0
 
 // ----------------------------------------------------------------------
 // MAIN COMPONENT
@@ -69,6 +79,7 @@ export default function SignUp() {
   // Form State
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+<<<<<<< HEAD
   const [enteredOtp, setEnteredOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,6 +90,22 @@ export default function SignUp() {
   const [popup, setPopup] = useState({ message: "", type: "info" });
 
   // Password Criteria
+=======
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [enteredOtp, setEnteredOtp] = useState("");
+  
+  // UI State
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [popup, setPopup] = useState({ message: "", type: "info" });
+
+  // Logic State
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  
+  // Password Criteria State
+>>>>>>> Karen2.0
   const [criteria, setCriteria] = useState({
     length: false,
     uppercase: false,
@@ -86,7 +113,15 @@ export default function SignUp() {
     special: false,
   });
 
+<<<<<<< HEAD
   const isPasswordValid = Object.values(criteria).every(Boolean);
+=======
+  // Derived State
+  const passwordsMatch = password === confirmPassword && confirmPassword !== "";
+  const isPasswordValid = Object.values(criteria).every(Boolean) && passwordsMatch;
+
+  // --- HANDLERS ---
+>>>>>>> Karen2.0
 
   const triggerPopup = (message, type = "info") => {
     setPopup({ message, type });
@@ -103,12 +138,16 @@ export default function SignUp() {
     });
   };
 
+<<<<<<< HEAD
   // Reset all state to cancel signup process
+=======
+>>>>>>> Karen2.0
   const handleCancel = () => {
     setIsOtpSent(false);
     setEnteredOtp("");
     setEmail("");
     setPassword("");
+<<<<<<< HEAD
     setCriteria({
       length: false,
       uppercase: false,
@@ -118,6 +157,15 @@ export default function SignUp() {
     setIsLoading(false);
   };
 
+=======
+    setConfirmPassword("");
+    setCriteria({ length: false, uppercase: false, number: false, special: false });
+    setIsLoading(false);
+  };
+
+  // --- FIREBASE & OTP LOGIC ---
+
+>>>>>>> Karen2.0
   const fetchAdminEmail = async () => {
     const db = getDatabase();
     const snapshot = await get(ref(db, "admin_information/admin_email_otp"));
@@ -142,7 +190,11 @@ export default function SignUp() {
       triggerPopup("OTP sent to admin email.", "success");
     } catch (err) {
       console.error(err);
+<<<<<<< HEAD
       triggerPopup("Failed to send OTP (Network/Server Error): " + err.message, "error");
+=======
+      triggerPopup(`Failed to send OTP: ${err.message}`, "error");
+>>>>>>> Karen2.0
     }
   };
 
@@ -151,6 +203,7 @@ export default function SignUp() {
     setIsLoading(true);
 
     try {
+<<<<<<< HEAD
       // -------------------------------------------------------
       // STEP 1: If OTP is NOT sent yet, Check Email & Send OTP
       // -------------------------------------------------------
@@ -166,34 +219,56 @@ export default function SignUp() {
         }
 
         // 1b. If unique, proceed to send OTP
+=======
+      // Step 1: Send OTP if not sent
+      if (!isOtpSent) {
+        const methods = await fetchSignInMethodsForEmail(auth, email);
+        if (methods.length > 0) {
+          triggerPopup("This email is already registered. Please log in.", "error");
+          setIsLoading(false);
+          return;
+        }
+>>>>>>> Karen2.0
         await executeOtpSending();
         setIsLoading(false);
         return;
       }
 
+<<<<<<< HEAD
       // -------------------------------------------------------
       // STEP 2: Verify OTP
       // -------------------------------------------------------
+=======
+      // Step 2: Verify OTP
+>>>>>>> Karen2.0
       if (enteredOtp !== generatedOtp) {
         triggerPopup("Invalid OTP. Please try again.", "error");
         setIsLoading(false);
         return;
       }
 
+<<<<<<< HEAD
       // -------------------------------------------------------
       // STEP 3: Create User & Verify
       // -------------------------------------------------------
+=======
+      // Step 3: Create User
+>>>>>>> Karen2.0
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await sendEmailVerification(userCredential.user);
 
       triggerPopup("Signup successful! Verification email sent.", "success");
+<<<<<<< HEAD
 
+=======
+>>>>>>> Karen2.0
       handleCancel(); // Reset form
 
     } catch (error) {
       console.error("Signup Process Error:", error);
       setIsLoading(false);
 
+<<<<<<< HEAD
       // ✅ Specific Error Handling
       switch (error.code) {
         case "auth/email-already-in-use":
@@ -214,6 +289,21 @@ export default function SignUp() {
     }
   };
 
+=======
+      const errorMessages = {
+        "auth/email-already-in-use": "Email is already in use.",
+        "auth/invalid-email": "Invalid email address.",
+        "auth/weak-password": "Password is too weak.",
+        "auth/network-request-failed": "Network error. Check connection.",
+      };
+
+      triggerPopup(errorMessages[error.code] || error.message, "error");
+    }
+  };
+
+  // --- RENDER ---
+
+>>>>>>> Karen2.0
   return (
     <div className="signup-container">
       <LoginPopup
@@ -224,7 +314,11 @@ export default function SignUp() {
 
       <div className="signup-card">
         {/* Logo */}
+<<<<<<< HEAD
          <div className="flex justify-center items-center w-full">
+=======
+        <div className="flex justify-center items-center w-full">
+>>>>>>> Karen2.0
           <div className="mb-3 flex justify-center items-center w-14 h-14 bg-app-dark rounded-xl overflow-hidden">
             <img
               src="/images/lolafeslaundry-logo-transparent.png"
@@ -238,6 +332,7 @@ export default function SignUp() {
         <p className="text-center !text-text-dark/70 mb-6">Sign up with a secure password and OTP verification.</p>
 
         <form onSubmit={handleSignup}>
+<<<<<<< HEAD
 
           {/* Email Field */}
           <div className="mb-3 text-start">
@@ -246,6 +341,14 @@ export default function SignUp() {
             </label>
             <div className="inputForm">
               {SIGNUP_ICONS.atSymbol}
+=======
+          
+          {/* Email Field */}
+          <div className="mb-3 text-start">
+            <label htmlFor="email" className="form-label text-text-dark">Admin Email</label>
+            <div className="inputForm">
+              <IconAtSymbol/>
+>>>>>>> Karen2.0
               <input
                 type="email"
                 id="email"
@@ -255,18 +358,28 @@ export default function SignUp() {
                 autoComplete="off"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+<<<<<<< HEAD
                 disabled={isOtpSent} // Lock email after OTP sent
+=======
+                disabled={isOtpSent}
+>>>>>>> Karen2.0
               />
             </div>
           </div>
 
           {/* Password Field */}
           <div className="mb-2 text-start">
+<<<<<<< HEAD
             <label htmlFor="password" className="form-label text-text-dark">
               Password
             </label>
             <div className="inputForm pwd-signup-con">
               {SIGNUP_ICONS.lock}
+=======
+            <label htmlFor="password" className="form-label text-text-dark">Password</label>
+            <div className="inputForm pwd-signup-con">
+              <IconLock/>
+>>>>>>> Karen2.0
               <input
                 type={showPassword ? "text" : "password"}
                 id="password"
@@ -276,22 +389,71 @@ export default function SignUp() {
                 autoComplete="off"
                 value={password}
                 onChange={handlePasswordChange}
+<<<<<<< HEAD
                 disabled={isOtpSent} // Lock password field BUT NOT toggle
+=======
+                disabled={isOtpSent}
+>>>>>>> Karen2.0
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+<<<<<<< HEAD
                 // Removed disabled attribute so it works even if OTP is sent
               >
                 {showPassword ? SIGNUP_ICONS.eyeClosed : SIGNUP_ICONS.eyeOpen}
+=======
+              >
+                {showPassword ? <IconEyeClosed /> : <IconEyeOpen />}
+>>>>>>> Karen2.0
               </button>
             </div>
           </div>
 
+<<<<<<< HEAD
+=======
+          {/* Confirm Password Field */}
+          <div className="mb-2 text-start">
+            <label htmlFor="confirmPassword" className="form-label text-text-dark">Confirm Password</label>
+            <div className="inputForm pwd-signup-con">
+              <IconLock/>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirmPassword"
+                className="input"
+                placeholder="Re-enter your password"
+                required
+                autoComplete="off"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={isOtpSent}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <IconEyeClosed /> : <IconEyeOpen />}
+              </button>
+            </div>
+          </div>
+
+          {/* Matching Indicator */}
+          <div className="mb-4">
+            {confirmPassword && (
+              <ul className="space-y-1 text-xs">
+                <li style={{ color: passwordsMatch ? "#198754" : "#dc3545" }} className="flex items-center gap-1">
+                  {passwordsMatch ? <IconCheck isMet={true} /> : <IconCheck isMet={false} />} Passwords match
+                </li>
+              </ul>
+            )}
+          </div>
+
+>>>>>>> Karen2.0
           {/* Password Criteria List */}
           <div className="mb-4">
             {password && (
               <ul className="space-y-1 text-xs">
+<<<<<<< HEAD
                 <li style={{ color: criteria.length ? "#198754" : "#dc3545" }} className="flex items-center gap-1">
                   {SIGNUP_ICONS.check(criteria.length)} At least 6 characters
                 </li>
@@ -316,6 +478,32 @@ export default function SignUp() {
                 type="text"
                 id="otp"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3  tracking-[0.5em] focus:ring-1 focus:ring-app-dark focus:outline-none text-center tracking-widest text-lg !font-bold"
+=======
+  {[
+    { key: "length", text: "At least 6 characters" },
+    { key: "uppercase", text: "At least 1 uppercase letter" },
+    { key: "number", text: "At least 1 number" },
+    { key: "special", text: "At least 1 special character" },
+  ].map(({ key, text }) => (
+    <li key={key} style={{ color: criteria[key] ? "#198754" : "#dc3545" }} className="flex items-center gap-1">
+      <IconCheck isMet={criteria[key]} /> {text}
+    </li>
+  ))}
+</ul>
+            )}
+          </div>
+
+          {/* OTP Field */}
+          {isOtpSent && (
+            <div className="mb-2 animate-fade-in">
+              <label htmlFor="otp" className="block text-sm font-normal text-text-dark mb-3">
+                Enter the OTP sent to the registered admin email.
+              </label>
+              <input
+                type="text"
+                id="otp"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 tracking-[0.5em] focus:ring-1 focus:ring-app-dark focus:outline-none text-center tracking-widest text-lg !font-bold"
+>>>>>>> Karen2.0
                 placeholder="000000"
                 value={enteredOtp}
                 onChange={(e) => setEnteredOtp(e.target.value)}
@@ -325,9 +513,13 @@ export default function SignUp() {
             </div>
           )}
 
+<<<<<<< HEAD
           
 
           {/* Action Button */}
+=======
+          {/* Submit Button */}
+>>>>>>> Karen2.0
           <button
             type="submit"
             className={`w-full mb-2 bg-app-dark text-white font-medium py-2 rounded-lg shadow transition-all ${
@@ -338,7 +530,11 @@ export default function SignUp() {
             {isLoading ? "Processing..." : (isOtpSent ? "Complete Signup" : "Send OTP Verification")}
           </button>
 
+<<<<<<< HEAD
           {/* Cancel Button (Visible only when OTP is sent) */}
+=======
+          {/* Cancel Button */}
+>>>>>>> Karen2.0
           {isOtpSent && (
             <div className="text-center mb-1">
               <button
@@ -350,10 +546,16 @@ export default function SignUp() {
               </button>
             </div>
           )}
+<<<<<<< HEAD
 
         </form>
 
         {/* Footer Link */}
+=======
+        </form>
+
+        {/* Footer */}
+>>>>>>> Karen2.0
         <div className="mt-2 text-center">
           <p className="text-sm text-gray-600">
             Already have an account?{" "}

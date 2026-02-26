@@ -69,6 +69,7 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
   const logActivity = useActivityStore((state) => state.logActivity);
 
   const handleAction = async (actionFn, id, data) => {
+<<<<<<< HEAD
   setIsProcessing(true);
   try {
     const result = await actionFn(id, data);
@@ -118,6 +119,60 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
   }
 };
 
+=======
+    setIsProcessing(true);
+    try {
+      const result = await actionFn(id, data);
+      
+      if (result !== false) {
+        // Use a UNIFIED order_number prefix for all service actions
+        // This helps the store's deduplication check identify them as the same "subject"
+        const LOG_SUBJECT = `SVC-${id || 'NEW'}`;
+
+        let logData = {
+          customer_name: data?.name || service.name,
+          total_amount: data?.price_per_kg || service.price_per_kg,
+          order_number: LOG_SUBJECT
+        };
+
+        if (actionFn === onSave) {
+         if (isNew) {
+    // Explicitly define the label here
+    logActivity(
+      logData, 
+      'pending', 
+      { action: 'created', label: 'Service Created' } 
+    );
+  }else {
+            const changes = [];
+            if (data.name !== service.name) changes.push("Name");
+            if (data.type !== service.type) changes.push("Type");
+            if (Number(data.price_per_kg) !== Number(service.price_per_kg)) changes.push("Price");
+            
+            if (changes.length > 0) {
+              const descriptiveLabel = `${changes.join(" & ")} Updated`;
+              logActivity(logData, 'in_progress', { action: 'status_update', label: descriptiveLabel });
+            }
+          }
+        } else if (actionFn === onToggle) {
+          const newState = !service.is_active;
+          logActivity(
+            logData, 
+            newState ? 'ready' : 'picked_up', 
+            { action: 'status_update', label: newState ? 'Service Enabled' : 'Service Disabled' }
+          );
+        } else if (actionFn === onDelete) {
+          logActivity(logData, 'picked_up', { action: 'status_update', label: 'Service Deleted' });
+        }
+      }
+      setShowConfirmDelete(false);
+    } catch (err) {
+      console.error("Logging error:", err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+>>>>>>> Karen2.0
   // --- Confirm Delete View ---
   if (showConfirmDelete) {
     return (

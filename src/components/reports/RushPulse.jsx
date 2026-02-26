@@ -27,6 +27,7 @@ export default function RushPulse() {
 
   const { waveData, busiestWindow } = useMemo(() => {
     const fullHeatmap = getPeakHours();
+<<<<<<< HEAD
     const processed = Array(18).fill(0);
 
     for (let hour = 6; hour < 24; hour++) {
@@ -43,6 +44,25 @@ export default function RushPulse() {
 
     const maxVal = Math.max(...processed);
     const peakIdx = processed.indexOf(maxVal);
+=======
+  const processed = Array(18).fill(0);
+
+  for (let hour = 6; hour < 24; hour++) {
+    if (selectedDay === "all") {
+      let totalForHour = 0;
+      for (let day = 0; day < 7; day++) {
+        totalForHour += fullHeatmap[day][hour];
+      }
+      // FIXED: Remove the "/ 7". We want the sum, not the average.
+      processed[hour - 6] = totalForHour; 
+    } else {
+      processed[hour - 6] = fullHeatmap[selectedDay][hour];
+    }
+  }
+
+    const maxVal = Math.max(...processed);
+  const peakIdx = processed.indexOf(maxVal);
+>>>>>>> Karen2.0
     
     const formatTime = (hIdx) => {
       const h = HOUR_LABELS[hIdx];
@@ -55,8 +75,12 @@ export default function RushPulse() {
       : "no data yet";
 
     return { waveData: processed, busiestWindow: windowText };
+<<<<<<< HEAD
     // FIX: Removed unnecessary 'orders' and added 'getPeakHours'
   }, [getPeakHours, selectedDay]);
+=======
+}, [getPeakHours, selectedDay]);
+>>>>>>> Karen2.0
 
   const maxValue = Math.max(...waveData, 1);
   const chartHeight = 100;
@@ -102,7 +126,11 @@ export default function RushPulse() {
               {showInfo && (
                 <div className="absolute left-0 top-6 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-50">
                   <p className="text-sm-text text-text-dark/90 leading-relaxed">
+<<<<<<< HEAD
                     This chart shows the whole numbers of orders per hour. When 'All' is selected, it shows the rounded average traffic for a typical day.
+=======
+                    This chart shows the total accumulation of orders per hour. When 'All' is selected, you are seeing the total combined volume from every day of the week.
+>>>>>>> Karen2.0
                   </p>
                 </div>
               )}

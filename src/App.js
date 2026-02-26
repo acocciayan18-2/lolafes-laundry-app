@@ -17,6 +17,10 @@ function App() {
     /* FIX: Added Future Flags to opt-in to v7 behavior 
        This removes the console warnings about state wrapping and splat paths.
     */
+<<<<<<< HEAD
+=======
+   
+>>>>>>> Karen2.0
     <Router 
       future={{ 
         v7_startTransition: true, 

@@ -3,7 +3,11 @@ import React from 'react';
 export default function QuickStats({ title, value, icon, trend }) {
   // We ignore the incoming 'bgColor' prop from the parent to enforce our B&W theme
   return (
+<<<<<<< HEAD
     <div className="bg-white rounded-xl shadow-md border border-app-dark/10 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+=======
+    <div className="bg-white rounded-xl shadow-md border border-app-dark/10  transform  overflow-hidden">
+>>>>>>> Karen2.0
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 ">
           <div className="min-w-0 flex-1">

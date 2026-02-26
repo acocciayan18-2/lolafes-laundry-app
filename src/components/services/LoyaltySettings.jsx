@@ -4,6 +4,10 @@ import { useActivityStore } from "../../store/activities/useActivityStore";
 import { useLoyaltyStore } from "../../store/services/useLoyaltyStore";
 import { useServiceStore } from "../../store/services/useServiceStore";
 import { IconArrowUp, IconGift } from "../icons";
+<<<<<<< HEAD
+=======
+import { useNotificationStore } from '../../store/ui/useNotificationStore';
+>>>>>>> Karen2.0
 
 // --- UI Helpers ---
 const Label = ({ children }) => (
@@ -28,6 +32,7 @@ const Switch = ({ checked, onCheckedChange }) => (
   <button 
     type="button" 
     onClick={() => onCheckedChange(!checked)}
+<<<<<<< HEAD
     className={`relative inline-flex h-5 w-10 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${checked ? 'bg-green-700' : 'bg-slate-300'}`}
   >
     <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-1'}`} />
@@ -35,6 +40,18 @@ const Switch = ({ checked, onCheckedChange }) => (
 );
 
 // --- UPDATED CUSTOM SELECT: High Stacking Priority ---
+=======
+    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none 
+      ${checked ? 'bg-green-700' : 'bg-slate-200'}`}
+  >
+    <span 
+      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 
+        ${checked ? 'translate-x-6' : 'translate-x-1'}`} 
+    />
+  </button>
+);
+
+>>>>>>> Karen2.0
 const CustomSelect = ({ value, onChange, options, disabled }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -89,7 +106,11 @@ const CustomSelect = ({ value, onChange, options, disabled }) => {
             ))}
             {options.length === 0 && (
               <div className="px-3 py-3 text-center text-nano font-bold text-slate-400 uppercase ">
+<<<<<<< HEAD
                 No Active Services Found
+=======
+                No Active Services Found!
+>>>>>>> Karen2.0
               </div>
             )}
           </div>
@@ -124,6 +145,7 @@ export default function LoyaltySettings() {
     setLocalSettings({ ...localSettings, [field]: val });
   };
 
+<<<<<<< HEAD
   const executeStatusChange = async (newStatus) => {
     const updated = { ...localSettings, is_enabled: newStatus };
     setLocalSettings(updated);
@@ -152,12 +174,46 @@ export default function LoyaltySettings() {
   };
 
   const handleSave = async () => {
+=======
+  const executeStatusChange = async (newStatus, wipePoints = false) => {
+    const { showNotification } = useNotificationStore.getState();
+    setIsSaving(true);
+    try {
+      const updated = { ...localSettings, is_enabled: newStatus };
+      await saveLoyaltySettings(updated, wipePoints);
+      setLocalSettings(updated);
+      
+      const labelText = newStatus ? "Voucher Enabled" : wipePoints ? "Voucher Reset & Disabled" : "Voucher Paused";
+
+      logActivity({ customer_name: "Voucher", order_number: "SETTINGS", total_amount: 0 }, 
+        newStatus ? 'ready' : 'picked_up', 
+        { action: 'status_update', label: labelText }
+      );
+
+      showNotification(labelText, "success");
+      setShowConfirmDialog(false);
+    } catch (err) {
+      showNotification("Failed to update status", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleToggle = (checked) => {
+    if (checked) executeStatusChange(true);
+    else setShowConfirmDialog(true);
+  };
+
+  const handleSave = async () => {
+    const { showNotification } = useNotificationStore.getState();
+>>>>>>> Karen2.0
     setIsSaving(true);
     try {
       const changes = [];
       if (localSettings.free_service_type !== loyaltySettings.free_service_type) changes.push("Reward Service");
       if (Number(localSettings.orders_required) !== Number(loyaltySettings.orders_required)) changes.push("Visit Threshold");
 
+<<<<<<< HEAD
       const descriptiveLabel = changes.length > 0 ? `${changes.join(" & ")} Updated` : "Loyalty Settings Updated";
 
       await saveLoyaltySettings({
@@ -176,6 +232,23 @@ export default function LoyaltySettings() {
 
     } catch (err) {
       console.error("Save failed", err);
+=======
+      if (changes.length === 0) {
+        showNotification("No changes detected.", "info");
+        setIsSaving(false);
+        return;
+      }
+
+      await saveLoyaltySettings({ ...localSettings, orders_required: Number(localSettings.orders_required) });
+
+      logActivity({ customer_name: "Voucher", order_number: "CONFIG", total_amount: 0 }, 'in_progress', {
+        action: 'status_update', label: `${changes.join(" & ")} Updated`
+      });
+
+      showNotification("Voucher updated successfully!", "success");
+    } catch (err) {
+      showNotification("Failed to update voucher.", "error");
+>>>>>>> Karen2.0
     } finally {
       setIsSaving(false);
     }
@@ -190,6 +263,7 @@ export default function LoyaltySettings() {
     <div className="w-full relative z-10">
       <AnimatePresence mode="wait">
         {showConfirmDialog ? (
+<<<<<<< HEAD
           <motion.div
             key="confirm"
             // REMOVED SCALE: Now only fades in/out
@@ -234,6 +308,32 @@ export default function LoyaltySettings() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+=======
+          <motion.div key="confirm" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+            className="w-full bg-white border border-slate-200 shadow-xl rounded-xl p-4 flex flex-col items-center text-center"
+          >
+            <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mb-4 text-amber-600">
+              <IconGift className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-extrabold text-text-dark mb-1">Disable Voucher?</h3>
+            <p className="text-sm-text text-text-dark/80 max-w-sm leading-relaxed mb-3">
+              Choose how to handle existing customer points. You can resume them later or clear them entirely.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
+              <button onClick={() => executeStatusChange(false, false)} disabled={isSaving} className="flex flex-col items-center p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-all">
+                <span className="font-bold text-text-dark text-sm-text">Pause Progress</span>
+                <span className="text-[11px] text-text-dark/70">Keep customer points saved</span>
+              </button>
+              <button onClick={() => executeStatusChange(false, true)} disabled={isSaving} className="flex flex-col items-center p-3 rounded-xl border border-slate-200 hover:border-red-500 hover:bg-red-50 transition-all">
+                <span className="font-bold text-red-600 text-sm-text">Reset Everything</span>
+                <span className="text-[11px] text-red-400">Clear all points to zero</span>
+              </button>
+            </div>
+            <button onClick={() => setShowConfirmDialog(false)} className="h-11 text-sm-text font-normal text-text-dark/80 hover:text-text-dark hover:underline">Nevermind, keep it active</button>
+          </motion.div>
+        ) : (
+          <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+>>>>>>> Karen2.0
             className="flex flex-col md:flex-row bg-white border border-slate-200 shadow-sm rounded-xl"
           >
             {/* LEFT SECTION */}
@@ -246,10 +346,17 @@ export default function LoyaltySettings() {
                   <div>
                     <h3 className="text-h3 font-bold text-slate-900 ">Customer Loyalty</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
+<<<<<<< HEAD
                         <span className={`w-1.5 h-1.5 rounded-full ${localSettings.is_enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
                         <span className={`text-nano font-bold uppercase  ${localSettings.is_enabled ? 'text-emerald-600' : 'text-slate-400'}`}>
                           {localSettings.is_enabled ? 'Promo Active' : 'Promo Inactive'}
                         </span>
+=======
+                      <span className={`w-1.5 h-1.5 rounded-full ${localSettings.is_enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
+                      <span className={`text-nano font-bold uppercase  ${localSettings.is_enabled ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        {localSettings.is_enabled ? 'Promo Active' : 'Promo Inactive'}
+                      </span>
+>>>>>>> Karen2.0
                     </div>
                   </div>
                 </div>
@@ -259,18 +366,26 @@ export default function LoyaltySettings() {
               <div className={`space-y-4 ${!localSettings.is_enabled ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="space-y-0.5 relative z-20"> 
                   <Label>Free Service Reward</Label>
+<<<<<<< HEAD
                   <CustomSelect 
                     options={services.filter(s => s.is_active)} 
                     value={localSettings.free_service_type}
+=======
+                  <CustomSelect options={services.filter(s => s.is_active)} value={localSettings.free_service_type}
+>>>>>>> Karen2.0
                     onChange={(val) => setLocalSettings({...localSettings, free_service_type: val})}
                   />
                 </div>
                 <div className="space-y-0.5 relative z-10">
                   <Label>Orders Needed</Label>
+<<<<<<< HEAD
                   <Input 
                     type="text"
                     inputMode="numeric" 
                     value={localSettings.orders_required}
+=======
+                  <Input type="text" inputMode="numeric" value={localSettings.orders_required}
+>>>>>>> Karen2.0
                     onChange={(e) => handleInputChange('orders_required', e.target.value)}
                   />
                 </div>
@@ -285,7 +400,11 @@ export default function LoyaltySettings() {
             {/* RIGHT SECTION (Visual Ticket) */}
             <div className={`w-full md:w-60 p-4 flex flex-col justify-between rounded-b-xl md:rounded-r-xl ${localSettings.is_enabled ? 'bg-app-light' : 'bg-slate-50'}`}>
               <div className="space-y-3 text-center">
+<<<<<<< HEAD
                 <h4 className="text-nano font-black uppercase  text-teal-600">Reward Summary</h4>
+=======
+                <h4 className={`text-nano font-bold uppercase ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-400'}`}>Reward Summary</h4>
+>>>>>>> Karen2.0
                 <div className="p-3 bg-white rounded-lg border border-dashed border-sky-300 shadow-sm">
                   <div className="text-h3 font-black text-slate-900">FREE</div>
                   <div className="text-micro font-bold uppercase text-teal-600 truncate">{localSettings.free_service_type || "No Service"}</div>
@@ -294,10 +413,18 @@ export default function LoyaltySettings() {
                 </div>
               </div>
 
+<<<<<<< HEAD
               <button
                 onClick={handleSave}
                 disabled={!hasChanges || isSaving || !isValid}
                 className="mt-3 w-full h-10 flex items-center justify-center rounded-xl text-sm-text font-medium bg-slate-800 text-white disabled:opacity-50 transition-all active:scale-95 shadow-md "
+=======
+              {/* SAVE TICKET BUTTON: Logic updated to include disabled when !is_enabled */}
+              <button
+                onClick={handleSave}
+                disabled={!localSettings.is_enabled || !hasChanges || isSaving || !isValid}
+                className="mt-3 w-full h-10 flex items-center justify-center rounded-xl text-sm-text font-medium bg-green-700 text-white disabled:opacity-50 transition-all active:scale-95 shadow-md "
+>>>>>>> Karen2.0
               >
                 {isSaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Save Ticket"}
               </button>

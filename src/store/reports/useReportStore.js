@@ -13,6 +13,7 @@ export const useReportStore = create((set, get) => ({
     return onSnapshot(q, (snapshot) => {
       const ordersData = snapshot.docs.map(doc => {
         const data = doc.data();
+<<<<<<< HEAD
         return {
           id: doc.id,
           ...data,
@@ -20,6 +21,16 @@ export const useReportStore = create((set, get) => ({
           created_at: data.created_at?.toDate?.() || (data.created_at ? new Date(data.created_at) : new Date()),
           ready_at: data.ready_at?.toDate?.() || (data.ready_at ? new Date(data.ready_at) : null),
         };
+=======
+        // Inside subscribeToReports mapping
+return {
+  id: doc.id,
+  ...data,
+  created_at: data.created_at?.toDate?.() || (data.created_at ? new Date(data.created_at) : new Date()),
+  updated_at: data.updated_at?.toDate?.() || (data.updated_at ? new Date(data.updated_at) : null), // Add this!
+  ready_at: data.ready_at?.toDate?.() || (data.ready_at ? new Date(data.ready_at) : null),
+};
+>>>>>>> Karen2.0
       });
       
       set({ orders: ordersData, isLoading: false });
@@ -27,6 +38,7 @@ export const useReportStore = create((set, get) => ({
   },
 
   getAnalytics: (days) => {
+<<<<<<< HEAD
     const orders = get().orders || [];
     const cutoff = new Date();
     
@@ -79,13 +91,83 @@ export const useReportStore = create((set, get) => ({
       totalOrders: filtered.length || 0 
     };
   },
+=======
+  const orders = get().orders || [];
+  const cutoff = new Date();
+  
+  if (days !== 'year') {
+    cutoff.setDate(cutoff.getDate() - parseInt(days || 7));
+  } else {
+    cutoff.setFullYear(cutoff.getFullYear() - 1);
+  }
+  
+  const filtered = orders.filter(o => o.created_at >= cutoff);
+  const totalRevenue = filtered.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+  const aov = filtered.length > 0 ? totalRevenue / filtered.length : 0;
+
+  const completedOrders = filtered.filter(o => 
+    ['ready', 'completed', 'picked_up'].includes(o.status) && 
+    (o.updated_at || o.ready_at) && 
+    o.created_at
+  );
+
+  const totalTatMs = completedOrders.reduce((sum, o) => {
+    // Fallback logic: check updated_at (from your OrderStore) then ready_at
+    const finishDate = o.updated_at ? new Date(o.updated_at) : new Date(o.ready_at);
+    const startDate = new Date(o.created_at);
+    
+    const diff = finishDate.getTime() - startDate.getTime();
+    return sum + (diff > 0 ? diff : 0);
+  }, 0);
+
+  // Convert MS to Hours
+  const avgTat = completedOrders.length > 0 
+    ? (totalTatMs / completedOrders.length) / (1000 * 60 * 60) 
+    : 0;
+  // ------------------------------------
+
+  const customerMap = new Map();
+  filtered.forEach(o => {
+    const phone = o.customer_phone || 'unknown';
+    customerMap.set(phone, (customerMap.get(phone) || 0) + 1);
+  });
+  
+  const returningCount = Array.from(customerMap.values()).filter(count => count > 1).length;
+  const newCount = customerMap.size - returningCount;
+  const retentionRate = customerMap.size > 0 ? (returningCount / customerMap.size) * 100 : 0;
+
+  const topCustomers = Array.from(customerMap.entries())
+    .map(([phone, count]) => ({ 
+      phone, 
+      count, 
+      name: filtered.find(o => o.customer_phone === phone)?.customer_name || "Guest" 
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  return { 
+    totalRevenue: totalRevenue || 0, 
+    aov: aov || 0, 
+    avgTat: avgTat || 0, 
+    newCount: newCount || 0, 
+    returningCount: returningCount || 0, 
+    retentionRate: retentionRate || 0, 
+    topCustomers: topCustomers || [], 
+    totalOrders: filtered.length || 0 
+  };
+},
+>>>>>>> Karen2.0
 
   getSalesTrend: (range) => {
     const { orders } = get();
     const now = new Date();
     let data = [];
 
+<<<<<<< HEAD
     // 1. TODAY: Hours 0-23 (UI will filter for 5am-12am)
+=======
+    // 1. TODAY: Hours 0-23 (UI will filter for 5am-12a
+>>>>>>> Karen2.0
     if (range === "day") {
       data = Array(24).fill(0).map((_, i) => ({ label: `${i}`, value: 0 }));
       orders.filter(o => o.created_at.toDateString() === now.toDateString())

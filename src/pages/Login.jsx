@@ -10,6 +10,7 @@ import ForgotPassword from "../modal/ForgotPassword";
 import { LoginPopup } from "../modal/LoginPopup";
 import { auth } from "../services/firebase";
 import "../style/login.css";
+<<<<<<< HEAD
 
 const LOGIN_ICONS = {
   atSymbol: (
@@ -36,26 +37,47 @@ const LOGIN_ICONS = {
     </svg>
   ),
 };
+=======
+import { IconAtSymbol, IconLock, IconEyeOpen, IconEyeClosed } from "../components/icons";
+
+
+>>>>>>> Karen2.0
 
 export default function Login() {
   const navigate = useNavigate();
 
+<<<<<<< HEAD
   // Login State
+=======
+>>>>>>> Karen2.0
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+<<<<<<< HEAD
   // Popup/Notification State
   const [popupMessage, setPopupMessage] = useState("");
   const [popupType, setPopupType] = useState(""); // "success" or "error"
 
   // Forgot Password Modal State
+=======
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupType, setPopupType] = useState("");
+
+>>>>>>> Karen2.0
   const [showForgotPopup, setShowForgotPopup] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [isResetLoading, setIsResetLoading] = useState(false);
 
+<<<<<<< HEAD
   // Helper to show notifications
+=======
+  // --- VALIDATION LOGIC ---
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isFormValid = emailRegex.test(loginEmail) && loginPassword.length >= 1;
+
+>>>>>>> Karen2.0
   const triggerPopup = (msg, type) => {
     setPopupMessage(msg);
     setPopupType(type);
@@ -67,11 +89,17 @@ export default function Login() {
       triggerPopup("Please enter your email.", "error");
       return;
     }
+<<<<<<< HEAD
 
     try {
       setIsResetLoading(true);
       await sendPasswordResetEmail(auth, resetEmail);
       
+=======
+    try {
+      setIsResetLoading(true);
+      await sendPasswordResetEmail(auth, resetEmail);
+>>>>>>> Karen2.0
       triggerPopup("Reset link sent! Check your email.", "success");
       setShowForgotPopup(false);
       setResetEmail("");
@@ -88,14 +116,22 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+<<<<<<< HEAD
     if (isLoginLoading) return;
+=======
+    if (isLoginLoading || !isFormValid) return;
+>>>>>>> Karen2.0
 
     setIsLoginLoading(true);
 
     try {
+<<<<<<< HEAD
       // 1. Firebase sets the session in LocalStorage automatically here
       await setPersistence(auth, browserLocalPersistence);
 
+=======
+      await setPersistence(auth, browserLocalPersistence);
+>>>>>>> Karen2.0
       const userCredential = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
       const user = userCredential.user;
 
@@ -125,7 +161,10 @@ export default function Login() {
       />
 
       <div className="login-card">
+<<<<<<< HEAD
         {/* Logo Section */}
+=======
+>>>>>>> Karen2.0
         <div className="flex justify-center items-center w-full">
           <div className="mb-3 flex justify-center items-center w-14 h-14 bg-app-dark rounded-xl overflow-hidden">
             <img
@@ -138,16 +177,26 @@ export default function Login() {
 
         <h3 className="text-center text-3xl font-extrabold text-text-dark mb-1">
           Welcome to Lola Fe's Laundry&nbsp;Shop
+<<<<<<< HEAD
           
+=======
+>>>>>>> Karen2.0
         </h3>
         <p className="text-center !text-text-dark/70">Log in to continue</p>
 
         <form onSubmit={handleLogin}>
+<<<<<<< HEAD
           
           <div className="mb-3 text-start">
             <label htmlFor="login-email" className="form-label text-text-dark">Email</label>
             <div className="inputForm mb-3 text-start">
               {LOGIN_ICONS.atSymbol}
+=======
+          <div className="mb-3 text-start">
+            <label htmlFor="login-email" className="form-label text-text-dark">Email</label>
+            <div className="inputForm mb-3 text-start">
+              <IconAtSymbol/>
+>>>>>>> Karen2.0
               <input
                 type="email"
                 id="login-email"
@@ -164,7 +213,11 @@ export default function Login() {
           <div className="mb-3 text-start">
             <label htmlFor="login-password" className="form-label text-text-dark">Password</label>
             <div className="inputForm pwd-login-con">
+<<<<<<< HEAD
               {LOGIN_ICONS.lock}
+=======
+              <IconLock/>
+>>>>>>> Karen2.0
               <input
                 type={showPassword ? "text" : "password"}
                 id="login-password"
@@ -181,7 +234,11 @@ export default function Login() {
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label="Toggle password visibility"
               >
+<<<<<<< HEAD
                 {showPassword ? LOGIN_ICONS.eyeClosed : LOGIN_ICONS.eyeOpen}
+=======
+                {showPassword ? <IconEyeClosed /> : <IconEyeOpen />}
+>>>>>>> Karen2.0
               </button>
             </div>
 
@@ -198,9 +255,15 @@ export default function Login() {
 
           <button
             type="submit"
+<<<<<<< HEAD
             disabled={isLoginLoading}
             className={`w-full bg-app-dark text-white font-medium px-4 py-2 rounded-lg shadow cursor-pointer transition-opacity ${
               isLoginLoading ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"
+=======
+            disabled={isLoginLoading || !isFormValid}
+            className={`w-full bg-app-dark text-white font-medium px-4 py-2 rounded-lg shadow cursor-pointer transition-opacity ${
+              (isLoginLoading || !isFormValid) ? "opacity-40 cursor-not-allowed" : "hover:opacity-90 shadow-md active:scale-95"
+>>>>>>> Karen2.0
             }`}
           >
             {isLoginLoading ? "Logging in..." : "Log in"}

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { create } from "zustand";
 import { db } from "../../services/firebase";
 import {
@@ -12,18 +13,36 @@ import {
   serverTimestamp,
   updateDoc, // 1. Added updateDoc import
 } from "firebase/firestore";
+=======
+import { create } from 'zustand';
+import { db } from '../../services/firebase';
+import { 
+  collection, query, orderBy, onSnapshot, doc, 
+  deleteDoc, getDoc, setDoc, serverTimestamp, updateDoc // Added updateDoc
+} from 'firebase/firestore';
+>>>>>>> Karen2.0
 
 export const useCustomerStore = create((set, get) => ({
   customers: [],
   isLoading: true,
   error: null,
 
+<<<<<<< HEAD
   // ... subscribeToCustomers logic (Keep as is)
   subscribeToCustomers: () => {
     set({ isLoading: true });
     const q = query(collection(db, "customers"), orderBy("created_at", "desc"));
     const unsubscribe = onSnapshot(
       q,
+=======
+  // Real-time listener
+  subscribeToCustomers: () => {
+    set({ isLoading: true });
+    
+    const q = query(collection(db, "customers"), orderBy("created_at", "desc"));
+
+    const unsubscribe = onSnapshot(q, 
+>>>>>>> Karen2.0
       (snapshot) => {
         const customersData = snapshot.docs.map((doc) => ({
           id: doc.id,
@@ -34,6 +53,7 @@ export const useCustomerStore = create((set, get) => ({
       (error) => {
         console.error("Error fetching customers:", error);
         set({ error: error.message, isLoading: false });
+<<<<<<< HEAD
       },
     );
     return unsubscribe;
@@ -52,6 +72,22 @@ export const useCustomerStore = create((set, get) => ({
       });
 
       return true;
+=======
+      }
+    );
+
+    return unsubscribe;
+  },
+
+  // --- NEW UPDATE METHOD ---
+  updateCustomer: async (customerId, data) => {
+    try {
+      const customerRef = doc(db, "customers", customerId);
+      await updateDoc(customerRef, {
+        ...data,
+        updated_at: serverTimestamp() // Tracks when the info was last changed
+      });
+>>>>>>> Karen2.0
     } catch (error) {
       console.error("Update Error:", error);
       throw error;
@@ -65,11 +101,21 @@ export const useCustomerStore = create((set, get) => ({
 
       if (customerSnap.exists()) {
         const customerData = customerSnap.data();
+<<<<<<< HEAD
         await setDoc(doc(db, "deleted_customers", customerId), {
           ...customerData,
           archivedAt: serverTimestamp(),
           status: "archived",
         });
+=======
+
+        await setDoc(doc(db, "deleted_customers", customerId), {
+          ...customerData,
+          archivedAt: serverTimestamp(),
+          status: 'archived'
+        });
+
+>>>>>>> Karen2.0
         await deleteDoc(customerRef);
       }
     } catch (error) {
@@ -77,6 +123,7 @@ export const useCustomerStore = create((set, get) => ({
       throw error;
     }
   },
+<<<<<<< HEAD
 
   checkPhoneExists: (phone) => {
     const { customers } = get();
@@ -87,3 +134,15 @@ export const useCustomerStore = create((set, get) => ({
     });
   },
 }));
+=======
+  
+  checkPhoneExists: (phone) => {
+    const { customers } = get();
+    const cleanInput = phone.replace(/\D/g, "");
+    return customers.some(c => {
+        const cleanDb = (c.phone || "").replace(/\D/g, "");
+        return cleanDb === cleanInput;
+    });
+  }
+}));
+>>>>>>> Karen2.0

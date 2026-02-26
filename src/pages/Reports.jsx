@@ -1,6 +1,10 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useReportStore } from "../store/reports/useReportStore";
+<<<<<<< HEAD
+=======
+import ExportOrdersButton from "../components/reports/ExportOrdersButton";
+>>>>>>> Karen2.0
 
 // Component Imports
 import CustomerMix from "../components/reports/CustomerMix";
@@ -10,11 +14,14 @@ import SalesPerformance from "../components/reports/SalesPerformance";
 import TopCustomers from "../components/reports/TopCustomers";
 import { ReportsSkeleton } from "../components/skeleton-loader";
 
+<<<<<<< HEAD
 //TOUR
 import { useLocation, useNavigate } from 'react-router-dom';
 import { startGlobalTour } from '../tours/globalTours';
 
 
+=======
+>>>>>>> Karen2.0
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -36,10 +43,13 @@ const itemVariants = {
 };
 
 export default function Reports() {
+<<<<<<< HEAD
   const location = useLocation();
   const navigate = useNavigate();
 
 
+=======
+>>>>>>> Karen2.0
   const { subscribeToReports, isLoading } = useReportStore();
   
   const [dateRange] = useState("7"); 
@@ -48,6 +58,7 @@ export default function Reports() {
   // NEW: State to control delayed skeleton visibility
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
+<<<<<<< HEAD
 //Tour Logic 
 useEffect(() => {
   const searchParams = new URLSearchParams(location.search);
@@ -67,6 +78,8 @@ useEffect(() => {
 }, [location.search, isLoading]); // Added isLoading as a dependency
   
 
+=======
+>>>>>>> Karen2.0
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     const unsubscribe = subscribeToReports();
@@ -109,6 +122,7 @@ useEffect(() => {
       className="min-h-screen bg-app-light text-slate-900 p-2"
     >
       <div className="max-w-6xl mx-auto px-1 md:px-2">
+<<<<<<< HEAD
         <motion.header variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 ">
           <div>
             <h1 className="text-h2 font-bold text-text-dark">Reports</h1>
@@ -136,11 +150,52 @@ useEffect(() => {
           </div>
         </motion.header>
 
+=======
+       <motion.header 
+  variants={itemVariants} 
+  className="flex flex-row justify-between items-center mb-6 px-1"
+>
+  {/* LEFT SIDE: Title & Clock */}
+  <div className="flex flex-col">
+    <h1 className="text-h2 font-bold text-text-dark leading-tight">Reports</h1>
+    
+    <div className="flex items-center gap-2 mt-0.5">
+      <p className="text-text-dark text-micro font-medium whitespace-nowrap">
+        {currentTime.toLocaleDateString('en-US', { 
+          weekday: 'short', 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        })}
+      </p>
+      
+      <span className='text-sm-text text-text-dark/20 font-light select-none'>|</span>
+      
+      <span className="text-micro font-medium text-text-dark uppercase whitespace-nowrap">
+        {currentTime.toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: true 
+        })}
+      </span>
+    </div>
+  </div>
+
+  {/* RIGHT SIDE: Export Button */}
+  <div className="shrink-0">
+    <ExportOrdersButton />
+  </div>
+</motion.header>
+>>>>>>> Karen2.0
         <motion.div 
           className="grid grid-cols-1 lg:grid-cols-4 gap-4"
           variants={containerVariants}
         >
+<<<<<<< HEAD
           <motion.div id="step-reports-kpi"  variants={itemVariants} className="lg:col-span-4">
+=======
+          <motion.div variants={itemVariants} className="lg:col-span-4">
+>>>>>>> Karen2.0
             <KpiCards range={dateRange} />
           </motion.div>
 
@@ -156,7 +211,11 @@ useEffect(() => {
             <CustomerMix range={dateRange} />
           </motion.div>
 
+<<<<<<< HEAD
           <motion.div id="step-reports-top" variants={itemVariants} className="lg:col-span-2">
+=======
+          <motion.div variants={itemVariants} className="lg:col-span-2">
+>>>>>>> Karen2.0
             <TopCustomers range={dateRange} />
           </motion.div>
         </motion.div>
