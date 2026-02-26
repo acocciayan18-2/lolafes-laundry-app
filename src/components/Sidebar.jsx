@@ -221,7 +221,7 @@ const LogoutConfirmationModal = ({ onCancel, onConfirm }) => (
   
   {/* LOG OUT BUTTON: Styled exactly like the Clear Cart 'Clear' button but using the Log Out logic */}
   <button 
-    className="flex-1 order-2  px-3 px-4 py-2 md:text-sm text-sm-text font-medium !bg-app-dark text-white rounded-lg transition-all"
+    className="flex-1 order-2  px-3  py-2 md:text-sm text-sm-text font-medium !bg-app-dark text-white rounded-lg transition-all"
     onClick={onConfirm}
   >
     Log Out
