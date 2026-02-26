@@ -1,10 +1,9 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import Login from "./pages/Login";
+import MainApp from "./pages/MainApp";
+import SignUp from "./pages/SignUp";
 import { AuthProvider } from "./security/AuthContext";
 import ProtectedRoute from "./security/ProtectedRoute";
-import Login from "./pages/Login";
-import SignUp from "./pages/SignUp";
-import MainApp from "./pages/MainApp";
 
 // --- NEW IMPORTS ---
 import { LoginPopup } from "./modal/LoginPopup";
@@ -15,10 +14,18 @@ function App() {
   const { message, type, hideNotification } = useNotificationStore();
 
   return (
-    <Router>
+    /* FIX: Added Future Flags to opt-in to v7 behavior 
+       This removes the console warnings about state wrapping and splat paths.
+    */
+   
+    <Router 
+      future={{ 
+        v7_startTransition: true, 
+        v7_relativeSplatPath: true 
+      }}
+    >
       <AuthProvider>
         {/* GLOBAL NOTIFICATION COMPONENT */}
-        {/* Placed here so it's always available across all routes */}
         <LoginPopup 
           message={message} 
           type={type} 

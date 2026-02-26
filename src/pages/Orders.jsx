@@ -1,10 +1,18 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { IconPlus, IconSearch, IconShirt } from "../components/icons";
-import OrderFilters from "../components/orders/OrderFilters";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+
+// Store & Tour Imports
+import { useOrderStore } from "../store/orders/useOrderStore";
+import { useOrderFilterStore } from "../store/orders/useOrderFilterStore";
+import { useActivityStore } from "../store/activities/useActivityStore";
+import { startGlobalTour } from '../tours/globalTours';
+
+// Component Imports
 import OrderCard from "../components/orders/OrderCard";
-import { useOrderStore } from "../store/orders/useOrderStore"; 
+import OrderFilters from "../components/orders/OrderFilters";
+import { IconAddNewOrder, IconShirt, IconSearch } from "../components/icons";
+import { OrderListSkeleton } from "../components/skeleton-loader";
 
 const SPRING_TRANSITION = {
   type: "spring",
@@ -14,58 +22,70 @@ const SPRING_TRANSITION = {
   restDelta: 0.01
 };
 
-const Button = ({ children, className = "", ...props }) => (
-  <button className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${className}`} {...props}>
-    {children}
-  </button>
-);
-
-const Input = ({ className, ...props }) => (
-  <input
-    className={`
-      flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm
-      placeholder:text-gray-400 outline-none transition-all
-      focus:!border-black focus:!ring-0
-      ${className}
-    `}
-    {...props}
-  />
-);
-
-const LaundryLoader = () => (
-  <div className="flex flex-col items-center justify-center space-y-2">
-    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-    <p className="text-xs text-gray-400">Loading orders...</p>
-  </div>
-);
-
 export default function Orders() {
-  const { orders, isLoading, subscribeToOrders, updateOrderStatus } = useOrderStore();
-  
-  const [filteredOrders, setFilteredOrders] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Subscribe to Firebase on mount
+  // 1. TOUR DETECTION (Defined at the top to prevent ReferenceErrors)
+  const searchParams = new URLSearchParams(location.search);
+  const isTourActive = searchParams.get('tour') === 'active';
+
+  // 2. STORE DATA
+  const { orders, isLoading, subscribeToOrders, updateOrderStatus } = useOrderStore();
+  const logActivity = useActivityStore((state) => state.logActivity);
+  const { 
+    searchTerm, setSearchTerm, 
+    statusFilter, setStatusFilter, 
+    dateFilter, setDateFilter 
+  } = useOrderFilterStore();
+
+  // 3. LOCAL STATE
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
+
+  // Determine if we need the Dummy Card for the Tour
+  const showDummyCard = isTourActive && (isLoading || filteredOrders.length === 0);
+
+  // --- EFFECTS ---
+
+  // Firebase Subscription
   useEffect(() => {
     const unsubscribe = subscribeToOrders();
     return () => unsubscribe(); 
   }, [subscribeToOrders]);
 
+  // Tour Trigger Logic
+  useEffect(() => {
+    if (isTourActive && !isLoading) {
+      const timer = setTimeout(() => {
+        startGlobalTour(navigate);
+      }, 1200); 
+      return () => clearTimeout(timer);
+    }
+  }, [isTourActive, isLoading, navigate]);
+
+  // Skeleton Delay Logic
+  useEffect(() => {
+    let timer;
+    if (isLoading) {
+      timer = setTimeout(() => setShouldShowSkeleton(true), 400);
+    } else {
+      setShouldShowSkeleton(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  // --- FILTER LOGIC ---
   const filterOrders = useCallback(() => {
     let filtered = [...orders];
 
-    // Status Filter
     if (statusFilter !== "all") {
       filtered = filtered.filter(order => order.status === statusFilter);
     }
 
-    // Date Filter Logic
     if (dateFilter !== "all") {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
       filtered = filtered.filter(order => {
         const orderDate = new Date(order.created_date);
         switch (dateFilter) {
@@ -87,109 +107,124 @@ export default function Orders() {
       });
     }
 
-    // --- UPDATED SEARCH FILTER ---
-    // Now searches Name, Phone, Order #, AND Address
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(order =>
         (order.customer_name?.toLowerCase().includes(lowerTerm)) ||
-        (order.customer_phone?.includes(lowerTerm)) ||
-        (order.customer_address?.toLowerCase().includes(lowerTerm)) || // Added Address Search
         (order.order_number?.toLowerCase().includes(lowerTerm))
       );
     }
-    
-    setFilteredOrders(filtered);
+
+    // Logic to keep the list clean (Active vs Picked Up)
+    const active = filtered.filter(o => o.status !== 'picked_up');
+    const pickedUp = filtered.filter(o => o.status === 'picked_up');
+    const limitedPickedUp = pickedUp.slice(0, Math.max(0, 30 - active.length));
+
+    setFilteredOrders([...active, ...limitedPickedUp]);
   }, [orders, searchTerm, statusFilter, dateFilter]);
 
   useEffect(() => {
     filterOrders();
   }, [filterOrders]);
 
+  const handleStatusUpdate = useCallback(async (orderId, newStatus) => {
+    try {
+      const orderToLog = orders.find(o => o.id === orderId);
+      await updateOrderStatus(orderId, newStatus);
+      if (orderToLog) logActivity(orderToLog, newStatus);
+    } catch (error) {
+      console.error("Status update failed:", error);
+    }
+  }, [orders, updateOrderStatus, logActivity]);
+
+  // --- RENDERING ---
+  if (isLoading && shouldShowSkeleton && !isTourActive) return <OrderListSkeleton />;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-3 pt-2 md:p-4">
-      <motion.div layoutRoot className="max-w-5xl mx-auto px-1 md:px-2">
+    <div className="min-h-screen bg-app-light p-2">
+      <motion.div layoutRoot className="max-w-6xl mx-auto px-1 md:px-2">
         <LayoutGroup>
+          
           {/* Header */}
-          <motion.div layout className="flex flex-row justify-between items-center mt-2 mb-3 gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">All Orders</h1>
-              <p className="text-gray-600 mt-1 text-[14px]">Manage and track orders</p>
+          <motion.div layout className="flex flex-row items-center mb-3 gap-4">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <h1 className="text-h2 text-text-dark">All Orders</h1>
+                {!isLoading && (
+                  <span className="bg-app-dark/5 px-2 py-0.5 rounded-lg text-micro font-bold text-text-dark/70 uppercase">
+                    {filteredOrders.length}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm-text text-gray-600 mt-0.5">Manage and track orders</p>
             </div>
+            
             <Link to="/main/neworder">
-              <Button className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md text-white px-4 py-3 h-9">
-                <IconPlus className="w-4 h-4 mr-2 !text-white !stroke-white" />
-                <span className="text-sm font-medium text-white">New Order</span>
-              </Button>
+              <button className="group flex items-center justify-center w-9 h-9 shadow-md bg-white rounded-xl border border-text-dark/20 active:scale-95 transition-all">
+                <IconAddNewOrder className="w-5 h-5" />
+              </button>
             </Link>
           </motion.div>
 
-          {/* Search & Filters */}
-          <motion.div layout className="flex flex-col lg:flex-row gap-2 mb-3">
-            <div className="relative w-full lg:flex-1">
-              <IconSearch className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
-              <Input
-                // Updated Placeholder to indicate Address search
-                placeholder="Search name, phone, address, or order #..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="!pl-10 bg-white/80 backdrop-blur-sm transition-colors border-slate-200 w-full"
-              />
-            </div>
-            
-            <div className="w-full lg:w-auto">
-              <OrderFilters 
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                dateFilter={dateFilter}
-                setDateFilter={setDateFilter}
-              />
-            </div>
+          {/* Filters Bar */}
+          <motion.div layout className="mb-3">
+            <OrderFilters 
+              statusFilter={statusFilter} setStatusFilter={setStatusFilter}
+              dateFilter={dateFilter} setDateFilter={setDateFilter}
+              searchTerm={searchTerm} setSearchTerm={setSearchTerm}
+            />
           </motion.div>
 
           {/* Orders List */}
-          <motion.div layout className="grid gap-1 grid-cols-1 overflow-visible">
+          <motion.div layout className="flex flex-col overflow-visible">
             <AnimatePresence mode="popLayout">
-              {isLoading ? (
-                <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="col-span-full flex justify-center items-center py-20">
-                  <LaundryLoader />
-                </motion.div>
-              ) : filteredOrders.length > 0 ? (
-                filteredOrders.map((order, index) => (
-                  <motion.div
-                    key={order.id}
-                    layout
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.98 }}
-                    transition={{ ...SPRING_TRANSITION, delay: index * 0.03 }}
-                  >
-                    <OrderCard
-                      order={order}
-                      onStatusUpdate={updateOrderStatus}
-                    />
-                  </motion.div>
-                ))
-              ) : (
-                <motion.div key="empty" layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="col-span-full text-center py-16 bg-white/40 backdrop-blur-sm rounded-2xl border border-dashed border-slate-300">
-                  <div className="flex justify-center mb-4">
-                    <IconShirt className="w-12 h-12 text-slate-300" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-600 mb-1">No orders found</h3>
-                  <p className="text-sm text-slate-400 mb-6">
-                    {(searchTerm || statusFilter !== "all" || dateFilter !== "all")
-                      ? "Try adjusting your search or filters"
-                      : "Start by creating your first order"
-                    }
-                  </p>
-                  <Link to="/main/neworder">
-                    <Button className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-6 py-2 rounded-xl shadow-sm transition-all">
-                      <IconPlus className="w-4 h-4 mr-2" />
-                      Create First Order
-                    </Button>
-                  </Link>
-                </motion.div>
-              )}
+               {/* 1. REAL ORDERS */}
+               {filteredOrders.length > 0 ? (
+                 filteredOrders.map((order, index) => (
+                   <motion.div
+                     key={order.id}
+                     layout
+                     initial={{ opacity: 0, y: 10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     exit={{ opacity: 0, scale: 0.98 }}
+                     transition={{ ...SPRING_TRANSITION, delay: index * 0.02 }}
+                     // ID for Tour Targeting (First real card)
+                     id={index === 0 ? "step-order-card-0" : undefined}
+                   >
+                     <OrderCard order={order} onStatusUpdate={handleStatusUpdate} />
+                   </motion.div>
+                 ))
+               ) : !showDummyCard && (
+                 <motion.div key="empty" className="text-center py-20">
+                   <IconShirt className="w-10 h-10 text-text-dark/10 mx-auto mb-2" />
+                   <h3 className="text-h3 font-medium text-text-dark/70">No orders found</h3>
+                 </motion.div>
+               )}
+
+               {/* 2. TOUR DUMMY CARD (Force Reveal) */}
+               {showDummyCard && (
+                 <motion.div
+                   key="tour-dummy"
+                   id="step-order-card-0"
+                   layout
+                   initial={{ opacity: 0, scale: 0.95 }}
+                   animate={{ opacity: 1, scale: 1 }}
+                   className="w-full bg-white p-4 rounded-xl border-2 border-dashed border-blue-400/50 shadow-sm flex items-center justify-between mb-3"
+                 >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                        <IconShirt className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div>
+                        <div className="h-4 w-32 bg-blue-100/50 rounded mb-2 animate-pulse" />
+                        <div className="h-3 w-24 bg-blue-50 rounded animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="px-3 py-1 bg-blue-100 text-blue-700 text-micro font-bold rounded-full uppercase">
+                      Example Order
+                    </div>
+                 </motion.div>
+               )}
             </AnimatePresence>
           </motion.div>
         </LayoutGroup>

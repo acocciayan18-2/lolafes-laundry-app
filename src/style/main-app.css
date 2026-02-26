@@ -1,14 +1,11 @@
 .mainapp-con {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-}
-.mainapp-con {
-  height: 100vh; /* Fallback for older browsers */
-  height: 100dvh; /* Dynamic height that accounts for iPhone tabs */
+  width: 100vw;
+  height: 100dvh; /* Vital for Safari */
+  display: flex;
+  overflow: hidden;
 }
 
-/* Also update the sidebar and main content area to follow suit */
-.sidebar, .mainapp-pages-con {
-  height: 100%;
+/* Ensure the sidebar matches the parent's dynamic height */
+.sidebar-container, .sidebar {
+  height: 100%; 
 }

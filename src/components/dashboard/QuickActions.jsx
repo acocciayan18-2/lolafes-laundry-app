@@ -1,28 +1,22 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { IconPlus, IconUsers } from '../icons'; 
+import { IconAddNewOrder, IconUsers } from '../icons';
 
 export default function QuickActions() {
-  // Shared structural classes (Shape, Size, Shadow, Font)
-  // We extract this to ensure BOTH buttons are identical in size/feel
-  const commonBtnClass = "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none shadow-md px-4 py-3 h-9 text-sm";
-
+  // Common classes updated to use transition between your new specific tokens
+  
   return (
-    <div className="flex gap-3">
-      {/* Button 1: New Order (Primary - Blue Gradient) */}
+    <div className="flex items-center gap-1.5">
+      {/* 1. NEW ORDER BUTTON - Updated to high-contrast Dark theme */}
       <Link to="/main/neworder">
-        <button className={`${commonBtnClass} bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white`}>
-          <IconPlus className="w-4 h-4 mr-2 !text-white !stroke-white" />
-          New Order
+        <button className="group flex items-center justify-center w-9 shadow-md h-9 hover:bg-app-dark/5 active:bg-app-dark/5 bg-white rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200 ">
+          <IconAddNewOrder className="w-5 h-5 " />
         </button>
       </Link>
 
-      {/* Button 2: Customers (Secondary - White/Gray) */}
-      {/* Uses the exact same commonBtnClass for structure, only color differs */}
+      {/* 2. CUSTOMERS BUTTON - Updated to Light theme with Dark text */}
       <Link to="/main/customers">
-        <button className={`${commonBtnClass} bg-white border border-gray-200 text-slate-700 hover:bg-gray-50`}>
-          <IconUsers className="w-4 h-4 mr-2 text-slate-700" />
-          Customers
+        <button className="group flex items-center justify-center w-9 h-9 shadow-md bg-white hover:bg-app-dark/5 active:bg-app-dark/5 rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200 ">
+          <IconUsers className="w-4 h-4 " />
         </button>
       </Link>
     </div>

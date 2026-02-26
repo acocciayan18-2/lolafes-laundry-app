@@ -5,8 +5,6 @@ import {
   deleteDoc, doc, query, orderBy, where, getDocs
 } from 'firebase/firestore';
 
-// Note: We are NOT importing other stores at the top level anymore.
-
 export const useServiceStore = create((set, get) => ({
   services: [],
   isLoading: true,
@@ -14,16 +12,14 @@ export const useServiceStore = create((set, get) => ({
   subscribeToServices: () => {
     const q = query(collection(db, "services"), orderBy("name", "asc"));
     
-    return onSnapshot(q, async (snapshot) => {
+    return onSnapshot(q, (snapshot) => {
       const servicesData = snapshot.docs.map(doc => ({ 
         id: doc.id, 
         ...doc.data() 
       }));
-      
       set({ services: servicesData, isLoading: false });
     }, async (error) => {
       console.error("Firebase Subscription Error:", error);
-      // Lazy load notification for error handling
       const { useNotificationStore } = await import("../ui/useNotificationStore");
       useNotificationStore.getState().showNotification("Connection lost. Retrying...", "error");
       set({ isLoading: false });
@@ -31,144 +27,123 @@ export const useServiceStore = create((set, get) => ({
   },
 
   addService: async (serviceData) => {
-  const { useNotificationStore } = await import("../ui/useNotificationStore"); 
-  const { showNotification } = useNotificationStore.getState();
-  try {
-    await addDoc(collection(db, "services"), serviceData);
-    showNotification(`${serviceData.name} added successfully!`, "success");
-    return true; // Tell the component we succeeded
-  } catch (error) {
-    showNotification("Failed to add service.", "error");
-    return false; // Tell the component we failed
-  }
-},
-
- updateService: async (id, updatedData) => {
-  const { useNotificationStore } = await import("../ui/useNotificationStore"); 
-  const { useLoyaltyStore } = await import("./useLoyaltyStore");
-
-  const { showNotification } = useNotificationStore.getState();
-  const loyaltySettings = useLoyaltyStore.getState().loyaltySettings;
-
-  const services = get().services;
-  const currentService = services.find(s => s.id === id);
-
-  try {
-    // CHECKPOINT: If we are DISABLING the service
-    if (currentService.is_active && updatedData.is_active === false) {
-      
-      // 1. Loyalty Check
-      if (loyaltySettings.is_enabled && loyaltySettings.free_service_type === currentService.name) {
-        const msg = `Cannot disable: "${currentService.name}" is currently the Loyalty Reward.`;
-        showNotification(msg, "error");
-        return false; // Stop execution quietly
-      }
-
-      // 2. Active Order Check
-      const ordersRef = collection(db, "orders");
-      const q = query(ordersRef, where("status", "not-in", ["completed", "picked_up"]));
-      const snapshot = await getDocs(q);
-      const inUse = snapshot.docs.some(d => d.data().services?.some(s => s.id === id));
-      
-      if (inUse) {
-        const msg = "Cannot disable: Service is currently in use by active orders.";
-        showNotification(msg, "error");
-        return false; // Stop execution quietly
-      }
-    }
-
-    // CHECKPOINT: If we are CHANGING THE NAME
-    if (updatedData.name && updatedData.name !== currentService.name) {
-       if (loyaltySettings.is_enabled && loyaltySettings.free_service_type === currentService.name) {
-          const msg = "Cannot rename: Update Loyalty Settings reward first.";
-          showNotification(msg, "error");
-          return false; // Stop execution quietly
-       }
-    }
-
-    // If all checks pass, proceed to update
-    const serviceRef = doc(db, "services", id);
-    await updateDoc(serviceRef, updatedData);
-    
+    const { useNotificationStore } = await import("../ui/useNotificationStore"); 
+    const { showNotification } = useNotificationStore.getState();
     try {
-    // If checkpoints pass:
-    const serviceRef = doc(db, "services", id);
-    await updateDoc(serviceRef, updatedData);
-    
-    // Only show notification for manual saves (not toggles)
-    if (Object.keys(updatedData).length > 1) {
-      showNotification("Service updated successfully", "success");
+      await addDoc(collection(db, "services"), serviceData);
+      showNotification(`${serviceData.name} added successfully!`, "success");
+      return true;
+    } catch (error) {
+      showNotification("Failed to add service.", "error");
+      return false;
     }
-    return true; // Success!
-  } catch (error) {
-    // If it's not a validation error we already handled:
-    if (!error.message.startsWith("Cannot")) {
-      const { useNotificationStore } = await import("../ui/useNotificationStore");
-      useNotificationStore.getState().showNotification("Update failed", "error");
-    }
-    return false; // Failure!
-  }
+  },
 
-  } catch (error) {
-    console.error("Database Error:", error);
-    showNotification("Failed to sync with cloud", "error");
-    return false;
-  }
-},
+  updateService: async (id, updatedData) => {
+    const { useNotificationStore } = await import("../ui/useNotificationStore"); 
+    const { useLoyaltyStore } = await import("./useLoyaltyStore");
+
+    const { showNotification } = useNotificationStore.getState();
+    const loyaltySettings = useLoyaltyStore.getState().loyaltySettings;
+
+    const currentService = get().services.find(s => s.id === id);
+    if (!currentService) return false;
+
+    try {
+      // 1. DISABLING CHECK
+      if (currentService.is_active && updatedData.is_active === false) {
+        if (loyaltySettings?.is_enabled && loyaltySettings.free_service_type === currentService.name) {
+          showNotification(`Cannot disable: "${currentService.name}" is the Loyalty Reward.`, "error");
+          return false;
+        }
+
+        const ordersRef = collection(db, "orders");
+        const q = query(ordersRef, where("status", "not-in", ["completed", "picked_up"]));
+        const snapshot = await getDocs(q);
+        const inUse = snapshot.docs.some(d => d.data().services?.some(s => s.id === id));
+        
+        if (inUse) {
+          showNotification("Cannot disable: Service is currently in use by active orders.", "error");
+          return false;
+        }
+      }
+
+      // 2. RENAME CHECK
+      if (updatedData.name && updatedData.name !== currentService.name) {
+         if (loyaltySettings?.is_enabled && loyaltySettings.free_service_type === currentService.name) {
+            showNotification("Cannot rename: Update Loyalty Settings reward first.", "error");
+            return false;
+         }
+      }
+
+      // 3. EXECUTE UPDATE
+      const serviceRef = doc(db, "services", id);
+      await updateDoc(serviceRef, updatedData);
+      
+      if (Object.keys(updatedData).length > 1) {
+        showNotification("Service updated successfully", "success");
+      }
+      return true;
+
+    } catch (error) {
+      console.error("Database Error:", error);
+      showNotification("Failed to sync with cloud", "error");
+      return false;
+    }
+  },
 
   deleteServiceSafe: async (serviceId, serviceData) => {
-    // Lazy load BOTH stores to break the circular loop
     const { useLoyaltyStore } = await import("./useLoyaltyStore");
     const { useNotificationStore } = await import("../ui/useNotificationStore"); 
 
     const { showNotification } = useNotificationStore.getState();
     const loyaltySettings = useLoyaltyStore.getState().loyaltySettings;
 
-    if (!serviceData) {
-      showNotification("Missing service data.", "error");
-      throw new Error("Service data is missing.");
+    // Fallback if data is missing: try to find it in the local state
+    const data = serviceData || get().services.find(s => s.id === serviceId);
+
+    if (!data) {
+      showNotification("Could not identify service to delete.", "error");
+      return false;
     }
 
-    // CHECKPOINT 1: Loyalty Check
-    if (loyaltySettings.is_enabled && loyaltySettings.free_service_type === serviceData.name) {
-      const msg = `Cannot delete: "${serviceData.name}" is the Loyalty Reward.`;
-      showNotification(msg, "error");
-      throw new Error(msg);
-    }
-
-    // CHECKPOINT 2: Active Orders Check
     try {
+      // CHECKPOINT 1: Loyalty
+      if (loyaltySettings?.is_enabled && loyaltySettings.free_service_type === data.name) {
+        showNotification(`Cannot delete: "${data.name}" is the Loyalty Reward.`, "error");
+        return false;
+      }
+
+      // CHECKPOINT 2: Active Orders
       const ordersRef = collection(db, "orders");
       const q = query(ordersRef, where("status", "not-in", ["completed", "picked_up"]));
       const snapshot = await getDocs(q);
       
-      const inActiveOrder = snapshot.docs.some(docSnap => {
-        const order = docSnap.data();
-        return order.services?.some(s => s.id === serviceId);
-      });
+      const inActiveOrder = snapshot.docs.some(docSnap => 
+        docSnap.data().services?.some(s => s.id === serviceId)
+      );
 
       if (inActiveOrder) {
-        const msg = "Service is in use by active orders.";
-        showNotification(msg, "error");
-        throw new Error(msg);
+        showNotification("Service is in use by active orders.", "error");
+        return false;
       }
 
-      // CHECKPOINT 3: The Archive Move
+      // CHECKPOINT 3: Archive & Delete
       await addDoc(collection(db, "deleted_services"), {
-        ...serviceData,
+        ...data,
         original_id: serviceId,
         archived_at: new Date().toISOString(),
         archive_reason: "Manual Deletion"
       });
 
       await deleteDoc(doc(db, "services", serviceId));
-      showNotification(`${serviceData.name} deleted successfully`, "success");
+      showNotification(`${data.name} deleted successfully`, "success");
+      return true;
 
     } catch (err) {
-      if (!err.message.includes("Cannot delete")) {
-        showNotification("Cloud transfer failed", "error");
-      }
-      throw err;
+      console.error("Delete failed:", err);
+      showNotification("Cloud transfer failed", "error");
+      return false;
     }
   }
 }));
