@@ -33,6 +33,14 @@ const STEPS_BY_PAGE = {
       },
     },
     {
+      element: "#step-unclaimed-orders", // NEW STEP INCLUDED
+      popover: {
+        title: "🚨 Overdue Pickups",
+        description:
+          "Track orders that have been ready for too long. You can claim them here.",
+      },
+    },
+    {
       element: "#step-actions",
       popover: {
         title: "🚀 Create Orders",
@@ -108,6 +116,24 @@ const STEPS_BY_PAGE = {
         description: "Track top spenders.",
       },
     },
+
+    {
+      element: "#step-customer-card-0", // Target the first card or dummy
+      popover: {
+        title: "📇 Customer Details",
+        description:
+          "Each card shows contact info and address for easy reference.",
+      },
+    },
+    {
+      element: "#step-customer-actions-0", // Target the ellipses button
+      popover: {
+        title: "⚙️ Quick Actions",
+        description:
+          "Click the ellipses to edit details or remove a customer from the record.",
+        nextBtnText: "Finish",
+      },
+    },
   ],
   services: [
     {
@@ -124,15 +150,89 @@ const STEPS_BY_PAGE = {
         description: "Set free wash rules.",
       },
     },
+    {
+      element: "#step-service-card-0", // Target the first card or dummy
+      popover: {
+        title: "🧺 Manage Rates",
+        description:
+          "Update your per-kilo pricing or temporarily disable services during peak hours.",
+        nextBtnText: "Finish",
+      },
+    },
   ],
+
+  // src/tours/globalTours.js
+
   reports: [
     {
+      element: "#step-reports-header",
+      popover: {
+        title: "📈 Business Analytics",
+        description:
+          "Welcome to your reports dashboard. Here you can track revenue, growth, and customer behavior.",
+        side: "bottom",
+        align: "start",
+      },
+    },
+    {
       element: "#step-reports-kpi",
-      popover: { title: "💰 Revenue", description: "Monitor daily income." },
+      popover: {
+        title: "💰 Key Performance Indicators",
+        description:
+          "A quick summary of your total revenue, order count, and customer growth for the selected period.",
+        side: "bottom",
+        align: "center",
+      },
     },
     {
       element: "#step-reports-performance",
-      popover: { title: "📈 Growth", description: "Visualize performance." },
+      popover: {
+        title: "📊 Sales Performance",
+        description:
+          "Visualize your revenue trends over time to identify your busiest days and weeks.",
+        side: "top",
+        align: "center",
+      },
+    },
+    {
+      element: "#step-reports-rush",
+      popover: {
+        title: "🔥 Rush Pulse",
+        description:
+          "Monitor peak hours and service demand to better manage your shop's workflow.",
+        side: "top",
+        align: "center",
+      },
+    },
+    {
+      element: "#step-reports-mix",
+      popover: {
+        title: "🎯 Customer Mix",
+        description:
+          "See the breakdown of new vs. returning customers to measure loyalty.",
+        side: "right",
+        align: "center",
+      },
+    },
+    {
+      element: "#step-reports-top",
+      popover: {
+        title: "🏆 Top Customers",
+        description:
+          "Recognize your most loyal spenders and frequent visitors.",
+        side: "left",
+        align: "center",
+      },
+    },
+    {
+      element: ".shrink-0 button", // Targets the Export button inside the header
+      popover: {
+        title: "📥 Data Export",
+        description:
+          "Download your data as a CSV or PDF for external accounting and record-keeping.",
+        side: "left",
+        align: "center",
+      },
     },
   ],
 };

@@ -5,7 +5,9 @@ import { useCustomerStore } from "../../store/customer/useCustomerStore";
 import { useNotificationStore } from "../../store/ui/useNotificationStore"; 
 import { IconDotsHorizontal, IconMapPin, IconPhone, IconUsers, IconEdit, IconTrash } from "../icons";
 
-const CustomerCard = ({ customer, onEdit }) => {
+const CustomerCard = ({ customer, onEdit, actionId  }) => {
+
+  
   const [showMenu, setShowMenu] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   
@@ -46,6 +48,7 @@ const CustomerCard = ({ customer, onEdit }) => {
       showNotification("Failed to remove customer. Please try again.", "error");
     }
   };
+  
 
   return (
     <>
@@ -75,17 +78,19 @@ const CustomerCard = ({ customer, onEdit }) => {
               )}
             </div>
           </div>
+          
 
           {/* ACTIONS CONTAINER */}
           <div className="relative" ref={menuRef}>
             <button 
+            id={actionId}
               onClick={(e) => {
                 e.stopPropagation();
                 setShowMenu(!showMenu);
               }}
               className="p-2 rounded-lg hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
             >
-              <IconDotsHorizontal className="w-5 h-5 text-text-dark/90" />
+              <IconDotsHorizontal className="w-5 h-5 text-text-dark/90" />  
             </button>
 
             <AnimatePresence>

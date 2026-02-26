@@ -12,11 +12,14 @@ import { useNewOrderStore } from "../store/new-order/useNewOrderStore";
 import { useLoyaltyStore } from "../store/services/useLoyaltyStore";
 import { useServiceStore } from "../store/services/useServiceStore";
 import { useNotificationStore } from "../store/ui/useNotificationStore";
-import { startGlobalTour } from "../tours/globalTours";
 
 import ClearCartModal from "../components/orders/ClearCartModal";
 // import { printThermalReceipt } from "../components/orders/receiptService";
 import { NewOrderSkeleton } from "../components/skeleton-loader";
+
+//TOUR
+import { startGlobalTour } from '../tours/globalTours';
+
 
 // --- Helper Functions ---
 const generateUniqueOrderNumber = async () => {
@@ -92,6 +95,26 @@ export default function NewOrder() {
   const { services, isLoading, subscribeToServices } = useServiceStore();
 
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
+
+  //Tour
+  useEffect(() => {
+  // We check if this specific page's tour has been done
+  // Using a unique key for each page like 'tour_dashboard_done'
+  const pageKey = location.pathname.split('/').pop() || 'dashboard';
+  const hasDoneThisPage = localStorage.getItem(`tour_${pageKey}_done`);
+
+  if (!hasDoneThisPage) {
+    const timer = setTimeout(() => {
+      startGlobalTour(); 
+      setForceReveal(true); 
+      // Mark this specific page as done so it doesn't pop up every time
+      localStorage.setItem(`tour_${pageKey}_done`, 'true');
+    }, 1000); 
+    
+    return () => clearTimeout(timer);
+  }
+}, [location.pathname]);
+
 
   // States
   const [isProcessing, setIsProcessing] = useState(false);

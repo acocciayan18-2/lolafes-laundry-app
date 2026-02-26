@@ -1,7 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState, useRef } from 'react'; // 1. Added useRef
+import { useEffect, useState, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+// Store & Tour Imports
 import { useOrderStore } from '../store/orders/useOrderStore';
-import { useUnclaimedStore } from '../store/orders/useUnclaimedStore'; // 2. Added store import
+import { useUnclaimedStore } from '../store/orders/useUnclaimedStore';
+import { startGlobalTour } from '../tours/globalTours';
 
 // Component Imports
 import CompactIntelligence from '../components/dashboard/CompactIntelligence';
@@ -9,8 +13,14 @@ import QuickActions from '../components/dashboard/QuickActions';
 import QuickStats from '../components/dashboard/QuickStats';
 import RecentActivity from '../components/dashboard/RecentActivity';
 import TodayOrders from '../components/dashboard/TodayOrders';
-import UnclaimedOrders from'../components/dashboard/UnclaimedOrders';
-import { IconAlertTriangle, IconCheckCircle, IconClock, IconPackage, IconTrendingUp } from '../components/icons';
+import UnclaimedOrders from '../components/dashboard/UnclaimedOrders';
+import { 
+  IconAlertTriangle, 
+  IconCheckCircle, 
+  IconClock, 
+  IconPackage, 
+  IconTrendingUp 
+} from '../components/icons';
 import { DashboardSkeleton } from '../components/skeleton-loader';
 
 const containerVariants = {
@@ -29,21 +39,41 @@ const isSameDay = (d1, d2) => {
          d1.getDate() === d2.getDate();
 };
 
-
 export default function Dashboard() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { orders, isLoading, subscribeToOrders } = useOrderStore();
-  const { unclaimedOrders } = useUnclaimedStore(); // 3. Get unclaimed orders
+  const { unclaimedOrders, computeUnclaimed } = useUnclaimedStore();
+  
   const [currentTime, setCurrentTime] = useState(new Date());
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
-  
-  // 4. Create the Ref for scrolling
   const unclaimedRef = useRef(null);
 
+  // --- TOUR DETECTION ---
+  const searchParams = new URLSearchParams(location.search);
+  const isTourActive = searchParams.get('tour') === 'active';
+
+  // 1. SUBSCRIPTIONS & SYNC
   useEffect(() => {
     const unsubscribe = subscribeToOrders();
     return () => unsubscribe && unsubscribe();
   }, [subscribeToOrders]);
 
+  useEffect(() => {
+    if (orders.length > 0) computeUnclaimed(orders);
+  }, [orders, computeUnclaimed]);
+
+  // 2. TOUR TRIGGER
+  useEffect(() => {
+    if (isTourActive && !isLoading) {
+      const timer = setTimeout(() => {
+        startGlobalTour(navigate);
+      }, 1200); 
+      return () => clearTimeout(timer);
+    }
+  }, [isTourActive, isLoading, navigate]);
+
+  // 3. UI TIMERS
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -52,16 +82,13 @@ export default function Dashboard() {
   useEffect(() => {
     let timer;
     if (isLoading) {
-      timer = setTimeout(() => {
-        setShouldShowSkeleton(true);
-      }, 400);
+      timer = setTimeout(() => setShouldShowSkeleton(true), 400);
     } else {
       setShouldShowSkeleton(false);
     }
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  // 5. Scroll Function
   const scrollToUnclaimed = () => {
     unclaimedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
@@ -80,8 +107,11 @@ export default function Dashboard() {
   const hours = currentTime.getHours();
   const greeting = hours < 12 ? "Good morning" : hours < 18 ? "Good afternoon" : "Good evening";
 
-  if (isLoading && shouldShowSkeleton) return <DashboardSkeleton />;
-  if (isLoading && !shouldShowSkeleton) return null;
+  // --- RENDERING LOGIC ---
+  // Guard: We only show the skeleton if we are NOT in tour mode. 
+  // This ensures the Tour Guide can find the "Dummy" components instantly.
+  if (isLoading && shouldShowSkeleton && !isTourActive) return <DashboardSkeleton />;
+  if (isLoading && !shouldShowSkeleton && !isTourActive) return null;
 
   return (
     <div className="min-h-screen bg-app-light text-slate-900 p-2 transition-colors duration-500">
@@ -124,33 +154,30 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-            {/* --- 2. INTELLIGENCE TICKER --- */}
-           {/* --- 2. INTELLIGENCE & ALERTS ROW --- */}
-<motion.div variants={itemVariants} id="step-intelligence" className="flex flex-col md:flex-row items-center justify-between gap-4">
-  
-  {/* Left Side: Intelligence Ticker */}
-  <div className="flex-1 w-full">
-    <CompactIntelligence />
-  </div>
+            {/* --- 2. INTELLIGENCE & ALERTS ROW --- */}
+            <motion.div variants={itemVariants} id="step-intelligence" className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex-1 w-full">
+                <CompactIntelligence />
+              </div>
 
-  {/* Right Side: Unclaimed Alert Link (Pinned to the end) */}
-  {unclaimedOrders.length > 0 && (
-    <motion.button 
-      initial={{ opacity: 0, x: 10 }}
-      animate={{ opacity: 1, x: 0 }}
-      onClick={scrollToUnclaimed}
-      className="shrink-0 flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl transition-all group"
-    >
-      <div className="relative">
-        <IconAlertTriangle className="w-4 h-4 text-red-500" />
-        <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
-      </div>
-      <span className="text-micro font-bold text-red-600 ">
-        {unclaimedOrders.length} Overdue Pickups
-      </span>
-    </motion.button>
-  )}
-</motion.div>
+              {unclaimedOrders.length > 0 && (
+                <motion.button 
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  onClick={scrollToUnclaimed}
+                  className="shrink-0 flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl transition-all group"
+                >
+                  <div className="relative">
+                    <IconAlertTriangle className="w-4 h-4 text-red-500" />
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                  </div>
+                  <span className="text-micro font-bold text-red-600 ">
+                    {unclaimedOrders.length} Overdue Pickups
+                  </span>
+                </motion.button>
+              )}
+            </motion.div>
+
             {/* --- 3. QUICK STATS --- */}
             <motion.div variants={itemVariants} id="step-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <QuickStats title="Today's Sales" value={`₱${todayRevenue.toLocaleString()}`} icon={<IconTrendingUp />} bgColor="from-emerald-400 to-green-500 shadow-emerald-200" trend={`${todayOrders.length} orders`} />
@@ -166,10 +193,12 @@ export default function Dashboard() {
                   <TodayOrders orders={todayOrders} isLoading={isLoading} />
                 </motion.div>
 
-                {/* --- 7. ATTACH THE REF HERE --- */}
-                <motion.div ref={unclaimedRef} variants={itemVariants} id="step-unclaimed-orders">
-                  <UnclaimedOrders />
-                </motion.div>
+                {/* Overdue Section: Revealed if there is data OR if tour is active */}
+                {(unclaimedOrders.length > 0 || isTourActive) && (
+                  <motion.div ref={unclaimedRef} variants={itemVariants} id="step-unclaimed-orders">
+                    <UnclaimedOrders />
+                  </motion.div>
+                )}
               </div>
 
               <motion.div variants={itemVariants} id="step-activity" className="lg:col-span-6">
