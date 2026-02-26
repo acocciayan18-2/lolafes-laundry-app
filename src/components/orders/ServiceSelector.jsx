@@ -12,11 +12,8 @@ export const ServiceSelector = ({
   setSelectedServices,
   Button,
   Badge,
-<<<<<<< HEAD
-=======
   // New prop to track if the customer info is valid
   isCustomerIncomplete = true 
->>>>>>> Karen2.0
 }) => {
   const { services, subscribeToServices, isLoading } = useServiceStore();
 
@@ -25,10 +22,7 @@ export const ServiceSelector = ({
     return () => unsubscribe();
   }, [subscribeToServices]);
 
-<<<<<<< HEAD
-=======
   // ... (serviceTypeLabels mapping remains the same)
->>>>>>> Karen2.0
   const serviceTypeLabels = {
     wash_only: "Wash Only",
     dry_only: "Dry Only",
@@ -53,12 +47,9 @@ export const ServiceSelector = ({
   };
 
   const updateQuantity = (service, delta) => {
-<<<<<<< HEAD
-=======
     // Safety check: Don't allow updates if customer info is missing
     if (isCustomerIncomplete) return;
 
->>>>>>> Karen2.0
     const existingIndex = selectedServices.findIndex((s) => s.id === service.id && !s.is_reward);
     
     if (existingIndex !== -1) {
@@ -108,15 +99,6 @@ export const ServiceSelector = ({
   });
 
   return (
-<<<<<<< HEAD
-    <div  className="bg-white shadow-md rounded-xl border border-gray-100 overflow-hidden"
-    >
-      <div className="p-4 pb-2 border-b border-gray-50 bg-white">
-        {/* HEADER: text-h3 */}
-        <h3 className="flex items-center gap-2 text-h3 font-bold text-text-dark">
-          <IconPackage className="w-6 h-6 !text-btn-primary !stroke-btn-primary" />
-          Services
-=======
     <div className={`bg-white shadow-md rounded-xl border border-gray-100 overflow-hidden transition-opacity duration-300 ${isCustomerIncomplete ? 'opacity-60' : 'opacity-100'}`}>
       <div className="p-4 pb-2 border-b border-gray-50 bg-white">
         <h3 className="flex items-center justify-between text-h3 font-bold text-text-dark">
@@ -129,7 +111,6 @@ export const ServiceSelector = ({
               Complete Customer Info First
             </span>
           )}
->>>>>>> Karen2.0
         </h3>
       </div>
 
@@ -139,10 +120,6 @@ export const ServiceSelector = ({
         ) : (
           sortedServiceTypes.map((type) => (
             <div key={type} className="space-y-2 !mt-4">
-<<<<<<< HEAD
-              {/* CATEGORY LABEL: text-nano uppercase */}
-=======
->>>>>>> Karen2.0
               <h4 className="text-sm-text uppercase font-bold text-btn-primary ml-1">
                 {serviceTypeLabels[type] || type.replace('_', ' ')}
               </h4>
@@ -155,23 +132,12 @@ export const ServiceSelector = ({
                       key={service.id} 
                       className={`flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
                         qty > 0 
-<<<<<<< HEAD
-                          ? " border border-app-dark shadow-md scale-[1.0]" 
-                          : "bg-gray-50/50 border border-gray-100 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="flex-1">
-                        {/* SERVICE NAME: text-base-text */}
-                        <h5 className="font-bold text-gray-900 text-base-text">{service.name}</h5>
-                        {/* PRICE BADGE: text-micro */}
-=======
                           ? " border border-app-dark/70 shadow-md scale-[1.0]" 
                           : "bg-gray-60/100 border border-gray-100"
                       }`}
                     >
                       <div className="flex-1">
                         <h5 className="font-bold text-gray-900 text-base-text">{service.name}</h5>
->>>>>>> Karen2.0
                         <Badge className="text-micro font-bold text-gray-600"> ₱{Number(service.price_per_kg).toFixed(2)}</Badge>
                       </div>
 
@@ -179,33 +145,18 @@ export const ServiceSelector = ({
                         <button
                           type="button"
                           onClick={() => updateQuantity(service, -1)}
-<<<<<<< HEAD
-                          disabled={qty === 0}
-                          className="w-8 h-8 flex items-center justify-center rounded-md cursor-pointer transition-all active:scale-90 hover:bg-gray-50 disabled:opacity-20 disabled:border-gray-300 disabled:cursor-not-allowed"
-=======
                           disabled={qty === 0 || isCustomerIncomplete}
                           className="w-8 h-8 flex items-center justify-center rounded-md transition-all active:scale-90 hover:bg-gray-100 disabled:opacity-20 disabled:cursor-not-allowed"
->>>>>>> Karen2.0
                         >
                           <p className="text-h3 font-medium text-gray-800 leading-none">–</p>
                         </button>
                         
-<<<<<<< HEAD
-                        {/* QTY DISPLAY: text-sm-text */}
-=======
->>>>>>> Karen2.0
                         <div className="w-8 text-center font-bold text-sm-text text-gray-800">
                           {qty}
                         </div>
 
                         <button
                           onClick={() => updateQuantity(service, 1)}
-<<<<<<< HEAD
-                          aria-label={`Add ${service.name}`}
-                          className="w-10 h-8 flex items-center justify-center rounded-md bg-btn-primary text-white hover:bg-btn-primary/80 transition-colors"
-                        >
-                          <span className="text-h3 font-medium text-white leading-none">+</span>
-=======
                           disabled={isCustomerIncomplete}
                           className={`w-10 h-8 flex items-center justify-center rounded-md transition-all active:scale-95 ${
                             isCustomerIncomplete 
@@ -214,7 +165,6 @@ export const ServiceSelector = ({
                           }`}
                         >
                           <span className="text-h3 font-medium leading-none">+</span>
->>>>>>> Karen2.0
                         </button>
                       </div>
                     </div>
@@ -224,14 +174,9 @@ export const ServiceSelector = ({
             </div>
           ))
         )}
-<<<<<<< HEAD
-
-        <AnimatePresence>
-=======
         
         {/* ... (Current Selection section remains the same) */}
          <AnimatePresence>
->>>>>>> Karen2.0
           {selectedServices.length > 0 && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}

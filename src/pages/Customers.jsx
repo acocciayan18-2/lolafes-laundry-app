@@ -2,21 +2,10 @@ import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import CustomerCard from "../components/customers/CustomerCard";
 import CustomerStats from "../components/customers/CustomerStats";
-<<<<<<< HEAD
-import EditCustomerModal from "../components/customers/EditCustomerModal"; // Added this
-import { IconSearch, IconUsers } from "../components/icons";
-import { useCustomerStore } from "../store/customer/useCustomerStore";
-import { CustomerListSkeleton } from "../components/skeleton-loader";
-
-// TOUR
-import { useLocation, useNavigate } from 'react-router-dom';
-import { startGlobalTour } from '../tours/globalTours';
-=======
 import { IconSearch, IconUsers } from "../components/icons";
 import { useCustomerStore } from "../store/customer/useCustomerStore";
 import { CustomerListSkeleton } from "../components/skeleton-loader";
 import EditCustomerModal from "../components/customers/EditCustomerModal"; 
->>>>>>> Karen2.0
 
 const SMOOTH_TRANSITION = {
   type: "spring",
@@ -34,30 +23,6 @@ const Input = ({ className, ...props }) => (
 );
 
 export default function Customers() {
-<<<<<<< HEAD
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const { customers, isLoading, subscribeToCustomers } = useCustomerStore();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
-  
-  // NEW: State for handling the Edit Modal
-  const [editingCustomer, setEditingCustomer] = useState(null);
-
-  // Tour logic 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const isTourActive = searchParams.get('tour') === 'active';
-    
-    if (isTourActive && !isLoading) {
-      const timer = setTimeout(() => {
-        startGlobalTour(navigate);
-      }, 1200); 
-      return () => clearTimeout(timer);
-    }
-  }, [location.search, isLoading, navigate]);
-=======
   const { customers, isLoading, subscribeToCustomers } = useCustomerStore();
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -66,7 +31,6 @@ export default function Customers() {
 
   // --- NEW: Modal State ---
   const [editingCustomer, setEditingCustomer] = useState(null);
->>>>>>> Karen2.0
 
   // 1. Handle Firebase Subscription
   useEffect(() => {
@@ -74,11 +38,7 @@ export default function Customers() {
     return () => unsubscribe();
   }, [subscribeToCustomers]);
 
-<<<<<<< HEAD
-  // 2. Skeleton Delay Logic
-=======
   // 2. SKELETON DELAY LOGIC:
->>>>>>> Karen2.0
   useEffect(() => {
     let timer;
     if (isLoading) {
@@ -88,12 +48,8 @@ export default function Customers() {
     } else {
       setShouldShowSkeleton(false);
     }
-<<<<<<< HEAD
-    return () => clearTimeout(timer);
-=======
 
     return () => clearTimeout(timer); 
->>>>>>> Karen2.0
   }, [isLoading]);
 
   // 3. Global Search Keydown Handler
@@ -119,11 +75,7 @@ export default function Customers() {
 
     window.addEventListener("keydown", handleGlobalSearchFocus);
     return () => window.removeEventListener("keydown", handleGlobalSearchFocus);
-<<<<<<< HEAD
-  }, []);
-=======
   }, [setSearchTerm]);
->>>>>>> Karen2.0
 
   const filteredCustomers = customers.filter(customer => {
     const term = searchTerm.toLowerCase();
@@ -134,12 +86,8 @@ export default function Customers() {
     );
   });
 
-<<<<<<< HEAD
-  // Loading States
-=======
   // --- RENDERING LOGIC ---
 
->>>>>>> Karen2.0
   if (isLoading && shouldShowSkeleton) {
     return <CustomerListSkeleton />;
   }
@@ -161,11 +109,7 @@ export default function Customers() {
         </div>
 
         {/* Search */}
-<<<<<<< HEAD
-        <div id="step-cust-search" className="relative w-full mb-3">
-=======
         <div className="relative w-full mb-3">
->>>>>>> Karen2.0
           <IconSearch className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
           <Input
             id="customer-search-input"
@@ -177,16 +121,8 @@ export default function Customers() {
         </div>
 
         {/* Stats */}
-<<<<<<< HEAD
-        <div id="step-cust-stats">
-          <CustomerStats customers={customers} />
-        </div>
-
-        {/* Customer Cards List */}
-=======
         <CustomerStats customers={customers} />
 
->>>>>>> Karen2.0
         <LayoutGroup>
           <div className="grid">
             <AnimatePresence mode="popLayout" initial={false}>
@@ -200,17 +136,10 @@ export default function Customers() {
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={SMOOTH_TRANSITION}
                   >
-<<<<<<< HEAD
-                    {/* FIXED: Added onEdit prop here */}
-                    <CustomerCard 
-                      customer={customer} 
-                      onEdit={(cust) => setEditingCustomer(cust)} 
-=======
                     {/* --- CONNECTED: onEdit handler --- */}
                     <CustomerCard 
                       customer={customer} 
                       onEdit={() => setEditingCustomer(customer)}
->>>>>>> Karen2.0
                     />
                   </motion.div>
                 ))
@@ -237,11 +166,7 @@ export default function Customers() {
           </div>
         </LayoutGroup>
 
-<<<<<<< HEAD
-        {/* EDIT MODAL OVERLAY */}
-=======
         {/* --- NEW: Modal Logic --- */}
->>>>>>> Karen2.0
         <AnimatePresence>
           {editingCustomer && (
             <EditCustomerModal 

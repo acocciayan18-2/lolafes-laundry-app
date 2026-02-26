@@ -171,10 +171,6 @@ export const IconLoyalty = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 
-<<<<<<< HEAD
-=======
-
->>>>>>> Karen2.0
 export const IconActivity = ({ className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
@@ -182,11 +178,6 @@ export const IconActivity = ({ className }) => (
 );
 
 
-<<<<<<< HEAD
-
-// 1. PENDING (Clock - Outline style)
-=======
->>>>>>> Karen2.0
 export const IconStatusPending = ({ className }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
@@ -529,8 +520,6 @@ export const IconCreditCard = ({ className }) => (
   </svg>
 );
 
-<<<<<<< HEAD
-=======
 
 
 export const IconHash = ({ className = "", size = 24 }) => (
@@ -546,7 +535,6 @@ export const IconHash = ({ className = "", size = 24 }) => (
   </svg>
 );
 
->>>>>>> Karen2.0
 export const IconX = ({ className = "w-6 h-6" }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
@@ -560,8 +548,6 @@ export const IconX = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 
-<<<<<<< HEAD
-=======
 // components/icons.jsx
 
 export const IconChevronDown = ({ className }) => (
@@ -625,7 +611,6 @@ export const IconEdit = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 
->>>>>>> Karen2.0
 export const IconClose = ({ className = "w-6 h-6" }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
@@ -643,8 +628,6 @@ export const IconClose = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 
-<<<<<<< HEAD
-=======
 
 // src/components/icons.jsx
 
@@ -681,4 +664,3 @@ export const IconCheck = ({ isMet, className = "" }) => (
     <path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z" />
   </svg>
 );
->>>>>>> Karen2.0

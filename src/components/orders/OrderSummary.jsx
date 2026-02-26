@@ -26,10 +26,7 @@ export const OrderSummary = ({
   onSubmit,
   isProcessing,
   Button,
-<<<<<<< HEAD
-=======
   isPhoneDuplicate,
->>>>>>> Karen2.0
 }) => {
   const total = selectedServices.reduce((sum, s) => sum + (Number(s.subtotal) || 0), 0);
 
@@ -40,18 +37,6 @@ export const OrderSummary = ({
   const dropdownRef = useRef(null);
   const [dropdownDirection, setDropdownDirection] = useState("bottom");
 
-<<<<<<< HEAD
-  // --- LOGIC: Validation check ---
-  const isPhoneValid = customer?.phone?.length === 11 && customer?.phone?.startsWith("09");
-  
-  const isOrderInvalid = 
-    isProcessing || 
-    selectedServices.length === 0 || 
-    !customer.name ||
-    !isPhoneValid; 
-
-  // --- REFINED OBSERVER ---
-=======
   // --- STRICT VALIDATION LOGIC ---
   const isPhoneValid = customer.phone && customer.phone.length === 11 && customer.phone.startsWith("09");
   const isCartValid = selectedServices.length > 0;
@@ -71,7 +56,6 @@ export const OrderSummary = ({
     return "Place Order";
   };
 
->>>>>>> Karen2.0
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -101,15 +85,9 @@ export const OrderSummary = ({
   }, [isDropdownOpen]);
 
   const paymentOptions = [
-<<<<<<< HEAD
-    { value: "cash", label: "Cash", icon: <IconWallet className="w-3 h-3 text-gray-400" /> },
-    { value: "gcash", label: "GCash", icon: <IconGCash className="w-4 h-4 text-gray-400" /> },
-    { value: "card", label: "Card", icon: <IconCreditCard className="w-4 h-4 text-gray-400" /> }
-=======
     { value: "cash", label: "Cash", icon: <IconWallet className="w-3 h-3 text-text-dark" /> },
     { value: "gcash", label: "GCash", icon: <IconGCash className="w-4 h-4 text-text-dark" /> },
     { value: "card", label: "Card", icon: <IconCreditCard className="w-4 h-4 text-text-dark" /> }
->>>>>>> Karen2.0
   ];
 
   const selectedOption = paymentOptions.find(opt => opt.value === paymentMethod);
@@ -140,36 +118,16 @@ export const OrderSummary = ({
           </h3>
         </div>
 
-<<<<<<< HEAD
-        <div className="p-4 space-y-5">
-          {/* CUSTOMER CARD */}
-          <div className="bg-gray-50 p-3 rounded-xl overflow-hidden border border-gray-100">
-=======
         <div className="p-4 space-y-3">
           {/* CUSTOMER CARD */}
           <div className={`p-3 rounded-xl overflow-hidden border transition-colors ${!isCustomerValid && customer.name ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
->>>>>>> Karen2.0
             <p className="text-sm-text font-medium text-text-dark/50 mb-2">Customer Details</p>
             {customer.name ? (
               <div className="space-y-1">
                 <p className="text-base-text font-bold text-gray-900 leading-tight">{customer.name}</p>
-<<<<<<< HEAD
-                <div className="flex flex-col">
-                   <p className={`text-sm-text font-medium flex items-center gap-1 ${!isPhoneValid ? "text-red-500 font-bold" : "text-text-dark"}`}>
-                    {customer.phone || customer.contact_number || "No contact number"}
-                  </p>
-                  {/* RED WARNING TEXT */}
-                  {!isPhoneValid && (
-                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">
-                      Invalid or missing 11-digit number (09XXXXXXXXX)
-                    </span>
-                  )}
-                </div>
-=======
                 <p className={`text-sm-text font-medium flex items-center gap-1 ${!isPhoneValid || isPhoneDuplicate ? 'text-red-600 font-bold' : 'text-text-dark'}`}>
                   {customer.phone || customer.contact_number || "No contact number"}
                 </p>
->>>>>>> Karen2.0
                 <p className="text-sm-text text-gray-600 leading-snug">
                   {customer.address || "No address provided"}
                 </p>
@@ -212,11 +170,7 @@ export const OrderSummary = ({
                 onChange={(e) => setNotes(e.target.value)}
                 onFocus={handleInputFocus}
                 placeholder="Add any special notes..."
-<<<<<<< HEAD
-                className="w-full p-3 rounded-lg border border-gray-300 text-base-text focus:ring-app-dark/80 focus:border-app-dark/80 outline-none min-h-[80px] resize-none"
-=======
                 className="w-full p-3 rounded-lg border border-gray-300 text-sm-text focus:ring-app-dark/80 focus:border-app-dark/80 outline-none min-h-[50px] resize-none custom-scrollbar"
->>>>>>> Karen2.0
               />
             </div>
 
@@ -272,21 +226,13 @@ export const OrderSummary = ({
                           key={option.value}
                           type="button"
                           onClick={() => { setPaymentMethod(option.value); setIsDropdownOpen(false); }}
-<<<<<<< HEAD
-                          className={`w-full px-4 py-2.5 text-left text-sm-text flex items-center justify-between tracking-tight ${paymentMethod === option.value ? "text-gray-900 font-bold bg-gray-50" : "text-gray-500 font-medium"}`}
-=======
                           className={`w-full px-4 py-2.5 text-left text-sm-text flex items-center justify-between tracking-tight ${paymentMethod === option.value ? "text-gray-900 font-medium bg-gray-100" : ""}`}
->>>>>>> Karen2.0
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-5 flex justify-center">{option.icon}</div>
                             {option.label}
                           </div>
-<<<<<<< HEAD
-                          {paymentMethod === option.value && <IconCheckBlack className="h-3.5 w-3.5 text-gray-900" />}
-=======
                           {paymentMethod === option.value && <IconCheckBlack className="h-3.5 w-3.5 text-text-dark" />}
->>>>>>> Karen2.0
                         </button>
                       ))}
                     </motion.div>
@@ -304,17 +250,10 @@ export const OrderSummary = ({
               className={`w-full h-12 text-base-text !font-medium shadow-md border-0 rounded-lg mt-2 transition-all text-white ${
                 isOrderInvalid 
                   ? "bg-gray-300 cursor-not-allowed hover:bg-gray-300" 
-<<<<<<< HEAD
-                  : "bg-green-700 hover:bg-green-600 active:bg-green-800" 
-              }`}
-            >
-              {isProcessing ? "Processing..." : "Place Order"}
-=======
                   : "bg-green-700 hover:bg-green-600 active:bg-green-800"
               }`}
             >
               {getButtonText()}
->>>>>>> Karen2.0
             </Button>
           </div>
         </div>
@@ -341,21 +280,12 @@ export const OrderSummary = ({
                 onClick={onSubmit}
                 disabled={isOrderInvalid}
                 className={`flex-1 h-12 text-base-text !font-medium shadow-md border-0 rounded-lg transition-all text-white ${
-<<<<<<< HEAD
-                    isOrderInvalid 
-                      ? "bg-gray-300 cursor-not-allowed" 
-                      : "bg-green-700 hover:bg-green-600"
-                  }`}
-              >
-                {isProcessing ? "..." : "Place Order"}
-=======
                   isOrderInvalid 
                     ? "bg-gray-300 cursor-not-allowed" 
                     : "bg-green-700 hover:bg-green-600"
                 }`}
               >
                 {isProcessing ? "..." : getButtonText()}
->>>>>>> Karen2.0
               </button>
             </div>
           </motion.div>

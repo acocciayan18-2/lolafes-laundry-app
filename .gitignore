@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-.env
-*.env
-node_modules/
-
-.vercel
-.env*.local
-=======
 # Dependencies
 node_modules/
 dist/
@@ -30,4 +22,3 @@ yarn-error.log*
 .vscode/
 .idea/
 .DS_Store
->>>>>>> Karen2.0

@@ -8,10 +8,7 @@ import "../style/sidebar.css";
 import {
   IconChart,
   IconDashboard,
-<<<<<<< HEAD
-=======
   IconGridPlus,
->>>>>>> Karen2.0
   IconPlus,
   IconSettings,
   IconShirt,
@@ -24,14 +21,9 @@ const SIDEBAR_CONFIG = {
     { text: "New Order", to: "/main/neworder", icon: <IconPlus className="w-5 h-5" /> },
     { text: "Orders", to: "/main/orders", icon: <IconShirt className="w-5 h-5" /> },
     { text: "Customers", to: "/main/customers", icon: <IconUsers className="w-5 h-5" /> },
-<<<<<<< HEAD
-    { text: "Services", to: "/main/services", icon: <IconSettings className="w-5 h-5" /> },
-    { text: "Reports", to: "/main/reports", icon: <IconChart className="w-5 h-5" /> },
-=======
     { text: "Services", to: "/main/services", icon: <IconGridPlus className="w-5 h-5" /> },
     { text: "Reports", to: "/main/reports", icon: <IconChart className="w-5 h-5" /> },
     { text: "Settings", to: "/main/settings", icon: <IconSettings className="w-5 h-5" /> },
->>>>>>> Karen2.0
   ],
   quickInfo: [
     { title: "today's orders", value: 0, bgColor: "bg-app-light", textColor: "text-text-dark" },

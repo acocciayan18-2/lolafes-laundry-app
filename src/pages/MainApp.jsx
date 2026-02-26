@@ -1,10 +1,4 @@
 import { useRef, useState } from "react";
-<<<<<<< HEAD
-import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom"; // Added routing hooks
-import Sidebar from "../components/Sidebar";
-import "../style/index.css";
-import "../style/main-app.css";
-=======
 import { Navigate, Route, Routes } from "react-router-dom";
 
 // --- IMPORTS ---
@@ -14,41 +8,20 @@ import "../style/index.css";
 import "../style/main-app.css";
 
 // --- PAGES ---
->>>>>>> Karen2.0
 import Customers from "./Customers";
 import Dashboard from "./Dashboard";
 import NewOrder from "./NewOrder";
 import Orders from "./Orders";
 import Reports from "./Reports";
 import Services from "./Services";
-<<<<<<< HEAD
-
-export default function MainApp() {
-  const navigate = useNavigate();
-  const location = useLocation();
-=======
 import Settings from "./Settings";
 
 export default function MainApp() {
->>>>>>> Karen2.0
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const scrollContainerRef = useRef(null);
 
-<<<<<<< HEAD
-  // --- TOUR TRIGGER LOGIC ---
-  const handleStartTour = () => {
-    // We clear the 'done' flag so the tour can restart
-    localStorage.removeItem('lola_tour_done');
-    
-    // Navigate to the current path but add the tour trigger
-    // This works regardless of which page you are currently on!
-    navigate(`${location.pathname}?tour=active`);
-  };
-
-=======
->>>>>>> Karen2.0
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
     const currentScrollY = scrollContainerRef.current.scrollTop;
@@ -64,12 +37,9 @@ export default function MainApp() {
   return (
     <div className="flex h-[100dvh] w-full bg-app-light mainapp-con relative overflow-hidden">
       
-<<<<<<< HEAD
-=======
       {/* 1. NETWORK TOAST (Imported) */}
       <NetworkToast />
 
->>>>>>> Karen2.0
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
       {/* Glass Overlay */}
@@ -82,16 +52,8 @@ export default function MainApp() {
         onClick={() => setIsSidebarOpen(false)}
       />
 
-<<<<<<< HEAD
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        
-        {/* Mobile Header */}
-        <header 
-=======
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
          <header 
->>>>>>> Karen2.0
           className={`lg:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-app-light border-b border-gray-100 shadow-sm z-40 transition-transform duration-300 ${
             showHeader ? "translate-y-0" : "-translate-y-full"
           }`}
@@ -116,10 +78,6 @@ export default function MainApp() {
           </button>
         </header>
 
-<<<<<<< HEAD
-        {/* Scrollable area */}
-=======
->>>>>>> Karen2.0
         <main 
           ref={scrollContainerRef}
           onScroll={handleScroll}
@@ -135,31 +93,9 @@ export default function MainApp() {
             <Route path="/neworder" element={<NewOrder />} />
             <Route path="/customers" element={<Customers />} />
             <Route path="/services" element={<Services />} />
-<<<<<<< HEAD
-          </Routes>
-        </main>
-
-        {/* --- FLOATING HELP BUTTON --- */}
-        <button
-          onClick={handleStartTour}
-          className="fixed bottom-6 right-6 z-[100] group flex items-center gap-2 bg-app-dark text-white p-3 md:px-4 md:py-3 rounded-2xl shadow-2xl hover:bg-slate-800 active:scale-95 transition-all duration-300 border border-white/10"
-          title="Start App Tour"
-        >
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            className="w-6 h-6 text-emerald-400 group-hover:rotate-12 transition-transform" 
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-          <span className="hidden md:block font-bold text-sm">Need Help?</span>
-        </button>
-
-=======
              <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
->>>>>>> Karen2.0
       </div>
     </div>
   );

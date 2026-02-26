@@ -19,13 +19,6 @@ export default function CustomerMix({ range }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-<<<<<<< HEAD
-  /* FIX: Removed 'orders' from the dependency array. 
-     Since getAnalytics handles the data fetching internally, 
-     React only needs to know when 'range' or the function itself changes.
-  */
-=======
->>>>>>> Karen2.0
   const stats = useMemo(() => getAnalytics(range), [range, getAnalytics]);
   const { newCount, returningCount, retentionRate } = stats;
 
@@ -37,20 +30,12 @@ export default function CustomerMix({ range }) {
   }, [retentionRate]);
 
   return (
-<<<<<<< HEAD
-    <div className="bg-white rounded-xl shadow-md border border-app-dark/10 transition-all duration-300 transform overflow-hidden h-full relative">
-=======
     <div className="bg-white rounded-xl shadow-md border border-app-dark/10 transition-all duration-300 transform  overflow-hidden relative">
->>>>>>> Karen2.0
       <div className="p-5">
         
         {/* Header Section */}
         <div className="flex items-start justify-between gap-1 mb-4">
-<<<<<<< HEAD
-          <div className="min-w-0 flex-1">
-=======
           <div className="min-w-0 flex-1 relative">
->>>>>>> Karen2.0
             <div className="flex items-center gap-1.5 mb-1">
               <p className="text-[13px] mb-1 font-bold text-text-dark/70 truncate uppercase">
                 Customer Retention
@@ -65,11 +50,7 @@ export default function CustomerMix({ range }) {
                 </button>
 
                 {showInfo && (
-<<<<<<< HEAD
-                  <div className="absolute left-0 top-6 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200">
-=======
                   <div className="absolute right-[-50px] top-full mt-2 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200">
->>>>>>> Karen2.0
                     <p className="text-[13px] text-text-dark/90 leading-relaxed ">
                       This metric tracks the loyalty of your shop. It represents the percentage of unique customers who have returned for more than one service.
                     </p>

@@ -1,13 +1,6 @@
-<<<<<<< HEAD
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
-import { IconTrash } from "../components/icons";
-=======
 import { collection, getDocs, limit, query, where } from 'firebase/firestore';
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
->>>>>>> Karen2.0
 import { CustomerForm } from "../components/orders/CustomerForm";
 import { LoyaltyStatus } from "../components/orders/LoyaltyStatus";
 import { OrderSummary } from "../components/orders/OrderSummary";
@@ -19,24 +12,12 @@ import { useNewOrderStore } from "../store/new-order/useNewOrderStore";
 import { useLoyaltyStore } from "../store/services/useLoyaltyStore";
 import { useServiceStore } from "../store/services/useServiceStore";
 import { useNotificationStore } from "../store/ui/useNotificationStore";
-<<<<<<< HEAD
-
-//TOUR
-import { useLocation, useNavigate } from 'react-router-dom';
-import { startGlobalTour } from '../tours/globalTours';
-
-import { NewOrderSkeleton } from "../components/skeleton-loader";
-
-// import "driver.js/dist/driver.css";
-
-=======
 import { startGlobalTour } from "../tours/globalTours";
 
 import ClearCartModal from "../components/orders/ClearCartModal";
 // import { printThermalReceipt } from "../components/orders/receiptService";
 import { NewOrderSkeleton } from "../components/skeleton-loader";
 
->>>>>>> Karen2.0
 // --- Helper Functions ---
 const generateUniqueOrderNumber = async () => {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -46,11 +27,7 @@ const generateUniqueOrderNumber = async () => {
   let newID = "";
   while (!isUnique) {
     newID = `ORD-${r(letters, 3)}${r(numbers, 3)}`;
-<<<<<<< HEAD
-    const q = query(collection(db, "orders"), where("order_number", "==", newID));
-=======
     const q = query(collection(db, "orders"), where("order_number", "==", newID), limit(1));
->>>>>>> Karen2.0
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) isUnique = true; 
   }
@@ -80,14 +57,7 @@ const Button = ({ children, variant = "primary", size = "md", className = "", ..
 const Input = ({ label, id, className = "", ...props }) => (
   <div className="w-full space-y-1">
     {label && (
-<<<<<<< HEAD
-      <label 
-        htmlFor={id} 
-        className="text-sm-text font-medium text-text-dark  ml-1 "
-      >
-=======
       <label htmlFor={id} className="text-sm-text font-medium text-text-dark ml-1">
->>>>>>> Karen2.0
         {label}
       </label>
     )}
@@ -109,64 +79,20 @@ const Badge = ({ children, className = "" }) => (
   <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${className}`}>{children}</span>
 );
 
-<<<<<<< HEAD
-
-
-
-=======
->>>>>>> Karen2.0
 export default function NewOrder() {
   const location = useLocation();
   const navigate = useNavigate();
 
-<<<<<<< HEAD
- 
-
   // Stores
-  // const checkPhoneExists = useCustomerStore((state) => state.checkPhoneExists);
-=======
-  // Stores
->>>>>>> Karen2.0
   const customers = useCustomerStore((state) => state.customers);
   const { loyaltySettings, subscribeToLoyalty } = useLoyaltyStore();
   const { submitOrder, createCustomer } = useNewOrderStore(); 
   const showNotification = useNotificationStore((state) => state.showNotification);
   const logActivity = useActivityStore((state) => state.logActivity);
-<<<<<<< HEAD
-
-  // Combine all needed properties into one call
-const { services, isLoading, subscribeToServices } = useServiceStore();
-
-
-  const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
-
-//Tour
-  useEffect(() => {
-  // We check if this specific page's tour has been done
-  // Using a unique key for each page like 'tour_dashboard_done'
-  const pageKey = location.pathname.split('/').pop() || 'dashboard';
-  const hasDoneThisPage = localStorage.getItem(`tour_${pageKey}_done`);
-
-  if (!hasDoneThisPage) {
-    const timer = setTimeout(() => {
-      startGlobalTour(); 
-      setForceReveal(true); 
-      // Mark this specific page as done so it doesn't pop up every time
-      localStorage.setItem(`tour_${pageKey}_done`, 'true');
-    }, 1000); 
-    
-    return () => clearTimeout(timer);
-  }
-}, [location.pathname]);
-
- 
-
-=======
   const { services, isLoading, subscribeToServices } = useServiceStore();
 
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
->>>>>>> Karen2.0
   // States
   const [isProcessing, setIsProcessing] = useState(false);
   const [customer, setCustomer] = useState({ name: "", phone: "", address: "" });
@@ -176,8 +102,6 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isPaid, setIsPaid] = useState(true); 
 
-<<<<<<< HEAD
-=======
   // --- VALIDATION & DUPLICATE LOGIC ---
   const isFormIncomplete = !customer.name.trim() || customer.phone.length < 11;
   
@@ -188,38 +112,11 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
     return dbPhoneClean === inputPhoneClean && c.id !== selectedCustomerId;
   });
 
->>>>>>> Karen2.0
   // --- CART PROTECTION LOGIC ---
   const [showClearWarning, setShowClearWarning] = useState(false);
   const prevCustomerRef = useRef(customer);
 
   useEffect(() => {
-<<<<<<< HEAD
-  const hasItems = selectedServices.length > 0;
-  
-  // Check if identity changed from a non-empty previous value
-  const nameChanged = prevCustomerRef.current.name !== customer.name && prevCustomerRef.current.name !== "";
-  const phoneChanged = prevCustomerRef.current.phone !== customer.phone && prevCustomerRef.current.phone !== "";
-
-  if (hasItems && (nameChanged || phoneChanged)) {
-    // Show the warning modal to prevent accidental data loss
-    setShowClearWarning(true);
-  } else {
-    prevCustomerRef.current = { ...customer };
-  }
-  
-}, [customer, selectedServices.length]);
-
-  const handleConfirmClear = () => {
-    setSelectedServices([]); // Empty the cart
-    prevCustomerRef.current = customer; // Sync the ref to the new customer
-    setShowClearWarning(false);
-   
-  };
-
-  const handleCancelClear = () => {
-    setCustomer(prevCustomerRef.current); // Revert customer info
-=======
     const hasItems = selectedServices.length > 0;
     const nameChanged = prevCustomerRef.current.name !== customer.name && prevCustomerRef.current.name !== "";
     const phoneChanged = prevCustomerRef.current.phone !== customer.phone && prevCustomerRef.current.phone !== "";
@@ -239,7 +136,6 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
 
   const handleCancelClear = () => {
     setCustomer(prevCustomerRef.current); 
->>>>>>> Karen2.0
     setShowClearWarning(false);
   };
 
@@ -280,12 +176,6 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
 
   // --- SUBMIT LOGIC ---
   const handleSubmit = async () => {
-<<<<<<< HEAD
-    if (!customer.name.trim() || selectedServices.length === 0) {
-      showNotification("Please finish customer details and select services.", "error");
-      return;
-    }
-=======
     const isNameEmpty = !customer.name.trim();
     const isPhoneEmpty = !customer.phone.trim();
     const isPhoneInvalid = customer.phone.length < 11;
@@ -306,7 +196,6 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
       return;
     }
 
->>>>>>> Karen2.0
     setIsProcessing(true);
     try {
       const uniqueOrderNumber = await generateUniqueOrderNumber();
@@ -341,37 +230,24 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
 
       await submitOrder(orderPayload);
       logActivity(orderPayload, 'pending');
-<<<<<<< HEAD
-      showNotification(`Order ${uniqueOrderNumber} created!`, "success");
-      navigate("/main/orders");
-=======
 
       // printThermalReceipt(orderPayload); 
 
       showNotification(`Order ${uniqueOrderNumber} created!`, "success");
       navigate("/main/orders");
 
->>>>>>> Karen2.0
     } catch (err) {
       setIsProcessing(false);
       showNotification("Failed to save order.", "error");
     }
   };
 
-<<<<<<< HEAD
-  // Subscriptions
-=======
->>>>>>> Karen2.0
   useEffect(() => {
     const unsubServices = subscribeToServices();
     const unsubLoyalty = subscribeToLoyalty();
     return () => { unsubServices(); unsubLoyalty(); };
   }, [subscribeToServices, subscribeToLoyalty]);
 
-<<<<<<< HEAD
-  // Global Keypress for focusing name
-=======
->>>>>>> Karen2.0
   useEffect(() => {
     const handleGlobalKeyPress = (e) => {
       if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA") return;
@@ -397,17 +273,6 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
     }
   }, [location.search, navigate]);
 
-<<<<<<< HEAD
-   // Loading state with debounce
-    if (isLoading && shouldShowSkeleton) {
-      return <NewOrderSkeleton />;
-    }
-  
-    // Prevents "flicker" on fast connections
-    if (isLoading && !shouldShowSkeleton) {
-      return null;
-    }
-=======
   if (isLoading && shouldShowSkeleton) {
     return <NewOrderSkeleton />;
   }
@@ -415,16 +280,10 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
   if (isLoading && !shouldShowSkeleton) {
     return null;
   }
->>>>>>> Karen2.0
 
   return (
     <div className="min-h-screen bg-app-light p-2">
       <div className="max-w-6xl mx-auto px-1 md:px-2">
-<<<<<<< HEAD
-        
-        {/* HEADER */}
-=======
->>>>>>> Karen2.0
         <div className="flex justify-between items-center mb-3">
           <div className="flex flex-col">
             <h1 className="text-h2 text-text-dark">New Order</h1>
@@ -457,19 +316,12 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
             
             <div id="step-services">
               <ServiceSelector 
-<<<<<<< HEAD
-                services={services.filter(s => s.is_active)} 
-                selectedServices={selectedServices} 
-                setSelectedServices={setSelectedServices} 
-                Button={Button} Badge={Badge}
-=======
                 services={services} 
                 selectedServices={selectedServices} 
                 setSelectedServices={setSelectedServices} 
                 Button={Button} 
                 Badge={Badge}
                 isCustomerIncomplete={isFormIncomplete} 
->>>>>>> Karen2.0
               />
             </div>
           </div>
@@ -484,60 +336,18 @@ const { services, isLoading, subscribeToServices } = useServiceStore();
                 isPaid={isPaid} setIsPaid={setIsPaid}
                 onSubmit={handleSubmit} isProcessing={isProcessing}
                 Button={Button} Input={Input}
-<<<<<<< HEAD
-=======
                 isPhoneDuplicate={isPhoneDuplicate}
->>>>>>> Karen2.0
               />
             </div>
           </div>
         </div>
       </div>
 
-<<<<<<< HEAD
-      <AnimatePresence>
-        {showClearWarning && (
-          <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 bg-app-dark/20 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white max-w-sm w-full text-center"
-            >
-              <div className="w-12 h-12 bg-app-dark rounded-full flex items-center justify-center mx-auto mb-4">
-                <IconTrash className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-h3 font-bold text-text-dark ">Clear Cart?</h3>
-              <p className="text-sm-text text-text-dark/70 mt-2 mb-6">
-                Changing the customer info will remove all items currently in the cart. Do you want to proceed?
-              </p>
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  className="flex-1 text-sm-text font-medium !border !border-1 !border-app-dark "
-                  onClick={handleCancelClear}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  variant="danger"
-                  className="flex-1 text-sm-text font-medium !bg-red-500 text-white  "
-                  onClick={handleConfirmClear}
-                >
-                  Clear Cart
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-=======
       <ClearCartModal 
         isOpen={showClearWarning}
         onCancel={handleCancelClear}
         onConfirm={handleConfirmClear}
       />
->>>>>>> Karen2.0
     </div>
   );
 }

@@ -69,57 +69,6 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
   const logActivity = useActivityStore((state) => state.logActivity);
 
   const handleAction = async (actionFn, id, data) => {
-<<<<<<< HEAD
-  setIsProcessing(true);
-  try {
-    const result = await actionFn(id, data);
-    
-    if (result !== false) {
-      let logData = {
-        customer_name: data?.name || service.name,
-        total_amount: data?.price_per_kg || service.price_per_kg,
-        order_number: "SERVICE"
-      };
-
-      if (actionFn === onSave) {
-        if (isNew) {
-          logActivity({ ...logData, order_number: "NEW" }, 'pending', { action: 'created', label: 'Service Created' });
-        } else {
-          const changes = [];
-          if (data.name !== service.name) changes.push("Name");
-          if (data.type !== service.type) changes.push("Type");
-          if (Number(data.price_per_kg) !== Number(service.price_per_kg)) changes.push("Price");
-          
-          const descriptiveLabel = changes.length > 0 
-            ? `${changes.join(" & ")} Updated` 
-            : "Service Details Updated";
-
-          logActivity(
-            { ...logData, order_number: "EDITED" }, 
-            'in_progress', 
-            { action: 'status_update', label: descriptiveLabel }
-          );
-        }
-      } else if (actionFn === onToggle) {
-        const newState = !service.is_active;
-        logActivity(
-          { ...logData, order_number: newState ? "ACTIVE" : "INACTIVE" }, 
-          newState ? 'ready' : 'picked_up', 
-          { action: 'status_update', label: newState ? 'Service Enabled' : 'Service Disabled' }
-        );
-      } else if (actionFn === onDelete) {
-        logActivity({ ...logData, order_number: "REMOVED" }, 'picked_up', { action: 'status_update', label: 'Service Deleted' });
-      }
-    }
-    setShowConfirmDelete(false);
-  } catch (err) {
-    console.error("Logging error:", err);
-  } finally {
-    setIsProcessing(false);
-  }
-};
-
-=======
     setIsProcessing(true);
     try {
       const result = await actionFn(id, data);
@@ -172,7 +121,6 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
       setIsProcessing(false);
     }
   };
->>>>>>> Karen2.0
   // --- Confirm Delete View ---
   if (showConfirmDelete) {
     return (

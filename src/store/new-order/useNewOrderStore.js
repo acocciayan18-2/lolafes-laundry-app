@@ -9,10 +9,7 @@ import {
   addDoc 
 } from 'firebase/firestore';
 import { useActivityStore } from '../activities/useActivityStore';
-<<<<<<< HEAD
-=======
 import { useLoyaltyStore } from '../services/useLoyaltyStore'; // 1. Import Loyalty Store
->>>>>>> Karen2.0
 
 export const useNewOrderStore = create((set) => ({
   isSubmitting: false,
@@ -37,14 +34,11 @@ export const useNewOrderStore = create((set) => ({
 
   submitOrder: async (orderPayload) => {
     set({ isSubmitting: true });
-<<<<<<< HEAD
-=======
     
     // 2. GET CURRENT LOYALTY STATUS
     const { loyaltySettings } = useLoyaltyStore.getState();
     const isLoyaltyActive = loyaltySettings?.is_enabled === true;
 
->>>>>>> Karen2.0
     const batch = writeBatch(db);
     
     try {
@@ -53,11 +47,7 @@ export const useNewOrderStore = create((set) => ({
       const orderData = {
         ...orderPayload,
         created_at: serverTimestamp(),
-<<<<<<< HEAD
-        status: 'pending', // Use lowercase for consistent logic checks
-=======
         status: 'pending', 
->>>>>>> Karen2.0
       };
 
       // 2. Set the Order in Firestore
@@ -67,12 +57,6 @@ export const useNewOrderStore = create((set) => ({
       if (orderPayload.customer_id) {
         const customerRef = doc(db, "customers", orderPayload.customer_id);
         
-<<<<<<< HEAD
-        // Calculate loyalty adjustments
-        const rewardsUsedCount = orderPayload.services.filter(s => s.is_reward).length;
-        const pointsToSpend = orderPayload.loyalty_points_to_deduct || 0; 
-        const pointsEarned = pointsToSpend > 0 ? 0 : 1; 
-=======
         // --- LOYALTY LOGIC WITH INACTIVE CHECK ---
         const rewardsUsedCount = orderPayload.services.filter(s => s.is_reward).length;
         const pointsToSpend = orderPayload.loyalty_points_to_deduct || 0; 
@@ -82,7 +66,6 @@ export const useNewOrderStore = create((set) => ({
         
         // Calculation: (Points Earned) - (Points Spent)
         // If inactive, pointsEarned is always 0.
->>>>>>> Karen2.0
         const netPointsChange = pointsEarned - pointsToSpend; 
 
         batch.update(customerRef, {
@@ -100,10 +83,6 @@ export const useNewOrderStore = create((set) => ({
       await batch.commit();
 
       // 5. Explicitly Log Activity
-<<<<<<< HEAD
-      // We pass 'created' and 'ORDER CREATED' to ensure the Activity Feed identifies this correctly.
-=======
->>>>>>> Karen2.0
       useActivityStore.getState().logActivity(
         { 
           ...orderData, 

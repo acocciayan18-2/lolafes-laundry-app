@@ -73,13 +73,8 @@ export default function KpiCards() {
             <IconInfo className="w-4 h-4 text-gray-400 stroke-gray-400" />
           </button>
           {showInfo && (
-<<<<<<< HEAD
-            <div className="absolute left-0 top-10 w-64 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
-              <p className="text-sm-text text-text-dark/90 leading-relaxed font-medium">
-=======
             <div className="absolute left-0 top-7 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200">
               <p className="text-[13px] text-text-dark/90 leading-relaxed">
->>>>>>> Karen2.0
                 Summarized shop health metrics including revenue, load volume, and speed.
               </p>
             </div>

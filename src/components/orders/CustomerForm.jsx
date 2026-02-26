@@ -12,69 +12,28 @@ export const CustomerForm = ({
   setSelectedCustomerId,
   Button,
   Input,
-<<<<<<< HEAD
-  isSubmitting,
-  // Suggestion: Pass a callback to the parent to disable/enable the main submit button
-  onValidationChange 
-=======
   isSubmitting
->>>>>>> Karen2.0
 }) => {
   const [showExistingCustomers, setShowExistingCustomers] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   const { customers, subscribeToCustomers, isLoading } = useCustomerStore();
-<<<<<<< HEAD
-  
-=======
-
->>>>>>> Karen2.0
   useEffect(() => {
     const unsubscribe = subscribeToCustomers();
     return () => unsubscribe();
   }, [subscribeToCustomers]);
 
   // --- VALIDATION LOGIC ---
-<<<<<<< HEAD
-  const duplicateCustomer = useMemo(() => {
-    if (isSubmitting || selectedCustomerId || customer.phone.length < 10) return null;
-=======
   const isPhoneIncomplete = customer.phone.length > 0 && customer.phone.length < 11;
   const isPhoneValidFormat = customer.phone.length === 11 && customer.phone.startsWith("09");
   
   // Memoized Duplicate Check: Ignores the currently selected customer ID
   const duplicateCustomer = useMemo(() => {
     if (isSubmitting || customer.phone.length < 4) return null;
->>>>>>> Karen2.0
     
     return customers.find(c => {
       const dbPhoneClean = String(c.phone || "").replace(/\D/g, "");
       const inputPhoneClean = String(customer.phone || "").replace(/\D/g, "");
-<<<<<<< HEAD
-      return dbPhoneClean === inputPhoneClean;
-    });
-  }, [customers, customer.phone, selectedCustomerId, isSubmitting]); 
-
-  const isPhoneDuplicate = !!duplicateCustomer;
-
-  // Validation criteria:
-  // 1. Must be exactly 11 digits
-  // 2. Must start with 09
-  // 3. Must not be a duplicate (if it's a new customer)
-  // 4. Name must not be empty
-  const isPhoneValid = customer.phone.length === 11 && customer.phone.startsWith("09");
-  const isNameValid = customer.name.trim().length > 1;
-  const canProceed = isPhoneValid && isNameValid && !isPhoneDuplicate;
-
-  // Sync validation status with parent component
-  useEffect(() => {
-    if (onValidationChange) {
-      onValidationChange(canProceed);
-    }
-  }, [canProceed, onValidationChange]);
-
-  // --- HANDLERS ---
-=======
       
       // KEY FIX: Match phone BUT ensure it's not the same ID as the selected one
       return dbPhoneClean === inputPhoneClean && c.id !== selectedCustomerId;
@@ -86,7 +45,6 @@ export const CustomerForm = ({
   // Validation flag for UI styling (red border)
   const isPhoneInvalid = (isPhoneIncomplete || (customer.phone.length === 11 && !isPhoneValidFormat)) && !selectedCustomerId;
 
->>>>>>> Karen2.0
   const filteredCustomers = customers?.filter(
     (c) =>
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -117,11 +75,7 @@ export const CustomerForm = ({
             <IconUsers className="w-6 h-6 !text-app-dark !stroke-app-dark" />
             Customer Information
           </h3>
-<<<<<<< HEAD
-          
-=======
             
->>>>>>> Karen2.0
           <AnimatePresence>
             {selectedCustomerId && (
               <motion.span 
@@ -209,23 +163,13 @@ export const CustomerForm = ({
             ) : (
               <div className="space-y-4 pt-1">
                 <div className="grid md:grid-cols-2 gap-2">
-<<<<<<< HEAD
-                  <Input
-=======
                  <Input
->>>>>>> Karen2.0
                     label="Customer Name"
                     value={customer.name}
                     id="customer-name"
                     readOnly={!!selectedCustomerId}
                     onChange={(e) => {
-<<<<<<< HEAD
-                      const capitalizedName = e.target.value.replace(/(^\w|\s\w)/g, (match) => 
-                        match.toUpperCase()
-                      );
-=======
                       const capitalizedName = e.target.value.replace(/(^\w|\s\w)/g, (match) => match.toUpperCase());
->>>>>>> Karen2.0
                       setCustomer({ ...customer, name: capitalizedName });
                     }}
                     placeholder="Enter Customer Name"
@@ -235,18 +179,10 @@ export const CustomerForm = ({
                         : focusClasses
                     }`}
                   />
-<<<<<<< HEAD
-                  
-=======
->>>>>>> Karen2.0
                   <div className="flex flex-col relative">
                     <Input
                       type="tel"
                       inputMode="numeric"
-<<<<<<< HEAD
-                      pattern="[0-9]*"
-=======
->>>>>>> Karen2.0
                       label="Contact Number"
                       value={customer.phone}
                       id="customer-phone"
@@ -258,45 +194,6 @@ export const CustomerForm = ({
                         setCustomer({ ...customer, phone: val });
                       }}
                       placeholder="09XX XXX XXXX"
-<<<<<<< HEAD
-                      className={`text-sm-text ${
-                        selectedCustomerId 
-                        ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-700 border-gray-200" 
-                        : `text-gray-900 ${focusClasses}`
-                      } ${
-                        (isPhoneDuplicate || (customer.phone.length > 0 && !isPhoneValid)) 
-                        ? "!border-red-500 !text-red-600 !bg-red-50" 
-                        : ""
-                      }`}
-                    />
-                    
-                    <div className="min-h-[20px] mt-1">
-                      <AnimatePresence>
-                        {isPhoneDuplicate && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: -5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -5 }}
-                          >
-                            <span className="font-bold text-red-600 text-micro ml-1">
-                              Number already exists!
-                            </span>
-                          </motion.div>
-                        )}
-                        
-                        {!isPhoneDuplicate && customer.phone.length > 0 && !isPhoneValid && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: -5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -5 }}
-                          >
-                            <span className="font-bold text-red-600 text-micro ml-1">
-                              {customer.phone.length < 11 
-                                ? `Need ${11 - customer.phone.length} more digits...` 
-                                : "Must start with 09XXXXXXXXX"}
-                            </span>
-                          </motion.div>
-=======
                       className={`text-sm-text transition-all ${
                         selectedCustomerId 
                           ? "bg-gray-50 cursor-not-allowed" 
@@ -329,29 +226,18 @@ export const CustomerForm = ({
                             className="font-bold text-red-600 text-micro ml-1 block">
                            Invalid Format (09XX...)
                           </motion.span>
->>>>>>> Karen2.0
                         )}
                       </AnimatePresence>
                     </div>
                   </div>
                 </div>
-<<<<<<< HEAD
-
-=======
->>>>>>> Karen2.0
                 <Input
                   label="Address"
                   id="customer-address"
                   value={customer.address}
                   readOnly={!!selectedCustomerId}
                   onChange={(e) => {
-<<<<<<< HEAD
-                    const capitalizedValue = e.target.value.replace(/(^\w|\s\w)/g, (match) => 
-                      match.toUpperCase()
-                    );
-=======
                     const capitalizedValue = e.target.value.replace(/(^\w|\s\w)/g, (match) => match.toUpperCase());
->>>>>>> Karen2.0
                     setCustomer({ ...customer, address: capitalizedValue });
                   }}
                   placeholder="Customer Address (Optional)"

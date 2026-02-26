@@ -4,24 +4,10 @@ import { IconGridPlus } from "../components/icons";
 import LoyaltySettings from "../components/services/LoyaltySettings";
 import ServiceCard from "../components/services/ServiceCard";
 import { ServicesSkeleton } from "../components/skeleton-loader";
-<<<<<<< HEAD
-import { useActivityStore } from "../store/activities/useActivityStore";
-import { useServiceStore } from "../store/services/useServiceStore";
-
-//TOUR
-import { useLocation, useNavigate } from 'react-router-dom';
-import { startGlobalTour } from '../tours/globalTours';
-
-
-// 1. IMPORT THE POPUP COMPONENT
-import { LoginPopup } from "../modal/LoginPopup"; 
-
-=======
 import { useServiceStore } from "../store/services/useServiceStore";
 import { LoginPopup } from "../modal/LoginPopup"; 
 
 // --- Constants & Helper Components ---
->>>>>>> Karen2.0
 const SMOOTH_TRANSITION = { type: "spring", stiffness: 300, damping: 30, mass: 1 };
 
 export const Button = ({ children, onClick, className = "", variant = "primary", ...props }) => {
@@ -45,11 +31,7 @@ export const Button = ({ children, onClick, className = "", variant = "primary",
 
 export const Input = ({ className = "", ...props }) => (
   <input
-<<<<<<< HEAD
-    className={`flex h-10 w-full rounded-lg border font-medium border-slate-200 bg-white px-3 py-2 text-base-text placeholder:text-slate-400 focus:outline-none !focus:ring-1 focus:ring-app-dark/70  ${className}`}
-=======
     className={`flex h-10 w-full rounded-lg border font-medium border-slate-200 bg-white px-3 py-2 text-base-text placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-app-dark/70 ${className}`}
->>>>>>> Karen2.0
     {...props}
   />
 );
@@ -60,35 +42,6 @@ export const Badge = ({ children, className }) => (
   </span>
 );
 
-<<<<<<< HEAD
-export default function Services() {
-
-  const location = useLocation();
-  const navigate = useNavigate();
-
- 
-  const { services, isLoading, addService, updateService, subscribeToServices, deleteServiceSafe } = useServiceStore();
-  const logActivity = useActivityStore((state) => state.logActivity);
-//Tour Logic
- useEffect(() => {
-  const searchParams = new URLSearchParams(location.search);
-  const isTourActive = searchParams.get('tour') === 'active';
-  
-  // Also check if the store is still loading
-  if (isTourActive && !isLoading) {
-    // INCREASE the timeout. 400ms is often too fast for 
-    // Framer Motion + Firebase data fetching.
-    const timer = setTimeout(() => {
-      console.log("Tour Triggered!"); // Check your console to see if this fires
-      startGlobalTour(navigate);
-    }, 1200); 
-
-    return () => clearTimeout(timer);
-  }
-}, [location.search, isLoading]); // Added isLoading as a dependency
-
-
-=======
 // --- Main Page Component ---
 export default function Services() {
   const { 
@@ -101,26 +54,19 @@ export default function Services() {
   } = useServiceStore();
 
   // Local UI State
->>>>>>> Karen2.0
   const [editingId, setEditingId] = useState(null);
   const [tempData, setTempData] = useState(null);
   const [popup, setPopup] = useState({ message: "", type: "info" });
   const [allowOverflow, setAllowOverflow] = useState(false);
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
-<<<<<<< HEAD
-=======
   // 1. Sync Services from Firebase
->>>>>>> Karen2.0
   useEffect(() => {
     const unsubscribe = subscribeToServices();
     return () => unsubscribe();
   }, [subscribeToServices]);
 
-<<<<<<< HEAD
-=======
   // 2. Manage Loading State with a slight delay to prevent flickering
->>>>>>> Karen2.0
   useEffect(() => {
     let timer;
     if (isLoading) {
@@ -135,71 +81,15 @@ export default function Services() {
 
   const triggerPopup = (message, type = "error") => setPopup({ message, type });
 
-<<<<<<< HEAD
-  const handleSave = async (id) => {
-    if (!tempData.name.trim()) return triggerPopup("Name is required");
-=======
   // 3. Handle Save (Add or Update)
   const handleSave = async (id) => {
     if (!tempData.name.trim()) return triggerPopup("Name is required");
     
->>>>>>> Karen2.0
     const price = parseFloat(tempData.price_per_kg);
     if (isNaN(price) || price <= 0) return triggerPopup("Invalid price");
 
     try {
       let result = false;
-<<<<<<< HEAD
-      if (id === "new_draft") {
-        const { id: _, ...cleanData } = tempData; 
-        result = await addService({ ...cleanData, price_per_kg: price }); 
-        
-        if (result) {
-          logActivity({
-            customer_name: tempData.name,
-            order_number: "NEW SERVICE",
-            total_amount: price
-          }, 'pending', 'created');
-        }
-      } else {
-        result = await updateService(id, { ...tempData, price_per_kg: price });
-        
-        if (result) {
-          logActivity({
-            customer_name: tempData.name,
-            order_number: "UPDATED",
-            total_amount: price
-          }, 'in_progress', 'status_update');
-        }
-      }
-
-      if (result === false) return;
-      setEditingId(null);
-      setTempData(null);
-    } catch (err) {
-      console.error("Firebase Save Error:", err); 
-      triggerPopup("Failed to save service. Please check your connection.");
-    }
-  };
-
-  const toggleStatus = async (id, currentStatus) => {
-    const service = services.find(s => s.id === id);
-    const newStatus = !currentStatus;
-    await updateService(id, { is_active: newStatus });
-
-    logActivity({
-      customer_name: service?.name || "Service",
-      order_number: newStatus ? "ACTIVATED" : "DEACTIVATED",
-      total_amount: service?.price_per_kg || 0
-    }, newStatus ? 'ready' : 'picked_up', 'status_update');
-  };
-
-  const addNewService = () => {
-    if (editingId) return;
-    setAllowOverflow(false);
-    setEditingId("new_draft");
-    setTempData({ name: "", type: "wash_only", price_per_kg: 0, duration_hours: 24, is_active: true });
-=======
 
       if (id === "new_draft") {
         // Strip the temporary 'id' before sending to Firebase
@@ -241,25 +131,14 @@ export default function Services() {
       duration_hours: 24, 
       is_active: true 
     });
->>>>>>> Karen2.0
   };
 
   if (isLoading && shouldShowSkeleton) {
     return <ServicesSkeleton />;
   }
 
-<<<<<<< HEAD
-  if (isLoading && !shouldShowSkeleton) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-app-light p-2">
-      {/* 2. RENDER THE POPUP HERE */}
-=======
-  return (
-    <div className="min-h-screen bg-app-light p-2">
->>>>>>> Karen2.0
       <LoginPopup 
         message={popup.message} 
         type={popup.type} 
@@ -267,19 +146,6 @@ export default function Services() {
       />
 
       <motion.div layoutRoot className="max-w-6xl mx-auto px-1 md:px-2">
-<<<<<<< HEAD
-        <div className="flex justify-between items-center mb-3">
-          <div> 
-            <h1 className="text-h2 font-bold text-text-dark">Services</h1>
-            <p className="text-sm-text text-gray-600 mt-0.5">Manage your shop's offering</p>
-          </div>
-          <button id="step-add-service" 
-            onClick={addNewService} 
-            className="group flex items-center justify-center w-9 shadow-md h-9 hover:bg-app-dark/5 bg-white rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200"
-            title="Add Service"
-          >
-            <IconGridPlus className="w-4 h-4 text-black stroke-black" strokeWidth={2.2} />
-=======
         {/* Header Section */}
         <div className="flex justify-between items-center mb-3">
           <div> 
@@ -292,17 +158,12 @@ export default function Services() {
             title="Add Service"
           >
             <IconGridPlus className="w-4 h-4 text-black" strokeWidth={2.2} />
->>>>>>> Karen2.0
           </button>
         </div>
 
         <LayoutGroup>
-<<<<<<< HEAD
-          <AnimatePresence mode="wait" onExitComplete={() => setAllowOverflow(false)}>
-=======
           {/* New Service Draft Form */}
           <AnimatePresence mode="wait">
->>>>>>> Karen2.0
             {editingId === "new_draft" && (
               <motion.div 
                 key="new-service-form"
@@ -310,23 +171,13 @@ export default function Services() {
                 animate={{ opacity: 1, height: "auto" }} 
                 exit={{ opacity: 0, height: 0 }} 
                 onAnimationComplete={() => setAllowOverflow(true)}
-<<<<<<< HEAD
-                onExitStart={() => setAllowOverflow(false)}
-=======
->>>>>>> Karen2.0
                 transition={SMOOTH_TRANSITION}
                 style={{ overflow: allowOverflow ? "visible" : "hidden" }}
                 className="mb-4 relative z-[50]" 
               >
                 <div className="flex items-center gap-2 mb-2 ml-1">
                   <div className="w-0.5 h-3 bg-app-dark/80 rounded-full" />
-<<<<<<< HEAD
-                  <span className="text-sm-text font-medium text-text-dark/80">
-                    Add New Service
-                  </span>
-=======
                   <span className="text-sm-text font-medium text-text-dark/80">Add New Service</span>
->>>>>>> Karen2.0
                 </div>
 
                 <ServiceCard 
@@ -335,32 +186,21 @@ export default function Services() {
                   tempData={tempData} 
                   setTempData={setTempData}
                   onSave={() => handleSave("new_draft")}
-<<<<<<< HEAD
-                  onCancel={() => setEditingId(null)}
-=======
                   onCancel={() => {
                     setEditingId(null);
                     setTempData(null);
                   }}
->>>>>>> Karen2.0
                 />
               </motion.div>
             )}
           </AnimatePresence>
 
-<<<<<<< HEAD
-          <div id="step-loyalty-config" className="relative z-[40] mb-3">
-            <LoyaltySettings />
-          </div>
-
-=======
           {/* Loyalty Settings Panel */}
           <div className="relative z-[40] mb-3">
             <LoyaltySettings />
           </div>
 
           {/* List of Services */}
->>>>>>> Karen2.0
           <div className="grid gap-3 relative z-[10]">
             <AnimatePresence mode="popLayout">
               {services.map((service) => (
@@ -370,21 +210,6 @@ export default function Services() {
                     isEditing={editingId === service.id}
                     tempData={tempData}
                     setTempData={setTempData}
-<<<<<<< HEAD
-                    onEdit={(s) => { setEditingId(s.id); setTempData({...s}); }} 
-                    onSave={() => handleSave(service.id)}
-                    onCancel={() => setEditingId(null)}
-                    onToggle={() => toggleStatus(service.id, service.is_active)} 
-                    onDelete={(id) => {
-                      const s = services.find(item => item.id === id);
-                      logActivity({
-                          customer_name: s?.name || "Service",
-                          order_number: "DELETED",
-                          total_amount: s?.price_per_kg || 0
-                      }, 'picked_up', 'status_update');
-                      deleteServiceSafe(id);
-                    }}
-=======
                     onEdit={(s) => { 
                       setEditingId(s.id); 
                       setTempData({ ...s }); 
@@ -396,7 +221,6 @@ export default function Services() {
                     }}
                     onToggle={() => toggleStatus(service.id, service.is_active)} 
                     onDelete={(id) => deleteServiceSafe(id)}
->>>>>>> Karen2.0
                   />
                 </motion.div>
               ))}
