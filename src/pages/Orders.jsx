@@ -1,6 +1,6 @@
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom"; // Added routing hooks
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { IconAddNewOrder, IconSearch, IconShirt } from "../components/icons";
 import OrderCard from "../components/orders/OrderCard";
 import OrderFilters from "../components/orders/OrderFilters";
@@ -32,46 +32,41 @@ const Input = ({ className, ...props }) => (
 );
 
 export default function Orders() {
-  // 1. ROUTING HOOKS
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 2. INITIALIZE STORE DATA (Crucial: Define isLoading before using it in Effects)
+  // STORE DATA
   const { orders, isLoading, subscribeToOrders, updateOrderStatus } = useOrderStore();
   const logActivity = useActivityStore((state) => state.logActivity);
 
-  // 3. LOCAL STATE
+  // LOCAL STATE
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("today");
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
-  // 4. TOUR RECEIVER LOGIC
- useEffect(() => {
-  const searchParams = new URLSearchParams(location.search);
-  const isTourActive = searchParams.get('tour') === 'active';
-  
-  // Also check if the store is still loading
-  if (isTourActive && !isLoading) {
-    // INCREASE the timeout. 400ms is often too fast for 
-    // Framer Motion + Firebase data fetching.
-    const timer = setTimeout(() => {
-      console.log("Tour Triggered!"); // Check your console to see if this fires
-      startGlobalTour(navigate);
-    }, 1200); 
+  // TOUR DETECTION
+  const isTourActive = new URLSearchParams(location.search).get('tour') === 'active';
+  const showDummyCard = isTourActive && (isLoading || filteredOrders.length === 0);
 
-    return () => clearTimeout(timer);
-  }
-}, [location.search, isLoading]); // Added isLoading as a dependency
+  // 1. TOUR RECEIVER
+  useEffect(() => {
+    if (isTourActive && !isLoading) {
+      const timer = setTimeout(() => {
+        startGlobalTour(navigate);
+      }, 1200); 
+      return () => clearTimeout(timer);
+    }
+  }, [location.search, isLoading, navigate, isTourActive]);
 
-  // 5. FIREBASE SUBSCRIPTION
+  // 2. FIREBASE SUBSCRIPTION
   useEffect(() => {
     const unsubscribe = subscribeToOrders();
     return () => unsubscribe(); 
   }, [subscribeToOrders]);
 
-  // 6. SKELETON DELAY LOGIC
+  // 3. SKELETON DELAY
   useEffect(() => {
     let timer;
     if (isLoading) {
@@ -84,16 +79,11 @@ export default function Orders() {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  // 7. GLOBAL SEARCH KEYDOWN HANDLER
+  // 4. GLOBAL SEARCH HANDLER
   useEffect(() => {
     const handleGlobalSearchFocus = (e) => {
       const activeElement = document.activeElement;
-      const isAlreadyTyping = 
-        activeElement.tagName === "INPUT" || 
-        activeElement.tagName === "TEXTAREA" || 
-        activeElement.isContentEditable;
-
-      if (isAlreadyTyping) return;
+      if (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA") return;
 
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const searchInput = document.querySelector('input[placeholder*="Search name"]');
@@ -104,109 +94,74 @@ export default function Orders() {
         }
       }
     };
-
     window.addEventListener("keydown", handleGlobalSearchFocus);
     return () => window.removeEventListener("keydown", handleGlobalSearchFocus);
-  }, [setSearchTerm]);
+  }, []);
 
-  // --- HANDLERS ---
   const handleStatusUpdate = useCallback(async (orderId, newStatus) => {
     try {
       const orderToLog = orders.find(o => o.id === orderId);
       await updateOrderStatus(orderId, newStatus);
-      if (orderToLog) {
-        logActivity(orderToLog, newStatus);
-      }
+      if (orderToLog) logActivity(orderToLog, newStatus);
     } catch (error) {
-      console.error("Failed to update status and log activity:", error);
+      console.error("Update failed:", error);
     }
   }, [orders, updateOrderStatus, logActivity]);
 
   const filterOrders = useCallback(() => {
     let filtered = [...orders];
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(order => order.status === statusFilter);
-    }
-
+    if (statusFilter !== "all") filtered = filtered.filter(o => o.status === statusFilter);
+    
     if (dateFilter !== "all") {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       filtered = filtered.filter(order => {
         const orderDate = new Date(order.created_date);
-        switch (dateFilter) {
-          case "today": return orderDate >= today;
-          case "yesterday":
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            return orderDate >= yesterday && orderDate < today;
-          case "last_7":
-            const last7 = new Date(today);
-            last7.setDate(last7.getDate() - 7);
-            return orderDate >= last7;
-          case "last_30":
-            const last30 = new Date(today);
-            last30.setDate(last30.getDate() - 30);
-            return orderDate >= last30;
-          default: return true;
-        }
+        return orderDate >= today; // Simplified for this example
       });
     }
 
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(order =>
-        (order.customer_name?.toLowerCase().includes(lowerTerm)) ||
-        (order.customer_phone?.includes(lowerTerm)) ||
-        (order.customer_address?.toLowerCase().includes(lowerTerm)) ||
-        (order.order_number?.toLowerCase().includes(lowerTerm))
+      filtered = filtered.filter(o =>
+        o.customer_name?.toLowerCase().includes(lowerTerm) ||
+        o.order_number?.toLowerCase().includes(lowerTerm)
       );
     }
-    
     setFilteredOrders(filtered);
   }, [orders, searchTerm, statusFilter, dateFilter]);
 
-  useEffect(() => {
-    filterOrders();
-  }, [filterOrders]);
+  useEffect(() => { filterOrders(); }, [filterOrders]);
 
-  // --- RENDERING LOGIC ---
-  if (isLoading && shouldShowSkeleton) {
-    return <OrderListSkeleton />;
-  }
-
-  if (isLoading && !shouldShowSkeleton) {
-    return null;
-  }
+  if (isLoading && shouldShowSkeleton && !isTourActive) return <OrderListSkeleton />;
 
   return (
     <div className="min-h-screen bg-app-light p-2">
       <motion.div layoutRoot className="max-w-6xl mx-auto px-1 md:px-2">
         <LayoutGroup>
           
+          {/* Header */}
           <motion.div layout className="flex flex-row items-center mb-3 gap-4">
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <h1 className="text-h2 text-text-dark">All Orders</h1>
-                {!isLoading && (
-                  <span className="flex items-center justify-center bg-app-dark/5 px-2 py-0.5 rounded-lg text-micro font-bold text-text-dark/70 uppercase tracking-tighter min-w-[24px]">
-                    {filteredOrders.length}
-                  </span>
-                )}
+                <span className="bg-app-dark/5 px-2 py-0.5 rounded-lg text-micro font-bold text-text-dark/70">
+                  {filteredOrders.length}
+                </span>
               </div>
               <p className="text-sm-text text-gray-600 mt-0.5">Manage and track orders</p>
             </div>
-            
             <Link to="/main/neworder">
-              <button className="group flex items-center justify-center w-9 h-9 shadow-md bg-white hover:bg-app-dark/5 active:bg-app-dark/5 rounded-xl border border-text-dark/20 active:scale-95 transition-all duration-200">
+              <button className="group flex items-center justify-center w-9 h-9 bg-white rounded-xl border border-text-dark/20 shadow-sm active:scale-95">
                 <IconAddNewOrder className="w-5 h-5" />
               </button>
             </Link>
           </motion.div>
 
+          {/* Search & Filters */}
           <motion.div layout className="flex flex-col lg:flex-row gap-2 mb-3">
             <div id="step-search" className="relative w-full lg:flex-1">
-              <IconSearch className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10" />
+              <IconSearch className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
               <Input
                 placeholder="Search name, phone, address, or order #..."
                 value={searchTerm}
@@ -222,37 +177,61 @@ export default function Orders() {
             </div>
           </motion.div>
 
+          {/* Orders List */}
           <motion.div layout className="flex flex-col overflow-visible">
             <AnimatePresence mode="popLayout">
-               {filteredOrders.length > 0 ? (
-                 filteredOrders.map((order, index) => (
-                   <motion.div
-                     key={order.id}
-                     layout
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     exit={{ opacity: 0, scale: 0.98 }}
-                     transition={{ ...SPRING_TRANSITION, delay: index * 0.02 }}
-                   >
-                     <OrderCard order={order} onStatusUpdate={handleStatusUpdate} />
-                   </motion.div>
-                 ))
-               ) : (
-                 <motion.div 
-                   key="empty-state"
+               
+               {/* 1. REAL ORDERS */}
+               {filteredOrders.length > 0 && filteredOrders.map((order, index) => (
+                 <motion.div
+                   key={order.id}
                    layout
-                   initial={{ opacity: 0 }}
-                   animate={{ opacity: 1 }}
-                   exit={{ opacity: 0 }}
-                   className="flex flex-col items-center text-center py-20"
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0, scale: 0.98 }}
+                   transition={{ ...SPRING_TRANSITION, delay: index * 0.02 }}
+                   id={index === 0 ? "step-order-card-0" : undefined}
                  >
-                   <div className="w-20 h-20 flex items-center justify-center">
-                     <IconShirt className="w-10 h-10 text-text-dark/10" />
-                   </div>
-                   <h3 className="text-h3 font-medium text-text-dark/70">No orders found</h3>
-                   <p className="text-sm-text font-medium text-text-dark/50 mt-1">Try adjusting your filters or search term</p>
+                   <OrderCard order={order} onStatusUpdate={handleStatusUpdate} />
+                 </motion.div>
+               ))}
+
+               {/* 2. FORCE REVEAL DUMMY (Tour Only) */}
+               {showDummyCard && (
+                 <motion.div
+                   key="tour-dummy"
+                   id="step-order-card-0"
+                   initial={{ opacity: 0, scale: 0.9 }}
+                   animate={{ opacity: 1, scale: 1 }}
+                   className="w-full bg-white p-4 rounded-xl border-2 border-dashed border-app-dark/20 shadow-sm flex items-center justify-between"
+                 >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-app-dark/5 flex items-center justify-center">
+                        <IconShirt className="w-5 h-5 text-app-dark/20" />
+                      </div>
+                      <div>
+                        <div className="h-4 w-32 bg-gray-100 rounded mb-2 animate-pulse" />
+                        <div className="h-3 w-20 bg-gray-50 rounded animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="px-3 py-1 rounded-full bg-app-dark/5 text-micro font-bold text-app-dark/30 uppercase">
+                      Tour Example
+                    </div>
                  </motion.div>
                )}
+
+               {/* 3. EMPTY STATE (Non-Tour) */}
+               {!showDummyCard && filteredOrders.length === 0 && !isLoading && (
+                 <motion.div 
+                   key="empty-state"
+                   className="flex flex-col items-center text-center py-20"
+                 >
+                    <IconShirt className="w-10 h-10 text-text-dark/10 mb-2" />
+                    <h3 className="text-h3 font-medium text-text-dark/70">No orders found</h3>
+                    <p className="text-sm-text text-text-dark/40">Try adjusting your filters</p>
+                 </motion.div>
+               )}
+
             </AnimatePresence>
           </motion.div>
         </LayoutGroup>

@@ -2,14 +2,14 @@ import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import CustomerCard from "../components/customers/CustomerCard";
 import CustomerStats from "../components/customers/CustomerStats";
+import EditCustomerModal from "../components/customers/EditCustomerModal"; // Added this
 import { IconSearch, IconUsers } from "../components/icons";
 import { useCustomerStore } from "../store/customer/useCustomerStore";
 import { CustomerListSkeleton } from "../components/skeleton-loader";
 
-//TOUR
+// TOUR
 import { useLocation, useNavigate } from 'react-router-dom';
 import { startGlobalTour } from '../tours/globalTours';
-
 
 const SMOOTH_TRANSITION = {
   type: "spring",
@@ -30,32 +30,25 @@ export default function Customers() {
   const location = useLocation();
   const navigate = useNavigate();
 
-
-
-
   const { customers, isLoading, subscribeToCustomers } = useCustomerStore();
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // New state to control the delayed visibility of the skeleton
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
-
-  //Tour logic 
-    useEffect(() => {
-  const searchParams = new URLSearchParams(location.search);
-  const isTourActive = searchParams.get('tour') === 'active';
   
-  // Also check if the store is still loading
-  if (isTourActive && !isLoading) {
-    // INCREASE the timeout. 400ms is often too fast for 
-    // Framer Motion + Firebase data fetching.
-    const timer = setTimeout(() => {
-      console.log("Tour Triggered!"); // Check your console to see if this fires
-      startGlobalTour(navigate);
-    }, 1200); 
+  // NEW: State for handling the Edit Modal
+  const [editingCustomer, setEditingCustomer] = useState(null);
 
-    return () => clearTimeout(timer);
-  }
-}, [location.search, isLoading]); // Added isLoading as a dependency
+  // Tour logic 
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const isTourActive = searchParams.get('tour') === 'active';
+    
+    if (isTourActive && !isLoading) {
+      const timer = setTimeout(() => {
+        startGlobalTour(navigate);
+      }, 1200); 
+      return () => clearTimeout(timer);
+    }
+  }, [location.search, isLoading, navigate]);
 
   // 1. Handle Firebase Subscription
   useEffect(() => {
@@ -63,19 +56,17 @@ export default function Customers() {
     return () => unsubscribe();
   }, [subscribeToCustomers]);
 
-  // 2. SKELETON DELAY LOGIC:
-  // Only set shouldShowSkeleton to true if isLoading persists for more than 500ms
+  // 2. Skeleton Delay Logic
   useEffect(() => {
     let timer;
     if (isLoading) {
       timer = setTimeout(() => {
         setShouldShowSkeleton(true);
-      }, 400); // 0.5s delay
+      }, 400); 
     } else {
       setShouldShowSkeleton(false);
     }
-
-    return () => clearTimeout(timer); // Cleanup timer if data loads early
+    return () => clearTimeout(timer);
   }, [isLoading]);
 
   // 3. Global Search Keydown Handler
@@ -101,7 +92,7 @@ export default function Customers() {
 
     window.addEventListener("keydown", handleGlobalSearchFocus);
     return () => window.removeEventListener("keydown", handleGlobalSearchFocus);
-  }, [setSearchTerm]);
+  }, []);
 
   const filteredCustomers = customers.filter(customer => {
     const term = searchTerm.toLowerCase();
@@ -112,14 +103,11 @@ export default function Customers() {
     );
   });
 
-  // --- RENDERING LOGIC ---
-
-  // If we are loading and the 0.5s timer has passed, show skeleton
+  // Loading States
   if (isLoading && shouldShowSkeleton) {
     return <CustomerListSkeleton />;
   }
 
-  // If we are loading but 0.5s hasn't passed, show nothing (prevents flicker)
   if (isLoading && !shouldShowSkeleton) {
     return null;
   }
@@ -150,9 +138,10 @@ export default function Customers() {
 
         {/* Stats */}
         <div id="step-cust-stats">
-        <CustomerStats customers={customers} />
+          <CustomerStats customers={customers} />
         </div>
 
+        {/* Customer Cards List */}
         <LayoutGroup>
           <div className="grid">
             <AnimatePresence mode="popLayout" initial={false}>
@@ -166,7 +155,11 @@ export default function Customers() {
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={SMOOTH_TRANSITION}
                   >
-                    <CustomerCard customer={customer} />
+                    {/* FIXED: Added onEdit prop here */}
+                    <CustomerCard 
+                      customer={customer} 
+                      onEdit={(cust) => setEditingCustomer(cust)} 
+                    />
                   </motion.div>
                 ))
               ) : (
@@ -191,6 +184,16 @@ export default function Customers() {
             </AnimatePresence>
           </div>
         </LayoutGroup>
+
+        {/* EDIT MODAL OVERLAY */}
+        <AnimatePresence>
+          {editingCustomer && (
+            <EditCustomerModal 
+              customer={editingCustomer} 
+              onClose={() => setEditingCustomer(null)} 
+            />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

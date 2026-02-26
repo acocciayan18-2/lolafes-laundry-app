@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { useActivityStore } from "../../store/activities/useActivityStore";
 import { useCustomerStore } from "../../store/customer/useCustomerStore";
 import { useNotificationStore } from "../../store/ui/useNotificationStore"; // Import your notification store
-import { IconDotsHorizontal, IconMapPin, IconPhone, IconUsers } from "../icons";
+import { IconDotsHorizontal, IconMapPin, IconPhone,IconEdit2, IconUsers } from "../icons";
 
-const CustomerCard = ({ customer }) => {
+const CustomerCard = ({ customer ,onEdit }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   
@@ -101,6 +101,17 @@ const CustomerCard = ({ customer }) => {
                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
                   className="absolute right-0 w-40 bg-white border border-gray-200 rounded-xl shadow-sm z-50 overflow-hidden"
                 >
+                    {/* EDIT OPTION */}
+                  <button
+                    onClick={() => {
+                      onEdit(customer);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm-text font-medium text-text-dark hover:bg-gray-50 transition-colors border-b border-gray-100"
+                  >
+                    <IconEdit2 className="w-4 h-4 text-text-dark/70" />
+                    Edit Details
+                  </button>
                   <button
                     onClick={() => { setShowConfirm(true); setShowMenu(false); }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm-text font-medium text-text-dark"

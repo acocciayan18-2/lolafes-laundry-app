@@ -19,7 +19,15 @@ const STEPS_BY_PAGE = {
   orders: [
     { element: 'input[placeholder*="Search name"]', popover: { title: '🔍 Search', description: 'Find orders quickly.' } },
     { element: '#step-filters', popover: { title: '📅 Filtering', description: 'Filter by status or date.' } },
+    { 
+    element: '#step-order-card-0', // We will give the first card (or dummy) this ID
+    popover: { 
+      title: '📦 Manage Order', 
+      description: 'Click on a card to update status, print receipts, or edit details.' 
+    } 
+  },
   ],
+  
   customers: [
     { element: '#customer-search-input', popover: { title: '👥 Customer List', description: 'Manage your loyal base.' } },
     { element: '#step-cust-stats', popover: { title: '📈 Loyalty Stats', description: 'Track top spenders.' } },
