@@ -444,7 +444,7 @@ const confirmDeliveryFee = async (e) => {
               <button 
                 key={option.value} 
                 onClick={(e) => {
-                  e.stopPropagation(); // Prevents card collapse when selecting a status
+                  e.stopPropagation(); 
                   handleStatusChange(e, option.value);
                 }} 
                 className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors ${order.status === option.value ? "font-bold bg-slate-50 text-text-dark" : "font-normal text-text-dark/90"}`}
