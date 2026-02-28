@@ -12,31 +12,50 @@ export default function ExportOrdersButton() {
     
     setIsExporting(true);
     try {
-      // Flatten the order objects for Excel compatibility
-      const dataForExcel = orders.map(order => ({
-        "Order Number": `#${order.order_number}`,
-        "Date Created": new Date(order.created_at).toLocaleDateString(),
-        "Customer Name": order.customer_name?.toUpperCase(),
-        "Phone": order.customer_phone || "N/A",
-        "Address": order.customer_address || "N/A",
-        "Status": order.status.replace('_', ' ').toUpperCase(),
-        "Services": order.services?.map(s => s.service_name).join(", "),
-        "Total Amount": Number(order.total_amount || 0),
-        "Payment Status": order.is_paid ? "PAID" : "UNPAID",
-        "Payment Method": order.payment_method || "N/A",
-        // --- ADDED PICKED UP DATE LOGIC ---
-        "Picked Up Date": order.picked_up_at 
-          ? new Date(order.picked_up_at).toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            }) 
-          : "PENDING PICKUP"
-      }));
+      // Helper function to format dates consistently as strings for Excel
+      const formatExcelDate = (date) => {
+        if (!date) return "N/A";
+        const d = new Date(date);
+        return d.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      };
 
-      await exportToExcel(dataForExcel, "Lola_Fe's_Laundry_Reports");
+      const dataForExcel = orders.map(order => {
+        // Business Logic: Determine if the order is finalized
+        const isHandovered = ['picked_up', 'delivered'].includes(order.status);
+        
+        return {
+          "Order Number": `#${order.order_number}`,
+          "Date Created": formatExcelDate(order.created_at),
+          "Customer Name": order.customer_name?.toUpperCase() || "GUEST",
+          "Contact Number": order.customer_phone || "N/A",
+          "Address": order.customer_address || "N/A",
+          "Status": order.status?.replace('_', ' ').toUpperCase(),
+          
+          // HANDOVER LOGIC: Using the explicit handover_method we added
+          "Handover Method": order.handover_method?.toUpperCase() || "PICKUP",
+          "Delivery Fee": Number(order.delivery_fee || 0),
+          "Total Revenue": Number(order.total_amount || 0),
+          
+          "Services": order.services?.map(s => `${s.service_name} (x${s.quantity || s.weight_kg})`).join(", "),
+          "Payment Status": order.is_paid ? "PAID" : "UNPAID",
+          "Payment Method": order.payment_method || "N/A",
+          
+          // TIMELINE LOGIC
+          "Released Date": isHandovered 
+            ? formatExcelDate(order.updated_at || order.picked_up_at || order.delivered_at) 
+            : "STILL IN SHOP",
+          // "Ready for Pickup": order.ready_at ? formatExcelDate(order.ready_at) : "PROCESSING"
+        };
+      });
+
+      await exportToExcel(dataForExcel, `Lola_Fe_Laundry_Report_${new Date().toLocaleDateString()}`);
     } catch (error) {
       console.error("Export failed:", error);
     } finally {
@@ -52,7 +71,7 @@ export default function ExportOrdersButton() {
         flex items-center gap-2 px-3 h-9 mt-1 border rounded-xl font-medium text-micro shadow-md transition-all active:scale-95
         ${isExporting 
           ? 'bg-slate-100 text-text-dark cursor-not-allowed' 
-          : 'text-text-dark active:scale-95'
+          : 'bg-white text-text-dark hover:bg-slate-50 border-slate-200'
         }
       `}
     >
@@ -61,7 +80,7 @@ export default function ExportOrdersButton() {
       ) : (
         <IconDownload className="w-4 h-4" />
       )}
-      <span>{isExporting ? 'Exporting...' : 'Export All Orders'}</span>
+      <span>{isExporting ? 'Generating Excel...' : 'Export All Orders'}</span>
     </button>
   );
 }

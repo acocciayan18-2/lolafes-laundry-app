@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconInfo } from './icons'; // Adjust path to your icons
+import { IconWifiOff, IconWifiOn } from './icons'; // Adjust path to your icons
 
 export const NetworkToast = () => {
   const [isOnline, setIsOnline] = useState(true); // Default to true to prevent flash on load
@@ -21,7 +21,7 @@ export const NetworkToast = () => {
         if (!isOnline) {
           setIsOnline(true);
           setShowBackOnline(true);
-          setTimeout(() => setShowBackOnline(false), 4000);
+          setTimeout(() => setShowBackOnline(false), 3000);
         }
       } catch (error) {
         // If fetch fails, we are definitely offline
@@ -66,8 +66,8 @@ export const NetworkToast = () => {
             exit={{ opacity: 0, x: 50 }}
             className="bg-red-500 text-white p-2  rounded-xl shadow-sm flex items-center gap-3 border border-red-600 pointer-events-auto backdrop-blur-sm"
           >
-            <div className="w-7 h-7   flex items-center justify-center shrink-0 animate-pulse">
-              <IconInfo className="w-5 h-5 text-white" />
+            <div className="w-7 h-7   flex items-center justify-center shrink-0">
+              <IconWifiOff className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 !mr-1">
               <p className="text-sm-text font-medium">No Internet Connection</p>
@@ -85,7 +85,7 @@ export const NetworkToast = () => {
             className="bg-emerald-600 text-white p-2  rounded-xl shadow-sm flex items-center gap-3 border border-emerald-700 pointer-events-auto"
           >
             <div className="w-7 h-7  flex items-center justify-center shrink-0">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+              <IconWifiOn className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 !mr-1">
               <p className="text-sm-text font-medium ">Back Online</p>

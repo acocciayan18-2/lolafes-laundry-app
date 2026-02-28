@@ -174,5 +174,49 @@ return {
       }
     });
     return heatmap;
+  },
+
+  getServiceAnalytics: (days) => {
+  const orders = get().orders || [];
+  const cutoff = new Date();
+  
+  if (days !== 'year') {
+    cutoff.setDate(cutoff.getDate() - parseInt(days || 7));
+  } else {
+    cutoff.setFullYear(cutoff.getFullYear() - 1);
   }
+
+  const filtered = orders.filter(o => o.created_at >= cutoff);
+  const serviceMap = {};
+  let totalVolumeCount = 0;
+
+  filtered.forEach(order => {
+    order.services?.forEach(s => {
+      // Normalize names (trim and uppercase) so "Wash" and "wash" match
+      const name = s.service_name?.trim().toUpperCase();
+      if (!name) return;
+
+      const qty = Number(s.quantity || s.weight_kg || 0);
+      const revenue = Number(s.price_per_unit || 0) * qty;
+
+      if (!serviceMap[name]) {
+        serviceMap[name] = { name, count: 0, revenue: 0, totalQty: 0 };
+      }
+
+      serviceMap[name].count += 1;
+      serviceMap[name].totalQty += qty;
+      serviceMap[name].revenue += revenue;
+      totalVolumeCount += 1;
+    });
+  });
+
+  return Object.values(serviceMap)
+    .sort((a, b) => b.count - a.count)
+    .map((service, index) => ({
+      ...service,
+      share: totalVolumeCount > 0 ? (service.count / totalVolumeCount) * 100 : 0,
+      rank: index + 1,
+    }))
+    .slice(0, 5); 
+},
 }));

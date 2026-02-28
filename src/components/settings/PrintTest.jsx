@@ -2,14 +2,17 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   IconStatusReady, 
-  IconInfo 
+  IconInfo,
+  IconDelivery, // Representing Bluetooth/Wireless
+  IconPackage    // Representing USB/Wired
 } from "../icons"; 
-import { printThermalReceipt } from "../orders/receiptService";
+import { silentPrint } from "../../services/printerService"; // Using the new silent logic
 import { useNotificationStore } from "../../store/ui/useNotificationStore";
 
 const PrintTest = () => {
   const showNotification = useNotificationStore((state) => state.showNotification);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [connectionType, setConnectionType] = useState("usb"); // Default to Wired
 
   // Mock data for the test receipt
   const testOrderData = {
@@ -20,21 +23,26 @@ const PrintTest = () => {
     payment_method: "Cash",
     is_paid: true,
     services: [
-      { service_name: "Wash & Fold (Test)", quantity: 5, subtotal: 125.00 },
-      { service_name: "Fabric Softener", quantity: 1, subtotal: 25.00 }
+      { service_name: "Wash & Fold (Test)", quantity: 5, total_amount: 125.00 },
+      { service_name: "Fabric Softener", quantity: 1, total_amount: 25.00 }
     ]
   };
 
-  const handleTestPrint = () => {
+  const handleTestPrint = async () => {
     setIsPrinting(true);
     try {
-      printThermalReceipt(testOrderData);
-      showNotification("Test receipt sent to printer queue", "success");
+      // Calling the direct hardware connection logic (No Popups)
+      const result = await silentPrint(testOrderData, connectionType);
+      
+      if (result.success) {
+        showNotification(`Test receipt sent via ${connectionType.toUpperCase()}`, "success");
+      } else {
+        throw new Error(result.error);
+      }
     } catch (err) {
-      showNotification("Print failed. Check connection.", "error");
+      showNotification(`Print failed: ${err.message || "Check connection"}`, "error");
     } finally {
-      // Small timeout to give the UI a chance to show the "Printing" state
-      setTimeout(() => setIsPrinting(false), 2000);
+      setIsPrinting(false);
     }
   };
 
@@ -50,16 +58,56 @@ const PrintTest = () => {
       </div>
       
       <p className="text-sm-text text-gray-600 mb-6">
-        Verify your Bluetooth, Wi-Fi, or USB Thermal Printer connection here.
+        Test your <strong>Silent Printing</strong> logic. Select your connection and fire a test receipt without popups.
       </p>
+
+      {/* CONNECTION SELECTOR */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <button
+          onClick={() => setConnectionType("usb")}
+          className={`flex items-center justify-center gap-2 p-3 rounded-2xl border-2 transition-all ${
+            connectionType === "usb" 
+              ? "border-app-dark bg-app-dark text-white shadow-md" 
+              : "border-gray-100 text-gray-400 hover:border-gray-200"
+          }`}
+        >
+          <IconPackage className="w-4 h-4" />
+          <span className="text-xs font-bold uppercase">Wired (USB)</span>
+        </button>
+
+        <button
+          onClick={() => setConnectionType("bluetooth")}
+          className={`flex items-center justify-center gap-2 p-3 rounded-2xl border-2 transition-all ${
+            connectionType === "bluetooth" 
+              ? "border-blue-500 bg-blue-500 text-white shadow-md" 
+              : "border-gray-100 text-gray-400 hover:border-gray-200"
+          }`}
+        >
+          <IconDelivery className="w-4 h-4" />
+          <span className="text-xs font-bold uppercase">Bluetooth</span>
+        </button>
+
+        <button
+    onClick={() => setConnectionType("browser")}
+    className={`flex flex-col items-center justify-center gap-1 p-3 rounded-2xl border-2 transition-all ${
+      connectionType === "browser" 
+        ? "border-emerald-500 bg-emerald-500 text-white shadow-md" 
+        : "border-gray-100 text-gray-400 hover:border-gray-200"
+    }`}
+  >
+    <IconStatusReady className="w-4 h-4" />
+    <span className="text-[10px] font-bold uppercase">WPS / PDF</span>
+  </button>
+      </div>
 
       <div className="space-y-4">
         {/* Instruction Alert */}
-        <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
           <div className="flex gap-3">
-            <IconInfo className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-700 leading-relaxed">
-              Ensure your printer is <strong>paired</strong> first. For 58mm thermal printers, set margins to <strong>None</strong> and Scale to <strong>100%</strong> in the print dialog.
+            <IconInfo className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
+              The first time you print, your browser will ask you to <strong>pair</strong> the device. 
+              Once paired, printing will be instant and silent.
             </p>
           </div>
         </div>
@@ -71,16 +119,16 @@ const PrintTest = () => {
           className={`w-full py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 ${
             isPrinting 
               ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
-              : "bg-app-dark text-white hover:shadow-lg"
+              : connectionType === 'bluetooth' ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-app-dark text-white hover:shadow-lg"
           }`}
         >
           {isPrinting ? (
             <>
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Processing...
+              Sending Data...
             </>
           ) : (
-            "Print Test Receipt"
+            `Print via ${connectionType === 'usb' ? 'USB' : 'Bluetooth'}`
           )}
         </button>
       </div>

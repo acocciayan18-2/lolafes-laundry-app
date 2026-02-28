@@ -115,7 +115,7 @@ export default function RecentActivity() {
             );
           })
         ) : (
-          <div className="h-full flex flex-col items-center justify-center py-20 opacity-20 grayscale">
+          <div className="h-full flex flex-col items-center justify-center py-20 opacity-40 grayscale">
             <IconOrdersList className="w-11 h-11 mb-2 text-text-dark" />
             <p className="text-sm-text text-text-dark font-medium">
               {isFetching ? "Retrieving history..." : "No local activity found"}

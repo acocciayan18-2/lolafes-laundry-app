@@ -8,7 +8,9 @@ import {
   IconStatusPending,
   IconStatusPickedUp,
   IconStatusProcessing,
-  IconStatusReady
+  IconStatusReady,
+  IconDelivery, 
+  IconHandover
 } from '../icons';
 
 const statusConfig = {
@@ -17,6 +19,11 @@ const statusConfig = {
   ready: { icon: IconStatusReady, label: "Ready", color: "status-ready" },
   completed: { icon: IconStatusCompleted, label: "Completed", color: "status-complete" },
   picked_up: { icon: IconStatusPickedUp, label: "Picked Up", color: "status-picked" }    
+};
+
+const handoverConfig = {
+  pickup: { icon: IconHandover, label: "Pickup", color: "amber" },
+  delivery: { icon: IconDelivery, label: "Delivery", color: "blue" }
 };
 
 export default function TodayOrders({ orders = [], isLoading }) {
@@ -40,6 +47,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
         {!isLoading && sortedOrders.length > 0 ? (
           sortedOrders.map((order) => {
             const cfg = statusConfig[order.status] || statusConfig.pending;
+            const handover = handoverConfig[order.handover_method || 'pickup'];
             const isStuck = isOrderStuck(order);
             const isLocked = isOrderLocked(order);
             
@@ -47,6 +55,12 @@ export default function TodayOrders({ orders = [], isLoading }) {
               hour: '2-digit', 
               minute: '2-digit' 
             });
+
+            // Handle display label for Picked Up vs Delivered in the list
+            let listStatusLabel = cfg.label;
+            if (order.status === 'picked_up' && order.handover_method === 'delivery') {
+              listStatusLabel = "Delivered";
+            }
 
             return (
               <button 
@@ -73,36 +87,38 @@ export default function TodayOrders({ orders = [], isLoading }) {
                   </h3>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="text-nano font-bold px-1 py-0.5 rounded border border-app-dark/10 bg-white/50 text-text-dark">#{order.order_number}</span>
+                    
+                   
+
                     <span className={`text-nano font-bold px-1.5 py-0.5 rounded border uppercase bg-${cfg.color}/10 text-${cfg.color} border-${cfg.color}`}>
-                      {cfg.label}
+                      {listStatusLabel}
                     </span>
-                    {isStuck && (
-                      <span className="text-[9px] font-black text-red-600 bg-red-100 px-1.5 py-0.5 rounded border border-red-200 uppercase tracking-tighter">
-                        STUCK
-                      </span>
-                    )}
+
+                     <span className={`text-nano font-bold uppercase px-2 py-1 rounded-lg flex items-center gap-1.5 transition-all active:scale-95 select-none hover:brightness-95 shadow-sm bg-${handover.color}-50 text-${handover.color}-700 border-${handover.color}-100`}>
+                       <handover.icon className="w-4 h-4" />
+                       {handover.label}
+                    </span>
                   </div>
                 </div>
 
                 <div className="text-right">
                   <p className="text-nano font-bold lowercase opacity-40">{timeCreated}</p>
+                 
                 </div>
               </button>
             )
           })
         ) : !isLoading && (
-          /* --- EMPTY STATE --- */
-          <div className="h-full flex flex-col items-center justify-center text-center py-10">
-            <div className="w-16 h-16  rounded-full flex items-center justify-center mb-4 ">
-              <IconShirt className="w-8 h-8 text-text-dark/40" />
+          <div className="h-full flex flex-col items-center justify-center text-center py-10 opacity-40">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 ">
+              <IconShirt className="w-8 h-8 text-text-dark" />
             </div>
-            <h3 className="text-sm-text font-bold text-text-dark/40 ">No Orders Today</h3>
-            <p className="text-nano font-medium text-text-dark/40 mt-1 ">Waiting for your first customer...</p>
+            <h3 className="text-sm-text font-medium text-text-dark ">No Orders Today</h3>
+            <p className="text-nano font-medium text-text-dark mt-1 ">Waiting for your first customer...</p>
           </div>
         )}
       </div>
 
-      {/* --- STATUS MODAL --- */}
       <AnimatePresence>
         {selectedOrder && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-app-dark/15 backdrop-blur-[4px]">
@@ -122,6 +138,15 @@ export default function TodayOrders({ orders = [], isLoading }) {
                   const isCurrent = selectedOrder.status === key;
                   const { allowed } = validate(selectedOrder, key);
 
+                  // DYNAMIC HANDOVER LOGIC FOR MODAL
+                  let displayLabel = cfg.label;
+                  let DisplayIcon = cfg.icon;
+
+                  if (key === 'picked_up' && selectedOrder.handover_method === 'delivery') {
+                    displayLabel = "Delivered";
+                    DisplayIcon = IconStatusPickedUp;
+                  }
+
                   return (
                     <button
                       key={key}
@@ -133,9 +158,9 @@ export default function TodayOrders({ orders = [], isLoading }) {
                         ${(!allowed && !isCurrent) ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
                     >
                       <div className={`p-2 rounded-xl ${isCurrent ? 'bg-white/20' : `bg-${cfg.color}/10`}`}>
-                        <cfg.icon className={`w-5 h-5 ${isCurrent ? 'text-white' : `text-${cfg.color}`}`} />
+                        <DisplayIcon className={`w-5 h-5 ${isCurrent ? 'text-white' : `text-${cfg.color}`}`} />
                       </div>
-                      <span className="text-sm-text font-bold uppercase flex-1 text-left">{cfg.label}</span>
+                      <span className="text-sm-text font-bold uppercase flex-1 text-left">{displayLabel}</span>
                       {isCurrent && <div className="w-2 h-2 rounded-full bg-white animate-pulse" />}
                     </button>
                   );

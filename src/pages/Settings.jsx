@@ -1,6 +1,7 @@
 import { IconSettings } from "../components/icons";
 import PrintTest from "../components/settings/PrintTest";
-import SessionSecurity from "../components/settings/SessionSecurity"; // I
+import SessionSecurity from "../components/settings/SessionSecurity";
+import AutoPrintToggle from "../components/settings/AutoPrintToggle"; // New Import
 
 const Settings = () => {
   return (
@@ -18,17 +19,23 @@ const Settings = () => {
           </div>
         </div>
 
+        {/* SETTINGS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-          {/* Hardware Block */}
+          
+          {/* Hardware & Testing */}
           <PrintTest />
 
-          {/* Session Security Block */}
-          <SessionSecurity />
-        </div>
+          {/* Automation & Printing Logic */}
+          <AutoPrintToggle />
 
-      
-</div>
+          {/* Session & Security */}
+          <div className="md:col-span-2">
+             <SessionSecurity />
+          </div>
+          
+        </div>
       </div>
+    </div>
   );
 };
 

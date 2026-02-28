@@ -6,8 +6,9 @@ import { useNotificationStore } from "../../store/ui/useNotificationStore";
 import "../../style/OrderCard.css";
 import {
   IconArrowRight, IconCreditCard,
+  IconDelivery,
   IconDoubleCheck,
-  IconGCash, IconInfo, IconMapPin, IconPhone,
+  IconGCash, IconHandover, IconInfo, IconMapPin, IconPhone,
   IconShirt, IconStatusCompleted, IconStatusPending, IconStatusPickedUp,
   IconStatusProcessing, IconStatusReady, IconWallet
 } from "../icons";
@@ -18,14 +19,30 @@ const statusConfig = {
   in_progress: { banner: "bg-status-process", theme: "bg-status-process/10 text-status-process border border-status-process", icon: IconStatusProcessing, label: "Processing", nextStatus: "ready" },
   ready: { banner: "bg-status-ready", theme: "bg-status-ready/10 text-status-ready border border-status-ready", icon: IconStatusReady, label: "Ready", nextStatus: "completed" },
   completed: { banner: "bg-status-complete", theme: "bg-status-complete/10 text-status-complete border border-status-complete", icon: IconStatusCompleted, label: "Completed", nextStatus: 'picked_up' },
-  picked_up: { banner: "bg-status-picked", theme: "bg-status-picked/10 text-status-picked border border-status-picked", icon: IconStatusPickedUp, label: "Picked Up", nextStatus: null }
+  picked_up: { banner: "bg-status-picked", theme: "bg-status-picked/10 text-status-picked border border-status-picked", icon: IconStatusPickedUp, label: "Picked Up", nextStatus: null },
+  delivered: { banner: "bg-emerald-500",  theme: "bg-status-picked/10 text-status-picked border border-status-picked",   icon: IconStatusPickedUp,   label: "Delivered", nextStatus: null 
+  }
+};
+
+const handoverConfig = {
+  pickup: { 
+    label: "Pickup", 
+    theme: "text-amber-700 ", 
+    icon: <IconHandover className="w-4 h-4" /> // or a Store icon if you have one
+  },
+  delivery: { 
+    label: "Delivery", 
+    theme: "text-blue-700 ", 
+    icon: <IconDelivery className="w-4 h-4" /> 
+  }
 };
 
 const statusOptions = [
   { value: "in_progress", label: "Processing", icon: IconStatusProcessing },
   { value: "ready", label: "Ready", icon: IconStatusReady },
   { value: "completed", label: "Completed", icon: IconStatusCompleted },
-  { value: "picked_up", label: "Picked Up", icon: IconStatusPickedUp }
+  { value: "picked_up", label: "Picked Up", icon: IconStatusPickedUp },
+  { value: "delivered", label: "Delivered", icon: IconStatusPickedUp }
 ];
 
 export default function OrderCard({ order }) {
@@ -40,7 +57,7 @@ export default function OrderCard({ order }) {
 
   const { 
     cancelOrder, updateOrderStatus, togglePaymentStatus, 
-    isOrderStuck, isOrderLocked, parseTimestamp 
+    isOrderStuck, isOrderLocked, parseTimestamp, updateHandoverMethod,
   } = useOrderStore();
   
   const { showNotification } = useNotificationStore();
@@ -57,7 +74,7 @@ export default function OrderCard({ order }) {
     : null;
 
   const handlePaymentClick = (e) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevents card from collapsing/expanding
     if (!order.is_paid && !isLocked) {
       const rect = e.currentTarget.getBoundingClientRect();
       setIsDropUp((window.innerHeight - rect.bottom) < 160);
@@ -65,31 +82,123 @@ export default function OrderCard({ order }) {
     }
   };
 
-  const selectPaymentMethod = async (method) => {
+  // 2. FIX: Added stopPropagation to the PAID/UNPAID toggle for cases where it's clickable
+ const handleTogglePaid = async (e) => {
+    e.stopPropagation();
+    if (isLocked) return;
+
     try {
-      await togglePaymentStatus(order.id, false, method);
-      showNotification(`Settled via ${method}`, "success");
-      logActivity(order, order.status, { action: 'payment_update', label: `Paid via ${method}` });
-      setShowPaymentPopover(false);
+      const targetStatus = !order.is_paid;
+      await togglePaymentStatus(order.id, targetStatus, order.payment_method || 'Cash');
+      
+      showNotification(
+        targetStatus ? "Marked as PAID" : "Marked as UNPAID", 
+        targetStatus ? "success" : "info"
+      );
     } catch (err) {
-      showNotification("Update failed", "error");
+      showNotification("Database sync failed.", "error");
+    }
+  };
+
+ const selectPaymentMethod = async (method) => {
+    try {
+      // Logic from useOrderStore: togglePaymentStatus(orderId, targetStatus, method)
+      await togglePaymentStatus(order.id, true, method); 
+      
+      showNotification(`Order settled via ${method}`, "success");
+      logActivity(order, order.status, { 
+        action: 'payment_update', 
+        label: `Paid via ${method}` 
+      });
+      setShowPaymentPopover(false)
+    } catch (err) {
+      showNotification("Payment update failed. Check connection.", "error");
     }
   };
 
   const handleStatusChange = async (e, newStatus) => {
-    if (newStatus === "picked_up" && !order.is_paid) {
-      showNotification("Payment required first!", "error");
-      return setIsOpen(false);
+    e.stopPropagation(); // Prevent card from collapsing
+
+    // BUSINESS RULE: Order cannot be released/handovered if unpaid
+    const isHandover = newStatus === "picked_up" || newStatus === "delivered";
+    
+    if (isHandover && !order.is_paid) {
+      showNotification(`Order #${order.order_number} must be PAID before handover!`, "error");
+      setIsOpen(false);
+      return;
     }
-    e.stopPropagation();
+
+    // Prevents accidental double-clicks or updates on locked orders
+    if (isLocked) {
+      showNotification("This order is finalized and locked.", "info");
+      return;
+    }
+
     setIsOpen(false);
     try {
       await updateOrderStatus(order, newStatus);
-      logActivity(order, newStatus, 'status_update');
+      logActivity(order, newStatus, { 
+        action: 'status_update', 
+        label: `Moved to ${newStatus}` 
+      });
+      showNotification(`Status updated to ${newStatus}`, "success");
     } catch (err) {
-      showNotification("Status update failed", "error");
+      console.error("Status Change Error:", err);
+      showNotification("Network error. Could not update status.", "error");
     }
   };
+
+  const currentStatusConfig = { ...statusConfig };
+  if (order.handover_method === 'delivery') {
+    currentStatusConfig.completed.nextStatus = 'delivered';
+  } else {
+    currentStatusConfig.completed.nextStatus = 'picked_up';
+  }
+
+
+  // Filter dropdown options based on Handover Method
+  const filteredStatusOptions = statusOptions.filter(option => {
+    if (order.handover_method === 'delivery' && option.value === 'picked_up') return false;
+    if (order.handover_method === 'pickup' && option.value === 'delivered') return false;
+    return true;
+  });
+
+const [isEditingFee, setIsEditingFee] = useState(false);
+const [tempFee, setTempFee] = useState(order.delivery_fee || 0);
+
+// 2. Updated Toggle Handler
+const handleHandoverToggle = async (e) => {
+  e.stopPropagation();
+  if (isLocked) return;
+
+  // IF CURRENT IS DELIVERY: Switch to Pickup (Simple subtraction)
+  if (order.handover_method === 'delivery') {
+    const feeToDeduct = Number(order.delivery_fee || 0);
+    const newTotal = Math.max(0, Number(order.total_amount) - feeToDeduct);
+    
+    await updateHandoverMethod(order.id, 'pickup', 0, newTotal);
+    showNotification(`Switched to Pickup. ₱${feeToDeduct} removed.`, "info");
+  } 
+  // IF CURRENT IS PICKUP: Trigger Fee Input
+  else {
+    setIsEditingFee(true);
+  }
+};
+
+// 3. Confirm Fee and Update
+const confirmDeliveryFee = async (e) => {
+  e.stopPropagation();
+  const feeToAdd = Number(tempFee);
+  const newTotal = Number(order.total_amount) + feeToAdd;
+
+  try {
+    await updateHandoverMethod(order.id, 'delivery', feeToAdd, newTotal);
+    setIsEditingFee(false);
+    showNotification(`Delivery set: +₱${feeToAdd} fee added.`, "success");
+  } catch (err) {
+    showNotification("Error updating fee", "error");
+  }
+};
 
   const handleConfirmCancel = async () => {
     try {
@@ -128,7 +237,7 @@ export default function OrderCard({ order }) {
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-hollow bg-white">
                   <status.icon className="w-5 h-5" />
                 </div>
-                {isStuck && order.status !== 'picked_up' && (
+                {isStuck && (
                   <span className="absolute -top-1 -right-1 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
@@ -141,11 +250,67 @@ export default function OrderCard({ order }) {
                   <span className="text-nano font-bold text-text-dark/50 uppercase  px-1.5 py-0.5 rounded">
                    {createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} | {createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                   </span>
+                  {/* HANDOVER SECTION */}
+{isEditingFee ? (
+  <div className="flex items-center gap-1 animate-in fade-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
+    <div className="relative">
+      <span className="absolute text-micro left-2 top-1/2 -translate-y-1/2 text-nano font-bold text-blue-600 pointer-events-none">₱</span>
+      <input 
+        type="text" // Switched to text to remove arrows
+        inputMode="decimal" // Triggers numeric keypad on mobile
+        autoFocus
+        value={tempFee}
+        onChange={(e) => {
+          // Regex: Only allow numbers and one decimal point
+          const val = e.target.value.replace(/[^0-9.]/g, '');
+          // Prevent multiple decimal points
+          if ((val.match(/\./g) || []).length <= 1) {
+            setTempFee(val);
+          }
+        }}
+        className="w-16 h-7 pl-4 pr-2 text-micro font-bold border border-blue-400 rounded-lg focus:outline-none bg-blue-50 text-blue-700 placeholder:text-blue-300"
+        placeholder="0"
+      />
+    </div>
+    <button 
+      onClick={confirmDeliveryFee}
+      className="h-7 px-2 bg-blue-600 text-white rounded-lg text-nano font-bold hover:bg-blue-700 active:scale-95 transition-all"
+    >
+      OK
+    </button>
+    {/* Small cancel button in case they misclicked */}
+    <button 
+      onClick={(e) => { e.stopPropagation(); setIsEditingFee(false); }}
+      className="text-nano font-bold text-rose-600 hover:text-rose-500 px-1"
+    >
+      Cancel
+    </button>
+  </div>
+) : (
+  <button 
+    onClick={(e) => e.stopPropagation()} 
+    onDoubleClick={handleHandoverToggle}
+    title="Double-click to set Delivery Fee"
+    className={`text-nano font-bold uppercase px-2 py-1 rounded-lg flex items-center gap-1.5 transition-all active:scale-95 select-none hover:brightness-95 shadow-sm ${
+      order.handover_method === 'delivery' 
+        ? 'bg-blue-50 text-blue-700 border-blue-200' 
+        : 'bg-amber-50 text-amber-700 border-amber-200'
+    }`}
+  >
+    {handoverConfig[order.handover_method]?.icon}
+    {handoverConfig[order.handover_method]?.label}
+  </button>
+)}
+
+                  
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-nano font-bold px-2 py-0.5 rounded border bg-white/50">#{order.order_number}</span>
-                  <span className={`text-nano font-bold uppercase px-2 py-0.5 rounded border ${status.theme}`}>{status.label}</span>
-                  
+                  {/* NEW: Handover Method Badge */}
+  
+  <span className={`text-nano font-bold uppercase px-2 py-0.5 rounded border ${status.theme}`}>{status.label}</span>
+  
+  
                   {/* Accurate Handover Badge */}
                   {handoverDate && (
                     <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md animate-in fade-in slide-in-from-left-2 duration-500">
@@ -161,85 +326,165 @@ export default function OrderCard({ order }) {
               </div>
             </div>
 
-            <div className="flex items-center justify-between lg:justify-end gap-4 w-full lg:w-auto">
-              <div className="relative" ref={paymentRef}>
-                <div className={`text-left lg:text-right ${isLocked || order.is_paid ? 'cursor-default' : 'cursor-pointer hover:opacity-70'}`} onClick={handlePaymentClick}>
-                  <div className="flex flex-col items-start lg:items-end">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      {order.is_paid && <span className={`text-nano font-bold px-1.5 py-0.5 rounded border uppercase ${isLocked ? 'text-slate-400 border-slate-200' : 'text-emerald-700 bg-emerald-100'}`}>{order.payment_method || 'Cash'}</span>}
-                      <span className={`text-nano font-bold px-1.5 py-0.5 rounded border transition-colors ${isLocked ? 'text-slate-400 bg-slate-100' : order.is_paid ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50'}`}>{order.is_paid ? "PAID" : "UNPAID"}</span>
-                    </div>
-                    <p className={`text-h3 font-bold ${isLocked ? 'text-slate-400' : 'text-text-dark'}`}>₱{order.total_amount?.toLocaleString()}</p>
-                  </div>
-                </div>
+        <div className="flex items-center justify-between lg:justify-end gap-4 w-full lg:w-auto">
+  <div className="relative flex flex-col items-start lg:items-end gap-1" ref={paymentRef}>
+    
+    {/* 1. STATUS BADGE: Requires DOUBLE CLICK to change */}
+    <div className="flex items-center gap-1.5">
+      <button 
+        // Single click only stops propagation to prevent card expansion
+        onClick={(e) => e.stopPropagation()} 
+        // Actual logic requires a double click
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          if (isLocked) return;
+          
+          if (order.is_paid) {
+            handleTogglePaid(e); // Toggles back to UNPAID
+          } else {
+            handlePaymentClick(e); // Opens payment method popover
+          }
+        }}
+        title="Double-click to change status"
+        className={`text-nano font-bold px-2 py-0.5 rounded border transition-all active:scale-95 select-none ${
+          isLocked ? 'text-slate-400 bg-slate-100 border-slate-200 cursor-not-allowed' : 
+          order.is_paid 
+            ? 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100 cursor-pointer' 
+            : 'text-red-500 bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer'
+        }`}
+      >
+        {order.is_paid ? "PAID" : "UNPAID"}
+      </button>
 
+      {/* Selected Method Badge (Visible only when Paid) */}
+      {order.is_paid && (
+        <span className={`text-nano font-bold px-1.5 py-0.5 rounded border uppercase animate-in fade-in zoom-in duration-300 ${
+          isLocked ? 'text-slate-400 border-slate-200' : 'text-emerald-700 bg-emerald-100 border-emerald-200'
+        }`}>
+          {order.payment_method || 'Cash'}
+        </span>
+      )}
+    </div>
+
+    {/* PRICE & FEE SECTION */}
+<div 
+  className={`flex flex-col lg:flex-row lg:items-center gap-x-2 gap-y-0.5 ${isLocked || order.is_paid ? 'cursor-default' : 'cursor-pointer'}`}
+  onClick={(e) => e.stopPropagation()} 
+  onDoubleClick={(e) => {
+    e.stopPropagation();
+    if (!order.is_paid && !isLocked) handlePaymentClick(e);
+  }}
+>
+  {/* Delivery Fee: Top on Mobile, Left on Desktop */}
+  {order.handover_method === 'delivery' && order.delivery_fee > 0 && (
+    <div className="flex justify-start lg:justify-end">
+      <span className="text-nano font-bold text-blue-600 tracking-tighter whitespace-nowrap pr-1 pt-1 pb-1  ">
+        + ₱{order.delivery_fee} DELIVERY
+      </span>
+    </div>
+  )}
+
+  {/* Main Total Price */}
+  <div className="flex flex-col items-start lg:items-end">
+    <p className={`text-h3 font-bold transition-colors leading-none ${
+      isLocked ? 'text-slate-400' : 
+      order.is_paid ? 'text-text-dark group-hover/price:text-app-dark' : 'text-text-dark group-hover/price:text-app-dark'
+    }`}>
+      ₱{order.total_amount?.toLocaleString()}
+    </p>
+  </div>
+</div>
+
+    {/* PAYMENT METHOD POPOVER (Standard single click for speed) */}
+    <AnimatePresence>
+      {showPaymentPopover && !isLocked && !order.is_paid && (
+        <motion.div 
+          initial={{ opacity: 0, y: isDropUp ? 10 : -10, scale: 0.95 }} 
+          animate={{ opacity: 1, y: 0, scale: 1 }} 
+          exit={{ opacity: 0, y: isDropUp ? 10 : -10, scale: 0.95 }} 
+          className={`absolute right-0 w-36 bg-white border border-slate-200 rounded-xl shadow-xl z-[100] py-1 overflow-hidden ${isDropUp ? "bottom-full mb-2" : "top-6"}`}
+        >
+          {[{ label: 'Cash', icon: IconWallet }, { label: 'GCash', icon: IconGCash }, { label: 'Card', icon: IconCreditCard }].map(({ label, icon: Icon }) => (
+            <button 
+              key={label} 
+              onClick={(e) => { 
+                e.stopPropagation(); // Prevent card from expanding
+                selectPaymentMethod(label); 
+              }} 
+              className="w-full px-3 py-2 text-left text-sm font-medium text-text-dark flex items-center gap-3 transition-colors hover:bg-slate-50"
+            >
+              <div className="shrink-0"><Icon className="w-4 h-4" /></div>
+              <span>{label}</span>
+            </button>
+          ))}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+
+  {/* STATUS UPDATE DROPDOWN & NEXT BUTTON */}
+ <div className="flex items-center gap-1.5" ref={dropdownRef}>
+              <div className="relative">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} 
+                  disabled={isLocked} 
+                   className={`h-8 px-3 text-sm-text font-medium rounded-lg border transition-all ${isLocked ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isOpen ? "bg-app-dark text-white" : "bg-white text-text-dark border-app-dark/20"}`}
+      >
+                  Update
+                </button>
                 <AnimatePresence>
-                  {showPaymentPopover && !isLocked && !order.is_paid && (
-                    <motion.div initial={{ opacity: 0, y: isDropUp ? 10 : -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: isDropUp ? 10 : -10, scale: 0.95 }} className={`absolute right-0 w-36 bg-white border border-slate-200 rounded-xl shadow-xl z-[100] py-1 overflow-hidden ${isDropUp ? "bottom-full mb-2" : "top-full mt-2"}`}>
-                      {[{ label: 'Cash', icon: IconWallet }, { label: 'GCash', icon: IconGCash }, { label: 'Maya', icon: IconCreditCard }].map(({ label, icon: Icon }) => (
-                        <button key={label} onClick={(e) => { e.stopPropagation(); selectPaymentMethod(label); }} className="w-full px-3 py-2 text-left text-sm font-medium text-text-dark flex items-center gap-3 transition-colors hover:bg-slate-50">
-                          <div className="shrink-0"><Icon className="w-4 h-4" /></div>
-                          <span>{label}</span>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                  {isOpen &&  (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            exit={{ opacity: 0, scale: 0.95 }} 
+            className="absolute right-0 w-40 bg-white border border-slate-200 rounded-xl shadow-2xl z-[100] py-1 top-full mt-1 overflow-hidden"
+          >
+            {filteredStatusOptions.map((option) => (
+              <button 
+                key={option.value} 
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevents card collapse when selecting a status
+                  handleStatusChange(e, option.value);
+                }} 
+                className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors ${order.status === option.value ? "font-bold bg-slate-50 text-text-dark" : "font-normal text-text-dark/90"}`}
+              >
+                <span>{option.label}</span>
+                <option.icon className="w-4 h-4 opacity-60" />
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
 
-              <div className="flex items-center gap-1.5" ref={dropdownRef}>
-                <div className="relative">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} 
-                    disabled={isLocked} 
-                    className={`h-9 px-3 text-sm-text font-medium rounded-lg border transition-all ${isLocked ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isOpen ? "bg-app-dark text-white" : "bg-white text-text-dark border-app-dark/20"}`}
-                  >
-                    Update
-                  </button>
-                  <AnimatePresence>
-                    {isOpen && (
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} 
-                        className="absolute right-0 w-40 bg-white border border-slate-200 rounded-xl shadow-2xl z-[100] py-1 top-full mt-1 overflow-hidden"
-                      >
-                        {statusOptions.map((option) => (
-                          <button 
-                            key={option.value} 
-                            onClick={(e) => handleStatusChange(e, option.value)} 
-                            className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors ${order.status === option.value ? "font-bold bg-slate-50 text-text-dark" : "font-normal text-text-dark/90"}`}
-                          >
-                            <span>{option.label}</span>
-                            <option.icon className="w-4 h-4 opacity-60" />
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {status.nextStatus && (
-                  <button 
-                    onClick={(e) => handleStatusChange(e, status.nextStatus)} 
-                    className="bg-btn-primary hover:bg-btn-primary/90 text-white pl-4 pr-3 py-1.5  rounded-lg shadow-md active:scale-95 flex flex-col items-center justify-center transition-all group"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm-text font-medium">Next</span>
-                      <IconArrowRight className="w-3.5 h-3.5 !text-white group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </button>
-                )}
-              </div>
-            </div>
+    {status.nextStatus && (
+      <button 
+        onClick={(e) => handleStatusChange(e, status.nextStatus)}
+        className="bg-btn-primary hover:bg-btn-primary/90 text-white pl-4 pr-3 py-1.5 rounded-lg shadow-md active:scale-95 flex flex-col items-center justify-center transition-all group"
+      >
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm-text font-medium">Next</span>
+          <IconArrowRight className="w-3.5 h-3.5 !text-white group-hover:translate-x-0.5 transition-transform" />
+        </div>
+      </button>
+    )}
+  </div>
+</div>
           </div>
 
           <AnimatePresence>
   {isExpanded && (
     <motion.div 
-      initial={{ height: 0, opacity: 0 }} 
-      animate={{ height: "auto", opacity: 1 }} 
-      exit={{ height: 0, opacity: 0 }} 
-      className="px-4 mb-4 overflow-hidden"
-    >
+                initial={{ height: 0, opacity: 0 }} 
+                animate={{ height: "auto", opacity: 1 }} 
+                exit={{ height: 0, opacity: 0 }} 
+                transition={{ 
+                  height: { duration: 0.25, ease: "circOut" },
+                  opacity: { duration: 0.2, ease: "linear" }
+                }}
+                className="px-4 mb-4 overflow-hidden"
+              >
       {/* 3 Columns on Laptop (md and up), 1 Column on CP */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-100 pt-4">
         
@@ -252,7 +497,7 @@ export default function OrderCard({ order }) {
             {order.services?.map((s, idx) => (
               <div key={idx} className="bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-lg flex items-center">
                 <span className="text-sm-text font-medium text-text-dark">{s.service_name}</span>
-                <span className="ml-2 text-micro font-black text-btn-primary">x{s.quantity || s.weight_kg}</span>
+                <span className="ml-2 text-micro font-bold text-btn-primary">x{s.quantity || s.weight_kg}</span>
               </div>
             ))}
           </div>
@@ -281,7 +526,7 @@ export default function OrderCard({ order }) {
         <div className="flex flex-col justify-between space-y-4">
           <div className="space-y-2">
             <h4 className="text-micro font-bold text-text-dark/50 uppercase">Notes</h4>
-            <p className="text-sm-text font-medium text-amber-700 leading-snug italic bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/50">
+            <p className="text-sm-text font-medium text-text-dark/30 leading-snug italic bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/50">
               {order.special_instructions || order.notes || "No notes provided."}
             </p>
           </div>

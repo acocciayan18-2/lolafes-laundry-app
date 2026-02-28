@@ -94,7 +94,7 @@ export default function KpiCards() {
                   <p className="text-h2 md:text-h1 font-bold text-text-dark leading-none truncate tracking-tighter cursor-default" title={kpi.value}>
                     {kpi.value}
                   </p>
-                  <p className="text-nano md:text-micro font-medium text-text-dark/60 mt-2 truncate italic">
+                  <p className="text-nano md:text-micro font-medium text-text-dark/60 mt-2 truncate">
                     {kpi.trend}
                   </p>
                 </div>

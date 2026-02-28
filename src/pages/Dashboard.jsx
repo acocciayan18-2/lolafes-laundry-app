@@ -104,13 +104,13 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <div className="flex items-center justify-between text-white py-0.5 gap-2">
-                    <p className="text-text-dark text-[12px] font-medium ">
+                    <p className="text-text-dark text-sm-text font-medium ">
                       {currentTime.toLocaleDateString('en-US', { 
                         weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' 
                       })}
                     </p>
-                    <span className='opacity-60 text-text-dark text-[13px]'> | </span>
-                    <span className="text-text-dark text-[12px] font-medium">
+                    <span className='text-sm-text text-text-dark/20 font-light select-none'> | </span>
+                    <span className="text-text-dark text-sm-text font-medium">
                       {currentTime.toLocaleTimeString([], { 
                         hour: '2-digit', minute: '2-digit', hour12: true 
                       }).toUpperCase()}

@@ -9,7 +9,7 @@ export default function QuickStats({ title, value, icon, trend }) {
           <div className="min-w-0 flex-1">
             
             {/* TITLE: Using text-nano (mobile) and text-micro (desktop) */}
-            <p className="text-nano md:text-micro font-bold  mb-1 truncate uppercase ">
+            <p className="text-nano md:text-micro font-bold text-text-dark/70  mb-1 truncate uppercase ">
               {title}
             </p>
             
