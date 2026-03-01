@@ -122,30 +122,58 @@ export default function OrderCard({ order }) {
     }
   };
 
-  const handleStatusChange = async (e, newStatus) => {
-    e.stopPropagation();
-    const isHandover = newStatus === "picked_up" || newStatus === "delivered";
-    
-    if (isHandover && !order.is_paid) {
-      showNotification(`Order #${order.order_number} must be PAID before handover!`, "error");
-      setIsOpen(false);
-      return;
-    }
+  // 1. Define the mapping outside or inside the component
+const statusLabels = {
+  pending: "Pending",
+  in_progress: "Processing",
+  ready: "Ready",
+  completed: "Completed",
+  picked_up: "Picked Up",
+  delivered: "Delivered",
+  cancelled: "Cancelled"
+};
 
-    if (isLocked) {
-      showNotification("This order is finalized and locked.", "info");
-      return;
-    }
-
+const handleStatusChange = async (e, newStatus) => {
+  e.stopPropagation();
+  
+  // Get the friendly name (e.g., "Processing") or fallback to the key if not found
+  const friendlyStatus = statusLabels[newStatus] || newStatus;
+  
+  const isHandover = newStatus === "picked_up" || newStatus === "delivered";
+  
+  // Validation: Payment check
+  if (isHandover && !order.is_paid) {
+    showNotification(`Order #${order.order_number} must be PAID before handover!`, "error");
     setIsOpen(false);
-    try {
-      await updateOrderStatus(order, newStatus);
-      logActivity(order, newStatus, { action: 'status_update', label: `Moved to ${newStatus}` });
-      showNotification(`Status updated to ${newStatus}`, "success");
-    } catch (err) {
-      showNotification("Could not update status.", "error");
-    }
-  };
+    return;
+  }
+
+  // Validation: Lock check
+  if (isLocked) {
+    showNotification("This order is finalized and locked.", "info");
+    return;
+  }
+
+  setIsOpen(false);
+  
+  try {
+    // Execute Database Update
+    await updateOrderStatus(order, newStatus);
+    
+    // 2. Fix: Use friendlyStatus for the Activity Log
+    logActivity(order, newStatus, { 
+      action: 'status_update', 
+      label: `Moved to ${friendlyStatus}` 
+    });
+    
+    // 3. Fix: Use friendlyStatus for the Toast Notification
+    showNotification(`Status updated to ${friendlyStatus}`, "success");
+    
+  } catch (err) {
+    console.error("Status Update Error:", err);
+    showNotification("Could not update status. Check your connection.", "error");
+  }
+};
 
   const handleManualPrint = async (e) => {
     e.stopPropagation();
@@ -488,7 +516,10 @@ export default function OrderCard({ order }) {
                   <div className="flex flex-col justify-between space-y-4">
                     <div className="space-y-2">
                       <h4 className="text-micro font-bold text-text-dark/50 uppercase">Notes</h4>
-                      <p className="text-sm-text font-medium text-text-dark/30 leading-snug italic bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/50">
+                      <p 
+                        className={`text-sm-text font-medium !text-amber-700 leading-snug italic bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/50 transition-all
+                          ${(!order.special_instructions && !order.notes) ? 'opacity-20' : 'opacity-100'}`}
+                      >
                         {order.special_instructions || order.notes || "No notes provided."}
                       </p>
                     </div>

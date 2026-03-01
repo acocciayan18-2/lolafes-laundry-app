@@ -88,16 +88,13 @@ export default function PopularServices({ range: initialRange }) {
                 </button>
                 <AnimatePresence>
                   {showInfo && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.95, y: 5 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 5 }}
-                      className="absolute right-[-100px] md:right-0 top-full mt-2 w-52 p-3 bg-white border border-app-dark/30 shadow-2xl rounded-xl z-[100]"
+                    <div 
+                      className="absolute left-0 top-7 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200"
                     > 
-                      <p className="text-[12px] text-text-dark/90 font-medium leading-relaxed">
+                      <p className="text-[13px] text-text-dark/90 leading-relaxed">
                         Tracks the **Operational Load**. The bar represents the percentage of total orders this service accounts for in the selected period.
                       </p>
-                    </motion.div>
+                    </div>
                   )}
                 </AnimatePresence>
               </div>

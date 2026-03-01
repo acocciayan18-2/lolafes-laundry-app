@@ -101,7 +101,7 @@ export default function Reports() {
         
         <motion.header 
           variants={itemVariants} 
-          className="flex flex-row justify-between items-center px-1 mb-6"
+          className="flex flex-row justify-between items-center px-1"
         >
           <div className="flex flex-col">
             <h1 className="text-h2 font-bold text-text-dark leading-tight">Reports</h1>

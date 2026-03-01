@@ -56,7 +56,7 @@ export const NetworkToast = () => {
   }, [isOnline]);
 
   return (
-    <div className="fixed top-4 right-2 z-[99999999999999] flex flex-col gap-2 pointer-events-none w-full max-w-[250px] px-2 ">
+    <div className="fixed top-4 right-1 z-[99999999999999] flex flex-col gap-2 pointer-events-none w-full max-w-[250px] px-2 ">
       <AnimatePresence>
         {/* OFFLINE STATE - RED */}
         {!isOnline && (
