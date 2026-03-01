@@ -24,45 +24,75 @@ export const CustomerForm = ({
     return () => unsubscribe();
   }, [subscribeToCustomers]);
 
-  // --- VALIDATION LOGIC ---
+  // ==========================================
+  // 1. PERFORMANCE: Memoized Search Filtering
+  // ==========================================
+  // Prevents the app from lagging when searching through thousands of customers
+  const filteredCustomers = useMemo(() => {
+    if (!customers) return [];
+    if (!searchTerm.trim()) return customers;
+    
+    const lowerSearch = searchTerm.toLowerCase();
+    return customers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(lowerSearch) ||
+        c.phone.includes(searchTerm)
+    );
+  }, [customers, searchTerm]);
+
+  // ==========================================
+  // 2. VALIDATION & SECURITY LOGIC
+  // ==========================================
   const isPhoneIncomplete = customer.phone.length > 0 && customer.phone.length < 11;
   const isPhoneValidFormat = customer.phone.length === 11 && customer.phone.startsWith("09");
   
-  // Memoized Duplicate Check: Ignores the currently selected customer ID
   const duplicateCustomer = useMemo(() => {
-    if (isSubmitting || customer.phone.length < 4) return null;
+    if (isSubmitting || customer.phone.length < 11) return null;
     
-    return customers.find(c => {
+    return customers?.find(c => {
       const dbPhoneClean = String(c.phone || "").replace(/\D/g, "");
       const inputPhoneClean = String(customer.phone || "").replace(/\D/g, "");
-      
-      // KEY FIX: Match phone BUT ensure it's not the same ID as the selected one
       return dbPhoneClean === inputPhoneClean && c.id !== selectedCustomerId;
     });
   }, [customers, customer.phone, selectedCustomerId, isSubmitting]);
 
   const isPhoneDuplicate = !!duplicateCustomer;
-
-  // Validation flag for UI styling (red border)
   const isPhoneInvalid = (isPhoneIncomplete || (customer.phone.length === 11 && !isPhoneValidFormat)) && !selectedCustomerId;
 
-  const filteredCustomers = customers?.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.phone.includes(searchTerm)
-  ) || [];
+  // ==========================================
+  // 3. CLEAN HANDLERS: Extracted from JSX
+  // ==========================================
+  const handlePhoneChange = (e) => {
+    let val = e.target.value;
+    
+    // SMART FEATURE: Auto-convert "+63" to "0" if they paste a copied PH number
+    if (val.startsWith('+63')) val = '0' + val.substring(3);
+    if (val.startsWith('63')) val = '0' + val.substring(2);
+    
+    val = val.replace(/\D/g, ''); // Strip non-digits
+    if (val.startsWith('9')) val = '0' + val; // Auto-prepend 0
+    if (val.length > 11) val = val.slice(0, 11); // Max 11 digits
+    
+    setCustomer({ ...customer, phone: val });
+  };
+
+  const handleTextChange = (field, value) => {
+    // Capitalize first letter of every word (Safer regex that doesn't mess up typing flow)
+    const capitalized = value.replace(/\b\w/g, (char) => char.toUpperCase());
+    setCustomer({ ...customer, [field]: capitalized });
+  };
 
   const selectCustomer = (c) => {
     setCustomer({ name: c.name, phone: c.phone, address: c.address || "" });
     setSelectedCustomerId(c.id);
     setShowExistingCustomers(false);
+    setSearchTerm(""); // Clear search for next time
   };
 
-  const getIconClasses = (isActive) => {
-    return `w-4 h-4 mr-2 transition-colors duration-200 ${
-      isActive ? "!text-app-light !stroke-app-light" : "!text-app-dark !stroke-app-dark"
-    }`;
-  };
+  // UI Helpers
+  const getIconClasses = (isActive) => `w-4 h-4 mr-2 transition-colors duration-200 ${
+    isActive ? "!text-app-light !stroke-app-light" : "!text-app-dark !stroke-app-dark"
+  }`;
 
   const isExistingActive = showExistingCustomers || selectedCustomerId !== null;
   const isAddNewActive = !showExistingCustomers && selectedCustomerId === null;
@@ -98,6 +128,7 @@ export const CustomerForm = ({
             variant={isExistingActive ? "default" : "outline"}
             size="md"
             onClick={() => setShowExistingCustomers(true)}
+            disabled={isSubmitting}
             className="transition-all !px-4"
           >
             <IconSearch className={getIconClasses(isExistingActive)} />
@@ -112,6 +143,7 @@ export const CustomerForm = ({
               setSelectedCustomerId(null);
               setCustomer({ name: "", phone: "", address: "" });
             }}
+            disabled={isSubmitting}
             className="transition-all !px-4"
           >
             <IconUserPlus className={getIconClasses(isAddNewActive)} />
@@ -135,7 +167,7 @@ export const CustomerForm = ({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className={`text-sm-text ${focusClasses}`}
-                  disabled={isLoading}
+                  disabled={isLoading || isSubmitting}
                 />
 
                 <div className="max-h-40 overflow-y-auto bg-gray-50/50 rounded-xl p-1 border border-gray-100 custom-scrollbar">
@@ -144,7 +176,8 @@ export const CustomerForm = ({
                       <button
                         key={c.id}
                         onClick={() => selectCustomer(c)}
-                        className="w-full text-left p-3 rounded-lg transition-colors hover:bg-blue-50 group"
+                        disabled={isSubmitting}
+                        className="w-full text-left p-3 rounded-lg transition-colors hover:bg-blue-50 group disabled:opacity-50"
                       >
                         <p className="text-base-text font-bold text-gray-900 group-hover:text-btn-primary transition-colors">{c.name}</p>
                         <p className="text-sm-text text-gray-500">{c.phone}</p>
@@ -168,11 +201,9 @@ export const CustomerForm = ({
                     label="Customer Name"
                     value={customer.name}
                     id="customer-name"
+                    disabled={isSubmitting}
                     readOnly={!!selectedCustomerId}
-                    onChange={(e) => {
-                      const capitalizedName = e.target.value.replace(/(^\w|\s\w)/g, (match) => match.toUpperCase());
-                      setCustomer({ ...customer, name: capitalizedName });
-                    }}
+                    onChange={(e) => handleTextChange('name', e.target.value)}
                     placeholder="Enter Customer Name"
                     className={`text-sm-text ${
                       selectedCustomerId 
@@ -187,13 +218,9 @@ export const CustomerForm = ({
                       label="Contact Number"
                       value={customer.phone}
                       id="customer-phone"
+                      disabled={isSubmitting}
                       readOnly={!!selectedCustomerId}
-                      onChange={(e) => {
-                        let val = e.target.value.replace(/\D/g, '');
-                        if (val.startsWith('9')) val = '0' + val;
-                        if (val.length > 11) val = val.slice(0, 11);
-                        setCustomer({ ...customer, phone: val });
-                      }}
+                      onChange={handlePhoneChange}
                       placeholder="09XX XXX XXXX"
                       className={`text-sm-text transition-all ${
                         selectedCustomerId 
@@ -222,7 +249,7 @@ export const CustomerForm = ({
                           </motion.span>
                         )}
 
-                        {!isPhoneDuplicate && customer.phone.length === 11 && !customer.phone.startsWith("09") && (
+                        {!isPhoneDuplicate && customer.phone.length === 11 && !isPhoneValidFormat && (
                           <motion.span initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                             className="font-bold text-red-600 text-micro ml-1 block">
                            Invalid Format (09XX...)
@@ -236,11 +263,9 @@ export const CustomerForm = ({
                   label="Address"
                   id="customer-address"
                   value={customer.address}
+                  disabled={isSubmitting}
                   readOnly={!!selectedCustomerId}
-                  onChange={(e) => {
-                    const capitalizedValue = e.target.value.replace(/(^\w|\s\w)/g, (match) => match.toUpperCase());
-                    setCustomer({ ...customer, address: capitalizedValue });
-                  }}
+                  onChange={(e) => handleTextChange('address', e.target.value)}
                   placeholder="Customer Address (Optional)"
                   className={`text-sm-text ${
                     selectedCustomerId 

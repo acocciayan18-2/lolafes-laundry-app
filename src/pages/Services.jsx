@@ -1,5 +1,5 @@
-import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { LayoutGroup } from "framer-motion";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { IconGridPlus } from "../components/icons";
 import LoyaltySettings from "../components/services/LoyaltySettings";
 import ServiceCard from "../components/services/ServiceCard";
@@ -8,8 +8,6 @@ import { useServiceStore } from "../store/services/useServiceStore";
 import { LoginPopup } from "../modal/LoginPopup"; 
 
 // --- Constants & Helper Components ---
-const SMOOTH_TRANSITION = { type: "spring", stiffness: 300, damping: 30, mass: 1 };
-
 export const Button = ({ children, onClick, className = "", variant = "primary", ...props }) => {
   const variants = {
     primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-sm",
@@ -21,7 +19,7 @@ export const Button = ({ children, onClick, className = "", variant = "primary",
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center justify-center rounded-lg font-bold transition-all px-4 py-2 ${variants[variant] || variants.primary} ${className}`}
+      className={`inline-flex items-center justify-center rounded-lg font-bold transition-all px-4 py-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 outline-none ${variants[variant] || variants.primary} ${className}`}
       {...props}
     >
       {children}
@@ -31,7 +29,7 @@ export const Button = ({ children, onClick, className = "", variant = "primary",
 
 export const Input = ({ className = "", ...props }) => (
   <input
-    className={`flex h-10 w-full rounded-lg border font-medium border-slate-200 bg-white px-3 py-2 text-base-text placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-app-dark/70 ${className}`}
+    className={`flex h-10 w-full rounded-lg border font-medium border-slate-200 bg-white px-3 py-2 text-base-text placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-app-dark/70 transition-shadow ${className}`}
     {...props}
   />
 );
@@ -57,16 +55,24 @@ export default function Services() {
   const [editingId, setEditingId] = useState(null);
   const [tempData, setTempData] = useState(null);
   const [popup, setPopup] = useState({ message: "", type: "info" });
-  const [allowOverflow, setAllowOverflow] = useState(false);
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
-  // 1. Sync Services from Firebase
+  // 1. PERFORMANCE: Memoized sorted services so active ones stay on top
+  const sortedServices = useMemo(() => {
+    if (!services) return [];
+    return [...services].sort((a, b) => {
+      if (a.is_active === b.is_active) return 0;
+      return a.is_active ? -1 : 1;
+    });
+  }, [services]);
+
+  // Sync Services from Firebase
   useEffect(() => {
     const unsubscribe = subscribeToServices();
     return () => unsubscribe();
   }, [subscribeToServices]);
 
-  // 2. Manage Loading State with a slight delay to prevent flickering
+  // Manage Loading State with a slight delay to prevent flickering
   useEffect(() => {
     let timer;
     if (isLoading) {
@@ -79,27 +85,37 @@ export default function Services() {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  const triggerPopup = (message, type = "error") => setPopup({ message, type });
+  const triggerPopup = useCallback((message, type = "error") => {
+    setPopup({ message, type });
+  }, []);
 
-  // 3. Handle Save (Add or Update)
+  // 2. SECURITY & VALIDATION: Handle Save (Add or Update)
   const handleSave = async (id) => {
-    if (!tempData.name.trim()) return triggerPopup("Name is required");
+    if (!tempData?.name?.trim()) return triggerPopup("Service name is required");
     
-    const price = parseFloat(tempData.price_per_kg);
-    if (isNaN(price) || price <= 0) return triggerPopup("Invalid price");
+    // Explicitly handle "0" while catching negatives or NaNs
+    const priceStr = String(tempData.price_per_kg ?? "").trim();
+    if (priceStr === "") return triggerPopup("Service price is required");
+    
+    const price = Number(priceStr);
+    if (isNaN(price) || price < 0) return triggerPopup("Invalid price. Must be 0 or greater.");
 
     try {
       let result = false;
+      // Sanitize object before DB write
+      const sanitizedData = { 
+        ...tempData, 
+        name: tempData.name.trim(),
+        price_per_kg: price 
+      };
 
       if (id === "new_draft") {
-        // Strip the temporary 'id' before sending to Firebase
-        const { id: _, ...cleanData } = tempData; 
-        result = await addService({ ...cleanData, price_per_kg: price }); 
+        const { id: _, ...cleanData } = sanitizedData; 
+        result = await addService(cleanData); 
       } else {
-        result = await updateService(id, { ...tempData, price_per_kg: price });
+        result = await updateService(id, sanitizedData);
       }
 
-      // If the store logic returns true, clear editing state
       if (result) {
         setEditingId(null);
         setTempData(null);
@@ -113,16 +129,14 @@ export default function Services() {
     }
   };
 
-  // 4. Handle Status Toggle (Enable/Disable)
+  // Handle Status Toggle
   const toggleStatus = async (id, currentStatus) => {
-    // Logic inside updateService handles checks for active orders
     return await updateService(id, { is_active: !currentStatus });
   };
 
-  // 5. Initialize New Service Form
+  // Initialize New Service Form
   const addNewService = () => {
-    if (editingId) return; // Prevent multiple forms at once
-    setAllowOverflow(false);
+    if (editingId) return; 
     setEditingId("new_draft");
     setTempData({ 
       name: "", 
@@ -131,6 +145,8 @@ export default function Services() {
       duration_hours: 24, 
       is_active: true 
     });
+    // Scroll to top so they see the form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (isLoading && shouldShowSkeleton) {
@@ -145,7 +161,7 @@ export default function Services() {
         onClose={() => setPopup({ ...popup, message: "" })} 
       />
 
-      <motion.div layoutRoot className="max-w-6xl mx-auto px-1 md:px-2">
+      <div className="max-w-6xl mx-auto px-1 md:px-2">
         {/* Header Section */}
         <div className="flex justify-between items-center mb-3">
           <div> 
@@ -154,80 +170,77 @@ export default function Services() {
           </div>
           <button 
             onClick={addNewService} 
-            className="group flex items-center justify-center w-9 h-9 shadow-md bg-white rounded-xl border border-text-dark/20 active:scale-95 hover:bg-app-dark/5 transition-all duration-200"
+            disabled={editingId !== null}
+            className="group flex items-center justify-center w-9 h-9 shadow-md bg-white rounded-xl border border-text-dark/20 active:scale-95 hover:bg-app-dark/5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-app-dark"
             title="Add Service"
+            aria-label="Add new service"
           >
             <IconGridPlus className="w-4 h-4 text-black" strokeWidth={2.2} />
           </button>
         </div>
 
         <LayoutGroup>
-          {/* New Service Draft Form */}
-          <AnimatePresence mode="wait">
-            {editingId === "new_draft" && (
-              <motion.div 
-                key="new-service-form"
-                initial={{ opacity: 0, height: 0 }} 
-                animate={{ opacity: 1, height: "auto" }} 
-                exit={{ opacity: 0, height: 0 }} 
-                onAnimationComplete={() => setAllowOverflow(true)}
-                transition={SMOOTH_TRANSITION}
-                style={{ overflow: allowOverflow ? "visible" : "hidden" }}
-                className="mb-4 relative z-[50]" 
-              >
-                <div className="flex items-center gap-2 mb-2 ml-1">
-                  <div className="w-0.5 h-3 bg-app-dark/80 rounded-full" />
-                  <span className="text-sm-text font-medium text-text-dark/80">Add New Service</span>
-                </div>
-
-                <ServiceCard 
-                  service={tempData} 
-                  isEditing={true}
-                  tempData={tempData} 
-                  setTempData={setTempData}
-                  onSave={() => handleSave("new_draft")}
-                  onCancel={() => {
-                    setEditingId(null);
-                    setTempData(null);
-                  }}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* New Service Draft Form (Instant Snap - No AnimatePresence) */}
+          {editingId === "new_draft" && (
+            <div className="mb-4 relative z-[50]">
+              <div className="flex items-center gap-2 mb-2 ml-1">
+                <div className="w-0.5 h-3 bg-app-dark/80 rounded-full" aria-hidden="true" />
+                <span className="text-sm-text font-medium text-text-dark/80">Add New Service</span>
+              </div>
+              <ServiceCard 
+                service={tempData} 
+                isEditing={true}
+                tempData={tempData} 
+                setTempData={setTempData}
+                onSave={() => handleSave("new_draft")}
+                onCancel={() => {
+                  setEditingId(null);
+                  setTempData(null);
+                }}
+              />
+            </div>
+          )}
 
           {/* Loyalty Settings Panel */}
           <div className="relative z-[40] mb-3">
             <LoyaltySettings />
           </div>
 
-          {/* List of Services */}
+          {/* List of Services (Instant Snap - No AnimatePresence/motion.div wrappers) */}
           <div className="grid gap-3 relative z-[10]">
-            <AnimatePresence mode="popLayout">
-              {services.map((service) => (
-                <motion.div key={service.id} layout transition={SMOOTH_TRANSITION}>
-                  <ServiceCard 
-                    service={service} 
-                    isEditing={editingId === service.id}
-                    tempData={tempData}
-                    setTempData={setTempData}
-                    onEdit={(s) => { 
-                      setEditingId(s.id); 
-                      setTempData({ ...s }); 
-                    }} 
-                    onSave={() => handleSave(service.id)}
-                    onCancel={() => {
-                      setEditingId(null);
-                      setTempData(null);
-                    }}
-                    onToggle={() => toggleStatus(service.id, service.is_active)} 
-                    onDelete={(id) => deleteServiceSafe(id)}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
+            {sortedServices.map((service) => (
+              <div key={service.id}>
+                <ServiceCard 
+                  service={service} 
+                  isEditing={editingId === service.id}
+                  tempData={tempData}
+                  setTempData={setTempData}
+                  onEdit={(s) => { 
+                    setEditingId(s.id); 
+                    setTempData({ ...s }); 
+                  }} 
+                  onSave={() => handleSave(service.id)}
+                  onCancel={() => {
+                    setEditingId(null);
+                    setTempData(null);
+                  }}
+                  onToggle={() => toggleStatus(service.id, service.is_active)} 
+                  onDelete={(id) => deleteServiceSafe(id)}
+                />
+              </div>
+            ))}
+            
+            {sortedServices.length === 0 && editingId !== "new_draft" && (
+               <div className="py-12 text-center border-1 border-dashed border-gray-200 rounded-2xl bg-white mt-4">
+                 <p className="text-sm-text font-medium text-gray-500">No services found.</p>
+                 <button onClick={addNewService} className="text-blue-600 font-bold text-sm-text hover:underline mt-1 outline-none">
+                   Add your first service
+                 </button>
+               </div>
+            )}
           </div>
         </LayoutGroup>
-      </motion.div>
+      </div>
     </div>
   );
 }

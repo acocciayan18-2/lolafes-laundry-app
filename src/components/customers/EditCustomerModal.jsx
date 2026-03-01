@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useCustomerStore } from '../../store/customer/useCustomerStore';
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
-import { useActivityStore } from '../../store/activities/useActivityStore'; // 1. Import Activity Store
+import { useActivityStore } from '../../store/activities/useActivityStore'; 
 import { IconUsers, IconPhone, IconMapPin, IconClose } from '../icons';
 
 /**
@@ -32,25 +32,55 @@ const EditCustomerModal = ({ customer, onClose }) => {
   
   const updateCustomer = useCustomerStore((state) => state.updateCustomer);
   const showNotification = useNotificationStore((state) => state.showNotification);
-  const logActivity = useActivityStore((state) => state.logActivity); // 2. Get logActivity action
+  const logActivity = useActivityStore((state) => state.logActivity); 
+
+  // ==========================================
+  // ACCESSIBILITY: Scroll Lock & Escape Key
+  // ==========================================
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && !isSubmitting) onClose();
+    };
+    
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleEsc);
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [isSubmitting, onClose]);
 
   const hasChanges = 
     formData.name.trim() !== (customer.name || "").trim() ||
     formData.phone.trim() !== (customer.phone || "").trim() ||
     formData.address.trim() !== (customer.address || "").trim();
 
+  // ==========================================
+  // SMART FORMATTERS
+  // ==========================================
   const handleNameChange = (val) => {
-    const formatted = val
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+    // Better Regex: Capitalizes first letter of every word smoothly without breaking typing
+    const formatted = val.replace(/(^\w|\s\w)/g, (match) => match.toUpperCase());
     setFormData(prev => ({ ...prev, name: formatted }));
     if (errors.name) setErrors(prev => ({ ...prev, name: null }));
   };
 
   const handlePhoneChange = (val) => {
-    const onlyNums = val.replace(/\D/g, '').slice(0, 11);
-    setFormData(prev => ({ ...prev, phone: onlyNums }));
+    let cleaned = val;
+    
+    // Auto-convert pasted PH area codes to standard '0'
+    if (cleaned.startsWith('+63')) cleaned = '0' + cleaned.substring(3);
+    if (cleaned.startsWith('63')) cleaned = '0' + cleaned.substring(2);
+    
+    cleaned = cleaned.replace(/\D/g, ''); // Strip non-digits
+    
+    // Auto-prepend 0 if they just start typing 9
+    if (cleaned.startsWith('9')) cleaned = '0' + cleaned;
+    
+    cleaned = cleaned.slice(0, 11); // Max 11 digits
+    
+    setFormData(prev => ({ ...prev, phone: cleaned }));
     if (errors.phone) setErrors(prev => ({ ...prev, phone: null }));
   };
 
@@ -60,7 +90,9 @@ const EditCustomerModal = ({ customer, onClose }) => {
 
     const newErrors = {};
     if (formData.name.trim().length < 3) newErrors.name = "Name must be at least 3 characters";
-    if (!/^(09|\+639)\d{9}$/.test(formData.phone)) newErrors.phone = "Invalid 11-digit PH number";
+    
+    // Regex simplified because handler now strictly enforces 09 format
+    if (!/^09\d{9}$/.test(formData.phone)) newErrors.phone = "Invalid 11-digit PH number";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -71,7 +103,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
     try {
       await updateCustomer(customer.id, formData);
 
-      // --- 3. LOG ACTIVITY LOGIC ---
+      // --- LOG ACTIVITY LOGIC ---
       const changes = [];
       if (formData.name.trim() !== (customer.name || "").trim()) changes.push("Name");
       if (formData.phone.trim() !== (customer.phone || "").trim()) changes.push("Phone");
@@ -84,7 +116,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
       logActivity(
         { 
           customer_name: formData.name, 
-          order_number: `CUST-${customer.id.slice(-4)}` // Tagging with last 4 of ID
+          order_number: `CUST-${customer.id.slice(-4)}` 
         }, 
         'in_progress', 
         { action: 'status_update', label: descriptiveLabel }
@@ -101,21 +133,29 @@ const EditCustomerModal = ({ customer, onClose }) => {
   };
 
   const inputClass = (err) => `
-    w-full pl-10 pr-4 py-3 border font-medium rounded-xl text-sm-text focus:outline-none
+    w-full pl-10 pr-4 py-3 border font-medium rounded-xl text-sm-text focus:outline-none transition-all
     ${err ? 'border-red-500 focus:border-red-600 bg-red-50/30' : 'border-app-dark/20 focus:border-app-dark/90 bg-white'}
   `;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-app-dark/20 backdrop-blur-sm z-[100] p-4">
+    <div 
+      className="fixed inset-0 flex items-center justify-center bg-app-dark/20 backdrop-blur-sm z-[100] p-4"
+      onClick={!isSubmitting ? onClose : undefined} // Backdrop click to close
+      role="dialog"
+      aria-modal="true"
+    >
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }} 
         animate={{ opacity: 1, scale: 1 }} 
         exit={{ opacity: 0, scale: 0.95 }} 
+        onClick={(e) => e.stopPropagation()} // Prevent backdrop click from triggering inside the modal
         className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden relative"
       >
         <button 
           onClick={onClose} 
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-50 rounded-full transition-colors"
+          disabled={isSubmitting}
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-50 rounded-full transition-colors disabled:opacity-50"
+          aria-label="Close modal"
         >
           <IconClose className="w-5 h-5" />
         </button>
@@ -132,6 +172,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
               value={formData.name} 
               onChange={(e) => handleNameChange(e.target.value)} 
               placeholder="e.g. Juan Dela Cruz"
+              disabled={isSubmitting}
             />
           </FormField>
 
@@ -142,6 +183,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
               value={formData.phone} 
               onChange={(e) => handlePhoneChange(e.target.value)} 
               placeholder="09XXXXXXXXX"
+              disabled={isSubmitting}
             />
           </FormField>
 
@@ -152,6 +194,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
               value={formData.address || ""} 
               onChange={(e) => setFormData({ ...formData, address: e.target.value })} 
               placeholder="House No., Street, Brgy."
+              disabled={isSubmitting}
             />
           </FormField>
 
@@ -159,20 +202,26 @@ const EditCustomerModal = ({ customer, onClose }) => {
             <button 
               type="button" 
               onClick={onClose} 
-              className="flex-1 px-4 py-2.5 text-sm-text font-medium text-text-dark/70 border border-app-dark/30 rounded-lg hover:bg-slate-50 transition-all"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2.5 text-sm-text font-medium text-text-dark/70 border border-app-dark/30 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50"
             >
               Cancel
             </button>
             <button 
               type="submit" 
               disabled={isSubmitting || !hasChanges} 
-              className={`flex-1 px-4 py-2.5 text-sm-text font-medium rounded-lg transition-all text-white
+              className={`flex-1 flex justify-center items-center gap-2 px-4 py-2.5 text-sm-text font-medium rounded-lg transition-all text-white
                 ${isSubmitting || !hasChanges 
                   ? 'bg-app-dark/30 cursor-not-allowed' 
-                  : 'bg-app-dark hover:opacity-95'
+                  : 'bg-app-dark hover:opacity-95 active:scale-95'
                 }`}
             >
-              {isSubmitting ? "Saving..." : "Save Changes"}
+              {isSubmitting ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  Saving...
+                </>
+              ) : "Save Changes"}
             </button>
           </div>
         </form>

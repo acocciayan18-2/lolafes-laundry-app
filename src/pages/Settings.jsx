@@ -1,10 +1,22 @@
+import { useEffect } from 'react';
 import { IconSettings } from "../components/icons";
 import PrintTest from "../components/settings/PrintTest";
 import SessionSecurity from "../components/settings/SessionSecurity";
 import AutoPrintToggle from "../components/settings/AutoPrintToggle";
-import ReceiptConfiguration from "../components/settings/ReceiptConfiguration"; // New Import
+import ReceiptConfiguration from "../components/settings/ReceiptConfiguration";
+import ReceiptButtonToggle from '../components/settings/ReceiptButtonToggle';
+import { useSettingsStore } from '../store/settings/useSettingsStore';
+
 
 const Settings = () => {
+  const { subscribeToSettings } = useSettingsStore();
+
+  // 🛡️ Real-time sync: Listen for changes across all admin devices
+  useEffect(() => {
+    const unsubscribe = subscribeToSettings();
+    return () => unsubscribe(); 
+  }, [subscribeToSettings]);
+
   return (
     <div className="min-h-screen bg-app-light p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
@@ -31,8 +43,11 @@ const Settings = () => {
           {/* 2. Hardware & Testing */}
           <PrintTest />
 
-          {/* 3. Automation & Printing Logic */}
-          <AutoPrintToggle />
+          {/* 3. Automation & Printing Logic (Grouped Toggles) */}
+          <div className="flex flex-col gap-4">
+             <AutoPrintToggle />
+             <ReceiptButtonToggle /> {/* 👈 The new modular toggle */}
+          </div>
 
           {/* 4. Session & Security (Full Width) */}
           <div className="md:col-span-2">

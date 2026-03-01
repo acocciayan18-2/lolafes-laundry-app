@@ -5,16 +5,12 @@ import {
   sendEmailVerification,
 } from "firebase/auth";
 import { get, getDatabase, ref } from "firebase/database";
-import { useState } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LoginPopup } from "../modal/LoginPopup";
 import { auth } from "../services/firebase";
 import "../style/signup.css";
 import { IconAtSymbol, IconLock, IconEyeOpen, IconEyeClosed, IconCheck } from "../components/icons";
-
-// ----------------------------------------------------------------------
-// CONSTANTS & ICONS
-// ----------------------------------------------------------------------
 
 const EMAILJS_CONFIG = {
   SERVICE_ID: process.env.REACT_APP_EMAILJS_SERVICE_ID,
@@ -22,58 +18,53 @@ const EMAILJS_CONFIG = {
   PUBLIC_KEY: process.env.REACT_APP_EMAILJS_PUBLIC_KEY,
 };
 
-
-// ----------------------------------------------------------------------
-// MAIN COMPONENT
-// ----------------------------------------------------------------------
-
 export default function SignUp() {
   const navigate = useNavigate();
 
-  // Form State
+  // --- STATE ---
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [enteredOtp, setEnteredOtp] = useState("");
   
-  // UI State
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [popup, setPopup] = useState({ message: "", type: "info" });
-
-  // Logic State
   const [generatedOtp, setGeneratedOtp] = useState("");
-  
-  // Password Criteria State
-  const [criteria, setCriteria] = useState({
-    length: false,
-    uppercase: false,
-    number: false,
-    special: false,
-  });
+  const [resendTimer, setResendTimer] = useState(0);
 
-  // Derived State
-  const passwordsMatch = password === confirmPassword && confirmPassword !== "";
-  const isPasswordValid = Object.values(criteria).every(Boolean) && passwordsMatch;
+  // --- 1. PERFORMANCE: Memoized Password Criteria ---
+  const criteria = useMemo(() => ({
+    length: password.length >= 8, // Standardized to 8 for better security
+    uppercase: /[A-Z]/.test(password),
+    number: /\d/.test(password),
+    special: /[!@#$%^&*()_,.?":{}|<>]/.test(password),
+  }), [password]);
 
-  // --- HANDLERS ---
+  const passwordsMatch = useMemo(() => 
+    password === confirmPassword && confirmPassword !== "", 
+  [password, confirmPassword]);
 
-  const triggerPopup = (message, type = "info") => {
+  const isPasswordValid = useMemo(() => 
+    Object.values(criteria).every(Boolean) && passwordsMatch, 
+  [criteria, passwordsMatch]);
+
+  // --- 2. TIMERS & COOLDOWNS ---
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => setResendTimer((prev) => prev - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  const triggerPopup = useCallback((message, type = "info") => {
     setPopup({ message, type });
-  };
-
-  const handlePasswordChange = (e) => {
-    const val = e.target.value;
-    setPassword(val);
-    setCriteria({
-      length: val.length >= 6,
-      uppercase: /[A-Z]/.test(val),
-      number: /\d/.test(val),
-      special: /[!@#$%^&*()_,.?":{}|<>]/.test(val),
-    });
-  };
+    // Auto-clear success popups, keep error popups longer
+    if (type === "success") setTimeout(() => setPopup({ message: "", type: "info" }), 4000);
+  }, []);
 
   const handleCancel = () => {
     setIsOtpSent(false);
@@ -81,50 +72,52 @@ export default function SignUp() {
     setEmail("");
     setPassword("");
     setConfirmPassword("");
-    setCriteria({ length: false, uppercase: false, number: false, special: false });
+    setGeneratedOtp("");
     setIsLoading(false);
   };
 
-  // --- FIREBASE & OTP LOGIC ---
-
-  const fetchAdminEmail = async () => {
-    const db = getDatabase();
-    const snapshot = await get(ref(db, "admin_information/admin_email_otp"));
-    if (snapshot.exists()) return snapshot.val();
-    throw new Error("Admin OTP email not found in database.");
-  };
-
+  // --- 3. SECURE OTP LOGIC ---
   const executeOtpSending = async () => {
+    if (resendTimer > 0) return;
+    
     try {
-      const adminEmail = await fetchAdminEmail();
+      const db = getDatabase();
+      const snapshot = await get(ref(db, "admin_information/admin_email_otp"));
+      
+      if (!snapshot.exists()) throw new Error("Admin configuration missing.");
+      
+      const adminEmail = snapshot.val();
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Store locally (Note: in a high-security env, this would be validated server-side)
       setGeneratedOtp(otp);
 
       await emailjs.send(
         EMAILJS_CONFIG.SERVICE_ID,
         EMAILJS_CONFIG.TEMPLATE_ID,
-        { email: adminEmail, otp },
+        { email: adminEmail, otp, target_user: email },
         EMAILJS_CONFIG.PUBLIC_KEY
       );
 
       setIsOtpSent(true);
-      triggerPopup("OTP sent to admin email.", "success");
+      setResendTimer(60); // 1-minute cooldown
+      triggerPopup("Verification code sent to system admin.", "success");
     } catch (err) {
-      console.error(err);
-      triggerPopup(`Failed to send OTP: ${err.message}`, "error");
+      triggerPopup(`System Error: ${err.message}`, "error");
     }
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
     setIsLoading(true);
 
     try {
-      // Step 1: Send OTP if not sent
       if (!isOtpSent) {
-        const methods = await fetchSignInMethodsForEmail(auth, email);
+        // PRE-CHECK: Ensure email isn't already taken before sending OTP
+        const methods = await fetchSignInMethodsForEmail(auth, email.trim());
         if (methods.length > 0) {
-          triggerPopup("This email is already registered. Please log in.", "error");
+          triggerPopup("This email is already registered.", "error");
           setIsLoading(false);
           return;
         }
@@ -133,36 +126,33 @@ export default function SignUp() {
         return;
       }
 
-      // Step 2: Verify OTP
+      // OTP VERIFICATION
       if (enteredOtp !== generatedOtp) {
-        triggerPopup("Invalid OTP. Please try again.", "error");
+        triggerPopup("Invalid verification code.", "error");
         setIsLoading(false);
         return;
       }
 
-      // Step 3: Create User
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // USER CREATION
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
       await sendEmailVerification(userCredential.user);
 
-      triggerPopup("Signup successful! Verification email sent.", "success");
-      handleCancel(); // Reset form
+      triggerPopup("Account created! Please check your email to verify.", "success");
+      
+      // Delay navigation to let user read the popup
+      setTimeout(() => navigate("/login"), 2000);
 
     } catch (error) {
-      console.error("Signup Process Error:", error);
-      setIsLoading(false);
-
-      const errorMessages = {
-        "auth/email-already-in-use": "Email is already in use.",
-        "auth/invalid-email": "Invalid email address.",
-        "auth/weak-password": "Password is too weak.",
-        "auth/network-request-failed": "Network error. Check connection.",
+      const errorMap = {
+        "auth/email-already-in-use": "Email is already registered.",
+        "auth/invalid-email": "Please enter a valid email address.",
+        "auth/weak-password": "Password does not meet security standards.",
+        "auth/network-request-failed": "Network error. Please check your connection."
       };
-
-      triggerPopup(errorMessages[error.code] || error.message, "error");
+      triggerPopup(errorMap[error.code] || error.message, "error");
+      setIsLoading(false);
     }
   };
-
-  // --- RENDER ---
 
   return (
     <div className="signup-container">
@@ -173,174 +163,146 @@ export default function SignUp() {
       />
 
       <div className="signup-card">
-        {/* Logo */}
-        <div className="flex justify-center items-center w-full">
-          <div className="mb-3 flex justify-center items-center w-14 h-14 bg-app-dark rounded-xl overflow-hidden">
+        <div className="flex justify-center items-center w-full mb-4">
+          <div className="flex justify-center items-center w-16 h-16 bg-app-dark rounded-2xl shadow-lg">
             <img
               src="/images/lolafeslaundry-logo-transparent.png"
-              alt="Lola Fe's Laundry Logo"
-              className="max-w-full max-h-full w-12 h-12"
+              alt="Logo"
+              className="w-12 h-12 object-contain"
             />
           </div>
         </div>
 
-        <h3 className="text-center text-3xl font-extrabold text-gray-800 mb-1">Create Admin Account</h3>
-        <p className="text-center !text-text-dark/70 mb-6">Sign up with a secure password and OTP verification.</p>
+        <h3 className="text-center text-2xl font-black text-text-dark mb-1">Create Admin Account</h3>
+        <p className="text-center text-sm font-medium text-text-dark/60 mb-6 uppercase tracking-wider">Internal Access Only</p>
 
-        <form onSubmit={handleSignup}>
-          
-          {/* Email Field */}
-          <div className="mb-3 text-start">
-            <label htmlFor="email" className="form-label text-text-dark">Admin Email</label>
-            <div className="inputForm">
-              <IconAtSymbol/>
+        <form onSubmit={handleSignup} noValidate>
+          {/* Email */}
+          <div className="mb-4 text-start">
+            <label htmlFor="email" className="text-xs font-bold uppercase text-text-dark/50 ml-1 mb-1 block">Admin Email</label>
+            <div className="inputForm relative">
+              <IconAtSymbol className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/40" />
               <input
                 type="email"
                 id="email"
-                className="input"
-                placeholder="Enter your Email"
+                className="input pl-10"
+                placeholder="juan@laundry.com"
                 required
-                autoComplete="off"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isOtpSent}
+                disabled={isOtpSent || isLoading}
               />
             </div>
           </div>
 
-          {/* Password Field */}
-          <div className="mb-2 text-start">
-            <label htmlFor="password" className="form-label text-text-dark">Password</label>
-            <div className="inputForm pwd-signup-con">
-              <IconLock/>
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                className="input"
-                placeholder="Enter your password"
-                required
-                autoComplete="off"
-                value={password}
-                onChange={handlePasswordChange}
-                disabled={isOtpSent}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <IconEyeClosed /> : <IconEyeOpen />}
-              </button>
+          {/* Passwords Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+            <div className="text-start">
+              <label className="text-xs font-bold uppercase text-text-dark/50 ml-1 mb-1 block">Password</label>
+              <div className="inputForm relative">
+                <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/40" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="input pl-10 pr-10"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isOtpSent || isLoading}
+                />
+                <button type="button" className="pwd-toggle-btn" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <IconEyeClosed /> : <IconEyeOpen />}
+                </button>
+              </div>
+            </div>
+
+            <div className="text-start">
+              <label className="text-xs font-bold uppercase text-text-dark/50 ml-1 mb-1 block">Confirm</label>
+              <div className="inputForm relative">
+                <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dark/40" />
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  className="input pl-10 pr-10"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={isOtpSent || isLoading}
+                />
+                <button type="button" className="pwd-toggle-btn" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  {showConfirmPassword ? <IconEyeClosed /> : <IconEyeOpen />}
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Confirm Password Field */}
-          <div className="mb-2 text-start">
-            <label htmlFor="confirmPassword" className="form-label text-text-dark">Confirm Password</label>
-            <div className="inputForm pwd-signup-con">
-              <IconLock/>
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                id="confirmPassword"
-                className="input"
-                placeholder="Re-enter your password"
-                required
-                autoComplete="off"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={isOtpSent}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? <IconEyeClosed /> : <IconEyeOpen />}
-              </button>
-            </div>
+          {/* Status Indicators */}
+          <div className="bg-slate-50 p-3 rounded-xl mb-4 border border-slate-100">
+            <ul className="grid grid-cols-2 gap-y-1 gap-x-4">
+              {Object.entries({
+                length: "Min 8 chars",
+                uppercase: "Uppercase",
+                number: "Number",
+                special: "Special char",
+                match: "Match"
+              }).map(([key, label]) => {
+                const isMet = key === 'match' ? passwordsMatch : criteria[key];
+                return (
+                  <li key={key} className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-tight ${isMet ? "text-emerald-600" : "text-slate-400"}`}>
+                    <IconCheck isMet={isMet} className="w-3 h-3" /> {label}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
 
-          {/* Matching Indicator */}
-          <div className="mb-4">
-            {confirmPassword && (
-              <ul className="space-y-1 text-xs">
-                <li style={{ color: passwordsMatch ? "#198754" : "#dc3545" }} className="flex items-center gap-1">
-                  {passwordsMatch ? <IconCheck isMet={true} /> : <IconCheck isMet={false} />} Passwords match
-                </li>
-              </ul>
-            )}
-          </div>
-
-          {/* Password Criteria List */}
-          <div className="mb-4">
-            {password && (
-              <ul className="space-y-1 text-xs">
-  {[
-    { key: "length", text: "At least 6 characters" },
-    { key: "uppercase", text: "At least 1 uppercase letter" },
-    { key: "number", text: "At least 1 number" },
-    { key: "special", text: "At least 1 special character" },
-  ].map(({ key, text }) => (
-    <li key={key} style={{ color: criteria[key] ? "#198754" : "#dc3545" }} className="flex items-center gap-1">
-      <IconCheck isMet={criteria[key]} /> {text}
-    </li>
-  ))}
-</ul>
-            )}
-          </div>
-
-          {/* OTP Field */}
+          {/* OTP Section */}
           {isOtpSent && (
-            <div className="mb-2 animate-fade-in">
-              <label htmlFor="otp" className="block text-sm font-normal text-text-dark mb-3">
-                Enter the OTP sent to the registered admin email.
-              </label>
+            <div className="mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex justify-between items-center mb-2">
+                <label htmlFor="otp" className="text-xs font-bold uppercase text-text-dark/50">Verification Code</label>
+                {resendTimer > 0 ? (
+                  <span className="text-[10px] font-bold text-slate-400 italic">Resend in {resendTimer}s</span>
+                ) : (
+                  <button type="button" onClick={executeOtpSending} className="text-[10px] font-bold text-blue-600 hover:underline">Resend Code</button>
+                )}
+              </div>
               <input
+                autoFocus
                 type="text"
                 id="otp"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 tracking-[0.5em] focus:ring-1 focus:ring-app-dark focus:outline-none text-center tracking-widest text-lg !font-bold"
+                className="w-full h-12 bg-white border-2 border-app-dark rounded-xl text-center text-xl font-black tracking-[0.75em] focus:ring-4 focus:ring-app-dark/10 outline-none transition-all"
                 placeholder="000000"
                 value={enteredOtp}
-                onChange={(e) => setEnteredOtp(e.target.value)}
-                required
+                onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, ''))}
                 maxLength={6}
               />
             </div>
           )}
 
-          {/* Submit Button */}
           <button
             type="submit"
-            className={`w-full mb-2 bg-app-dark text-white font-medium py-2 rounded-lg shadow transition-all ${
-              !isPasswordValid || isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-app-dark/95"
-            }`}
             disabled={!isPasswordValid || isLoading}
+            className={`w-full bg-app-dark text-white font-bold h-12 rounded-xl shadow-lg transition-all active:scale-[0.98] ${
+              !isPasswordValid || isLoading ? "opacity-30 cursor-not-allowed grayscale" : "hover:bg-black"
+            }`}
           >
-            {isLoading ? "Processing..." : (isOtpSent ? "Complete Signup" : "Send OTP Verification")}
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Processing...
+              </div>
+            ) : isOtpSent ? "Create Admin Account" : "Request OTP Access"}
           </button>
 
-          {/* Cancel Button */}
           {isOtpSent && (
-            <div className="text-center mb-1">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="text-sm text-gray-500 hover:text-gray-700 bg-transparent border-none cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
+            <button type="button" onClick={handleCancel} className="mt-4 text-xs font-bold text-slate-400 hover:text-text-dark transition-colors uppercase tracking-widest">
+              ← Change Details
+            </button>
           )}
         </form>
 
-        {/* Footer */}
-        <div className="mt-2 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{" "}
-            <button
-              onClick={() => navigate("/login")}
-              className="text-blue-600 bg-transparent border-none cursor-pointer"
-            >
-              Login
-            </button>
+        <div className="mt-6 pt-6 border-t border-slate-100 text-center">
+          <p className="text-sm font-medium text-text-dark/60">
+            Internal Access Only • <button onClick={() => navigate("/login")} className="font-bold text-blue-600 hover:text-blue-800">Return to Login</button>
           </p>
         </div>
       </div>

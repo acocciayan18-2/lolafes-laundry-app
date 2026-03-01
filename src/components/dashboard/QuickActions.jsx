@@ -2,22 +2,39 @@ import { Link } from 'react-router-dom';
 import { IconAddNewOrder, IconUsers } from '../icons';
 
 export default function QuickActions() {
-  // Common classes updated to use transition between your new specific tokens
-  
+  // 1. PERFORMANCE (DRY Principle): 
+  // Extracting common classes makes the component lighter, easier to maintain, 
+  // and prevents you from having to update styling in multiple places.
+  // Note: I removed 'border-1' as 'border' natively handles the 1px width in Tailwind.
+  const actionButtonClasses = "group flex items-center justify-center w-9 h-9 shadow-md bg-white hover:bg-app-dark/5 active:bg-app-dark/5 rounded-xl border border-text-dark/20 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-app-dark/20";
+
   return (
-    <div className="flex items-center gap-1.5">
-      {/* 1. NEW ORDER BUTTON - Updated to high-contrast Dark theme */}
-      <Link to="/main/neworder">
-        <button className="group flex items-center justify-center w-9 shadow-md h-9 hover:bg-app-dark/5 active:bg-app-dark/5 bg-white rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200 ">
-          <IconAddNewOrder className="w-5 h-5 " />
-        </button>
+    <div 
+      className="flex items-center gap-1.5" 
+      role="group" 
+      aria-label="Quick Navigation Actions"
+    >
+      {/* 2. VALIDATION & ACCESSIBILITY: 
+          - Applied classes directly to the Link instead of wrapping a <button>.
+          - Added aria-label for screen readers.
+          - Added title for a native hover tooltip since these are icon-only buttons.
+      */}
+      <Link 
+        to="/main/neworder"
+        className={actionButtonClasses}
+        aria-label="Create New Order"
+        title="Create New Order"
+      >
+        <IconAddNewOrder className="w-5 h-5" aria-hidden="true" />
       </Link>
 
-      {/* 2. CUSTOMERS BUTTON - Updated to Light theme with Dark text */}
-      <Link to="/main/customers">
-        <button className="group flex items-center justify-center w-9 h-9 shadow-md bg-white hover:bg-app-dark/5 active:bg-app-dark/5 rounded-xl border border-1 border-text-dark/20 active:scale-95 transition-all duration-200 ">
-          <IconUsers className="w-4 h-4 " />
-        </button>
+      <Link 
+        to="/main/customers"
+        className={actionButtonClasses}
+        aria-label="View Customers Directory"
+        title="View Customers"
+      >
+        <IconUsers className="w-4 h-4" aria-hidden="true" />
       </Link>
     </div>
   );

@@ -1,5 +1,5 @@
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { IconAddNewOrder, IconShirt } from "../components/icons";
 import OrderCard from "../components/orders/OrderCard";
@@ -17,8 +17,6 @@ const SPRING_TRANSITION = {
   restDelta: 0.01
 };
 
-
-
 export default function Orders() {
   const { orders, isLoading, subscribeToOrders, updateOrderStatus } = useOrderStore();
   const logActivity = useActivityStore((state) => state.logActivity);
@@ -29,9 +27,7 @@ export default function Orders() {
     dateFilter, setDateFilter 
   } = useOrderFilterStore();
 
-  const [filteredOrders, setFilteredOrders] = useState([]);
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
-
 
   // 1. Firebase Subscription
   useEffect(() => {
@@ -52,7 +48,7 @@ export default function Orders() {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  // 3. Global Search Handler
+  // 3. Global Search Handler (Secured against input bugs)
   useEffect(() => {
     const handleGlobalSearchFocus = (e) => {
       const activeElement = document.activeElement;
@@ -63,8 +59,10 @@ export default function Orders() {
 
       if (isAlreadyTyping) return;
 
+      // Only trigger on standard letter/number keys, ignoring shortcuts
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const searchInput = document.querySelector('input[placeholder*="Search name"]');
+        // Fallback to multiple generic selectors in case the placeholder changes later
+        const searchInput = document.querySelector('input[placeholder*="Search name"]') || document.querySelector('input[type="text"]');
         if (searchInput) {
           searchInput.focus();
           setSearchTerm(prev => prev + e.key);
@@ -79,7 +77,7 @@ export default function Orders() {
 
   const handleStatusUpdate = useCallback(async (orderId, newStatus) => {
     try {
-      const orderToLog = orders.find(o => o.id === orderId);
+      const orderToLog = orders?.find(o => o.id === orderId);
       await updateOrderStatus(orderId, newStatus);
       if (orderToLog) {
         logActivity(orderToLog, newStatus);
@@ -89,41 +87,45 @@ export default function Orders() {
     }
   }, [orders, updateOrderStatus, logActivity]);
 
-  // --- FILTER & LIMIT LOGIC ---
-  const filterOrders = useCallback(() => {
-    let filtered = [...orders];
+  // ==========================================
+  // 4. PERFORMANCE: useMemo for Derived State
+  // This completely eliminates the double-render cycle and runs instantly.
+  // ==========================================
+  const filteredOrders = useMemo(() => {
+    if (!orders || orders.length === 0) return [];
 
-    // Status Filter
+    let filtered = orders;
+
+    // A. Status Filter
     if (statusFilter !== "all") {
       filtered = filtered.filter(order => order.status === statusFilter);
     }
 
-    // Date Filter
+    // B. Date Filter (OPTIMIZED: Math outside the loop)
     if (dateFilter !== "all") {
       const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      // Using timestamps (integers) is exponentially faster to compare than Date objects
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const yesterdayStart = todayStart - 86400000; // 24 hours in milliseconds
+      const last7Start = todayStart - (7 * 86400000);
+      const last30Start = todayStart - (30 * 86400000);
+
       filtered = filtered.filter(order => {
-        const orderDate = new Date(order.created_date);
+        // Sanitize the date to prevent crashes if a record is missing the timestamp
+        if (!order.created_date) return false;
+        
+        const orderTime = new Date(order.created_date).getTime();
         switch (dateFilter) {
-          case "today": return orderDate >= today;
-          case "yesterday":
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            return orderDate >= yesterday && orderDate < today;
-          case "last_7":
-            const last7 = new Date(today);
-            last7.setDate(last7.getDate() - 7);
-            return orderDate >= last7;
-          case "last_30":
-            const last30 = new Date(today);
-            last30.setDate(last30.getDate() - 30);
-            return orderDate >= last30;
+          case "today": return orderTime >= todayStart;
+          case "yesterday": return orderTime >= yesterdayStart && orderTime < todayStart;
+          case "last_7": return orderTime >= last7Start;
+          case "last_30": return orderTime >= last30Start;
           default: return true;
         }
       });
     }
 
-    // Search Filter
+    // C. Search Filter
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(order =>
@@ -134,20 +136,23 @@ export default function Orders() {
       );
     }
 
-   
-    const active = filtered.filter(o => o.status !== 'picked_up');
-    const pickedUp = filtered.filter(o => o.status === 'picked_up');
+    // D. Split and Limit Logic (O(N) single pass instead of two .filter passes)
+    const active = [];
+    const pickedUp = [];
+    
+    for (let i = 0; i < filtered.length; i++) {
+      if (filtered[i].status === 'picked_up') {
+        pickedUp.push(filtered[i]);
+      } else {
+        active.push(filtered[i]);
+      }
+    }
 
-    // Always show all active orders. Only fill the rest of the 30 slots with Picked Up.
     const remainingSlots = Math.max(0, 30 - active.length);
-    const limitedPickedUp = pickedUp.slice(0, remainingSlots);
-
-    setFilteredOrders([...active, ...limitedPickedUp]);
+    return [...active, ...pickedUp.slice(0, remainingSlots)];
+    
   }, [orders, searchTerm, statusFilter, dateFilter]);
 
-  useEffect(() => {
-    filterOrders();
-  }, [filterOrders]);
 
   if (isLoading && shouldShowSkeleton) return <OrderListSkeleton />;
   if (isLoading && !shouldShowSkeleton) return null;
@@ -179,7 +184,7 @@ export default function Orders() {
           </motion.div>
 
           {/* Search and Filters Bar */}
-         <motion.div layout className="mb-3">
+          <motion.div layout className="mb-3">
             <OrderFilters 
               statusFilter={statusFilter} 
               setStatusFilter={setStatusFilter}

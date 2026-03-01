@@ -1,5 +1,5 @@
 import { collection, getDocs, limit, query, where } from 'firebase/firestore';
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CustomerForm } from "../components/orders/CustomerForm";
 import { LoyaltyStatus } from "../components/orders/LoyaltyStatus";
@@ -14,13 +14,9 @@ import { useServiceStore } from "../store/services/useServiceStore";
 import { useNotificationStore } from "../store/ui/useNotificationStore";
 import { startGlobalTour } from "../tours/globalTours";
 import { useSettingsStore } from "../store/settings/useSettingsStore";
-
-// ... other imports
-import { silentPrint } from "../services/printerService"; // Our new hardware logic
-import { useOrderStore } from "../store/orders/useOrderStore"; // To check autoPrint setting
-
+import { silentPrint } from "../services/printerService"; 
+import { useOrderStore } from "../store/orders/useOrderStore"; 
 import ClearCartModal from "../components/orders/ClearCartModal";
-// import { printThermalReceipt } from "../components/orders/receiptService";
 import { NewOrderSkeleton } from "../components/skeleton-loader";
 
 // --- Helper Functions ---
@@ -91,15 +87,15 @@ export default function NewOrder() {
   const settings = useOrderStore((state) => state.settings);
 
   // Stores
-  const customers = useCustomerStore((state) => state.customers);
+  const { customers, subscribeToCustomers } = useCustomerStore();
   const { loyaltySettings, subscribeToLoyalty } = useLoyaltyStore();
   const { submitOrder, createCustomer } = useNewOrderStore(); 
   const showNotification = useNotificationStore((state) => state.showNotification);
   const logActivity = useActivityStore((state) => state.logActivity);
   const { services, isLoading, subscribeToServices } = useServiceStore();
-const { receiptConfig, fetchSettings } = useSettingsStore();
-  const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
+  const { receiptConfig } = useSettingsStore();
   
+  const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
 
   // States
   const [isProcessing, setIsProcessing] = useState(false);
@@ -109,23 +105,23 @@ const { receiptConfig, fetchSettings } = useSettingsStore();
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isPaid, setIsPaid] = useState(true);
-  // --- ADD THESE TWO LINES ---
-const [handoverMethod, setHandoverMethod] = useState('pickup');
-const [deliveryFee, setDeliveryFee] = useState(0); 
+  const [handoverMethod, setHandoverMethod] = useState('pickup');
+  const [deliveryFee, setDeliveryFee] = useState(0); 
 
-  // --- VALIDATION & DUPLICATE LOGIC ---
-  const isFormIncomplete = !customer.name.trim() || customer.phone.length < 11;
+  // ==========================================
+  // FIX: STABLE CUSTOMER ARRAY
+  // ==========================================
+  const safeCustomers = useMemo(() => customers || [], [customers]);
 
+  const isFormIncomplete = !customer?.name?.trim() || (customer?.phone?.length || 0) < 11;
 
-
-
-  
-  // FIX: Only flag duplicate if phone matches AND it's NOT the selected customer
-  const isPhoneDuplicate = customers.some(c => {
-    const dbPhoneClean = String(c.phone || "").replace(/\D/g, "");
-    const inputPhoneClean = String(customer.phone || "").replace(/\D/g, "");
-    return dbPhoneClean === inputPhoneClean && c.id !== selectedCustomerId;
-  });
+  const isPhoneDuplicate = useMemo(() => {
+    return safeCustomers.some(c => {
+      const dbPhoneClean = String(c.phone || "").replace(/\D/g, "");
+      const inputPhoneClean = String(customer?.phone || "").replace(/\D/g, "");
+      return dbPhoneClean === inputPhoneClean && c.id !== selectedCustomerId;
+    });
+  }, [safeCustomers, customer?.phone, selectedCustomerId]);
 
   // --- CART PROTECTION LOGIC ---
   const [showClearWarning, setShowClearWarning] = useState(false);
@@ -155,34 +151,37 @@ const [deliveryFee, setDeliveryFee] = useState(0);
   };
 
   // --- REWARD LOGIC ---
-  const selectedCustomerData = selectedCustomerId ? customers.find(c => c.id === selectedCustomerId) : null;
+  const selectedCustomerData = useMemo(() => 
+    selectedCustomerId ? safeCustomers.find(c => c.id === selectedCustomerId) : null
+  , [selectedCustomerId, safeCustomers]);
 
-  const handleApplyReward = () => {
+  const handleApplyReward = useCallback(() => {
     const hasReward = selectedServices.some(s => s.is_reward);
     if (hasReward || !loyaltySettings?.is_enabled) return;
+    
     const currentData = selectedCustomerData || customer;
     const points = currentData.loyalty_points !== undefined ? currentData.loyalty_points : (currentData.order_count || 0);
     const required = loyaltySettings.orders_required || 10;
+    
     if (Math.floor(points / required) <= 0) {
         showNotification("Insufficient points for reward.", "error");
         return;
     }
+    
     const freeService = {
       id: `reward-${Date.now()}`, 
       service_name: `${loyaltySettings.free_service_type} (Reward)`,
       service_type: loyaltySettings.free_service_type,
       quantity: 1, price_per_kg: 0, subtotal: 0, is_reward: true 
     };
-    setSelectedServices([...selectedServices, freeService]);
+    setSelectedServices(prev => [...prev, freeService]);
     showNotification("Reward applied!", "success");
-  };
+  }, [selectedServices, loyaltySettings, selectedCustomerData, customer, showNotification]);
 
   useEffect(() => {
     let timer;
     if (isLoading) {
-      timer = setTimeout(() => {
-        setShouldShowSkeleton(true);
-      }, 400);
+      timer = setTimeout(() => setShouldShowSkeleton(true), 400);
     } else {
       setShouldShowSkeleton(false);
     }
@@ -191,17 +190,12 @@ const [deliveryFee, setDeliveryFee] = useState(0);
 
   // --- SUBMIT LOGIC ---
   const handleSubmit = async () => {
-    const isNameEmpty = !customer.name.trim();
-    const isPhoneEmpty = !customer.phone.trim();
-    const isPhoneInvalid = customer.phone.length < 11;
-    const isCartEmpty = selectedServices.length === 0;
-
-    if (isNameEmpty || isPhoneEmpty || isPhoneInvalid) {
+    if (isFormIncomplete) {
       showNotification("Please complete Customer Name and a valid 11-digit Contact Number.", "error");
       return;
     }
 
-    if (isCartEmpty) {
+    if (selectedServices.length === 0) {
       showNotification("Please select at least one service to proceed.", "error");
       return;
     }
@@ -215,6 +209,7 @@ const [deliveryFee, setDeliveryFee] = useState(0);
     try {
       const uniqueOrderNumber = await generateUniqueOrderNumber();
       let finalCustomerId = selectedCustomerId;
+      
       if (!finalCustomerId) {
         const newCust = await createCustomer({
           name: customer.name.trim(),
@@ -227,7 +222,7 @@ const [deliveryFee, setDeliveryFee] = useState(0);
       const subtotal = selectedServices.reduce((sum, s) => sum + (Number(s.subtotal) || 0), 0);
       const finalDeliveryFee = handoverMethod === 'delivery' ? Number(deliveryFee) : 0;
       const totalAmount = subtotal + finalDeliveryFee;
-      const pointsToDeduct = selectedServices.some(s => s.is_reward) ? (loyaltySettings.orders_required || 10) : 0;
+      const pointsToDeduct = selectedServices.some(s => s.is_reward) ? (loyaltySettings?.orders_required || 10) : 0;
 
       const orderPayload = {
         customer_id: finalCustomerId, 
@@ -238,7 +233,7 @@ const [deliveryFee, setDeliveryFee] = useState(0);
         total_amount: Number(totalAmount),
         handover_method: handoverMethod,
         delivery_fee: finalDeliveryFee,
-        notes: notes.trim(),
+        notes: notes?.trim() || "",
         payment_method: paymentMethod,
         is_paid: Boolean(isPaid),
         loyalty_points_to_deduct: pointsToDeduct,
@@ -251,10 +246,8 @@ const [deliveryFee, setDeliveryFee] = useState(0);
       await submitOrder(orderPayload);
       logActivity(orderPayload, 'pending');
 
-      // --- UPDATED PRINTING LOGIC ---
       if (settings?.autoPrint) {
         try {
-          // 👈 Pass receiptConfig (branding) as the third argument
           await silentPrint(orderPayload, settings.defaultPrinter || 'browser', receiptConfig);
         } catch (printErr) {
           console.error("Auto-print failed:", printErr);
@@ -274,8 +267,17 @@ const [deliveryFee, setDeliveryFee] = useState(0);
   useEffect(() => {
     const unsubServices = subscribeToServices();
     const unsubLoyalty = subscribeToLoyalty();
-    return () => { unsubServices(); unsubLoyalty(); };
-  }, [subscribeToServices, subscribeToLoyalty]);
+    let unsubCustomers;
+    if (subscribeToCustomers) {
+       unsubCustomers = subscribeToCustomers();
+    }
+    
+    return () => { 
+      if (typeof unsubServices === 'function') unsubServices(); 
+      if (typeof unsubLoyalty === 'function') unsubLoyalty(); 
+      if (typeof unsubCustomers === 'function') unsubCustomers();
+    };
+  }, [subscribeToServices, subscribeToLoyalty, subscribeToCustomers]);
 
   useEffect(() => {
     const handleGlobalKeyPress = (e) => {
@@ -293,7 +295,6 @@ const [deliveryFee, setDeliveryFee] = useState(0);
     return () => window.removeEventListener("keydown", handleGlobalKeyPress);
   }, []);
 
-  const [forceReveal, setForceReveal] = useState(false);
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     if (searchParams.get('tour') === 'active') {
@@ -301,6 +302,8 @@ const [deliveryFee, setDeliveryFee] = useState(0);
       setTimeout(() => startGlobalTour(navigate, 3), 700);
     }
   }, [location.search, navigate]);
+
+  const [forceReveal, setForceReveal] = useState(false);
 
   if (isLoading && shouldShowSkeleton) {
     return <NewOrderSkeleton />;
@@ -326,7 +329,7 @@ const [deliveryFee, setDeliveryFee] = useState(0);
               <CustomerForm 
                 customer={customer} setCustomer={setCustomer}
                 selectedCustomerId={selectedCustomerId} setSelectedCustomerId={setSelectedCustomerId}
-                allCustomers={[]} Button={Button} Input={Input}
+                allCustomers={safeCustomers} Button={Button} Input={Input}
                 isSubmitting={isProcessing}
               />
             </div>
@@ -356,27 +359,26 @@ const [deliveryFee, setDeliveryFee] = useState(0);
           </div>
 
           <div className="lg:col-span-1">
-           <div id="step-summary">
-  <OrderSummary 
-  customer={customer} 
-  selectedServices={selectedServices}
-  notes={notes} 
-  setNotes={setNotes}
-  paymentMethod={paymentMethod} 
-  setPaymentMethod={setPaymentMethod}
-  isPaid={isPaid} 
-  setIsPaid={setIsPaid}
-  // DO NOT FORGET THESE
-  handoverMethod={handoverMethod} 
-  setHandoverMethod={setHandoverMethod}
-  deliveryFee={deliveryFee} 
-  setDeliveryFee={setDeliveryFee}
-  onSubmit={handleSubmit} 
-  isProcessing={isProcessing}
-  Button={Button} 
-  isPhoneDuplicate={isPhoneDuplicate}
-/>
-</div>
+            <div id="step-summary">
+              <OrderSummary 
+                customer={customer} 
+                selectedServices={selectedServices}
+                notes={notes} 
+                setNotes={setNotes}
+                paymentMethod={paymentMethod} 
+                setPaymentMethod={setPaymentMethod}
+                isPaid={isPaid} 
+                setIsPaid={setIsPaid}
+                handoverMethod={handoverMethod} 
+                setHandoverMethod={setHandoverMethod}
+                deliveryFee={deliveryFee} 
+                setDeliveryFee={setDeliveryFee}
+                onSubmit={handleSubmit} 
+                isProcessing={isProcessing}
+                Button={Button} 
+                isPhoneDuplicate={isPhoneDuplicate}
+              />
+            </div>
           </div>
         </div>
       </div>

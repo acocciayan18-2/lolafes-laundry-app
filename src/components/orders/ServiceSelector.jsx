@@ -1,18 +1,35 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import { useServiceStore } from "../../store/services/useServiceStore";
 import { IconPackage } from "../icons";
 
+// 1. PERFORMANCE: Move statics outside the component to prevent memory reallocation
 const SPRING_TRANSITION = {
   type: "spring", stiffness: 300, damping: 30, mass: 1, restDelta: 0.01
+};
+
+const SERVICE_TYPE_LABELS = {
+  wash_only: "Wash Only",
+  dry_only: "Dry Only",
+  fold_only: "Fold Only",
+  press_only: "Press Only",
+  wash_dry: "Wash & Dry",
+  wash_fold: "Wash & Fold",
+  dry_fold: "Dry & Fold",
+  dry_press: "Dry & Press",
+  wash_dry_fold: "Wash, Dry & Fold",
+  wash_dry_press: "Wash, Dry & Press",
+  wash_fold_press: "Wash, Fold & Press",
+  full_service: "Full Service (W/D/F/P)",
+  special_care: "Delicates / Handwash",
+  bulk_items: "Bulk (Comforters/Rug)",
+  add_on: "Add-ons & Supplies"
 };
 
 export const ServiceSelector = ({
   selectedServices,
   setSelectedServices,
-  Button,
   Badge,
-  // New prop to track if the customer info is valid
   isCustomerIncomplete = true 
 }) => {
   const { services, subscribeToServices, isLoading } = useServiceStore();
@@ -22,34 +39,58 @@ export const ServiceSelector = ({
     return () => unsubscribe();
   }, [subscribeToServices]);
 
-  // ... (serviceTypeLabels mapping remains the same)
-  const serviceTypeLabels = {
-    wash_only: "Wash Only",
-    dry_only: "Dry Only",
-    fold_only: "Fold Only",
-    press_only: "Press Only",
-    wash_dry: "Wash & Dry",
-    wash_fold: "Wash & Fold",
-    dry_fold: "Dry & Fold",
-    dry_press: "Dry & Press",
-    wash_dry_fold: "Wash, Dry & Fold",
-    wash_dry_press: "Wash, Dry & Press",
-    wash_fold_press: "Wash, Fold & Press",
-    full_service: "Full Service (W/D/F/P)",
-    special_care: "Delicates / Handwash",
-    bulk_items: "Bulk (Comforters/Rug)",
-    add_on: "Add-ons & Supplies"
-  };
+  // ==========================================
+  // 2. PERFORMANCE: O(1) Quantity Lookup Map
+  // Instead of using .find() inside a map loop, we create a dictionary once.
+  // ==========================================
+  const quantityMap = useMemo(() => {
+    const map = {};
+    selectedServices.forEach(s => {
+      if (!s.is_reward) map[s.id] = s.quantity;
+    });
+    return map;
+  }, [selectedServices]);
 
-  const getQuantity = (serviceId) => {
-    const item = selectedServices.find(s => s.id === serviceId && !s.is_reward);
-    return item ? item.quantity : 0;
-  };
+  const getQuantity = useCallback((serviceId) => {
+    return quantityMap[serviceId] || 0;
+  }, [quantityMap]);
 
-  const updateQuantity = (service, delta) => {
-    // Safety check: Don't allow updates if customer info is missing
+  // ==========================================
+  // 3. PERFORMANCE: Memoized Grouping & Sorting
+  // Stops the component from re-categorizing 50+ services on every click
+  // ==========================================
+  const { groupedServices, sortedServiceTypes } = useMemo(() => {
+    if (!services || services.length === 0) return { groupedServices: {}, sortedServiceTypes: [] };
+
+    const grouped = services
+      .filter(s => s.is_active)
+      .reduce((acc, service) => {
+        const type = service.type || 'other';
+        if (!acc[type]) acc[type] = [];
+        acc[type].push(service);
+        return acc;
+      }, {});
+
+    const serviceOrder = Object.keys(SERVICE_TYPE_LABELS);
+    const sortedTypes = Object.keys(grouped).sort((a, b) => {
+      const indexA = serviceOrder.indexOf(a);
+      const indexB = serviceOrder.indexOf(b);
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+
+    return { groupedServices: grouped, sortedServiceTypes: sortedTypes };
+  }, [services]);
+
+  // ==========================================
+  // 4. SECURITY & DATA SANITIZATION: Safe Updates
+  // ==========================================
+  const updateQuantity = useCallback((service, delta) => {
     if (isCustomerIncomplete) return;
 
+    // Sanitize price to ensure math doesn't result in NaN
+    const price = Number(service.price_per_kg) || 0; 
     const existingIndex = selectedServices.findIndex((s) => s.id === service.id && !s.is_reward);
     
     if (existingIndex !== -1) {
@@ -62,7 +103,7 @@ export const ServiceSelector = ({
         updatedServices[existingIndex] = {
           ...updatedServices[existingIndex],
           quantity: newQty,
-          subtotal: newQty * service.price_per_kg,
+          subtotal: newQty * price,
         };
         setSelectedServices(updatedServices);
       }
@@ -72,31 +113,12 @@ export const ServiceSelector = ({
         service_name: service.name,
         service_type: service.type,
         quantity: 1,
-        price_per_kg: service.price_per_kg,
-        subtotal: service.price_per_kg,
+        price_per_kg: price,
+        subtotal: price,
         is_reward: false
       }]);
     }
-  };
-
-  const groupedServices = services
-    .filter(s => s.is_active)
-    .reduce((acc, service) => {
-      const type = service.type || 'other';
-      if (!acc[type]) acc[type] = [];
-      acc[type].push(service);
-      return acc;
-    }, {});
-
-  const serviceOrder = Object.keys(serviceTypeLabels);
-  
-  const sortedServiceTypes = Object.keys(groupedServices).sort((a, b) => {
-    const indexA = serviceOrder.indexOf(a);
-    const indexB = serviceOrder.indexOf(b);
-    if (indexA === -1) return 1;
-    if (indexB === -1) return -1;
-    return indexA - indexB;
-  });
+  }, [isCustomerIncomplete, selectedServices, setSelectedServices]);
 
   return (
     <div className={`bg-white shadow-md rounded-xl border border-gray-100 overflow-hidden transition-opacity duration-300 ${isCustomerIncomplete ? 'opacity-60' : 'opacity-100'}`}>
@@ -107,7 +129,7 @@ export const ServiceSelector = ({
             Services
           </div>
           {isCustomerIncomplete && (
-            <span className="text-micro  bg-amber-50 text-amber-600 px-2 py-1 rounded-md border border-amber-100 animate-pulse">
+            <span className="text-micro bg-amber-50 text-amber-600 px-2 py-1 rounded-md border border-amber-100 animate-pulse">
               Complete Customer Info First
             </span>
           )}
@@ -121,7 +143,7 @@ export const ServiceSelector = ({
           sortedServiceTypes.map((type) => (
             <div key={type} className="space-y-2 !mt-4">
               <h4 className="text-sm-text uppercase font-bold text-btn-primary ml-1">
-                {serviceTypeLabels[type] || type.replace('_', ' ')}
+                {SERVICE_TYPE_LABELS[type] || type.replace('_', ' ')}
               </h4>
               
               <div className="grid gap-2">
@@ -138,7 +160,7 @@ export const ServiceSelector = ({
                     >
                       <div className="flex-1">
                         <h5 className="font-bold text-gray-900 text-base-text">{service.name}</h5>
-                        <Badge className="text-micro font-bold text-gray-600"> ₱{Number(service.price_per_kg).toFixed(2)}</Badge>
+                        <Badge className=" font-bold text-gray-600"> ₱{Number(service.price_per_kg).toFixed(2)}</Badge>
                       </div>
 
                       <div className="flex items-center gap-2 p-1 rounded-lg">
@@ -146,18 +168,21 @@ export const ServiceSelector = ({
                           type="button"
                           onClick={() => updateQuantity(service, -1)}
                           disabled={qty === 0 || isCustomerIncomplete}
+                          aria-label={`Decrease quantity of ${service.name}`}
                           className="w-8 h-8 flex items-center justify-center rounded-md transition-all active:scale-90 hover:bg-gray-100 disabled:opacity-20 disabled:cursor-not-allowed"
                         >
                           <p className="text-h3 font-medium text-gray-800 leading-none">–</p>
                         </button>
                         
-                        <div className="w-8 text-center font-bold text-sm-text text-gray-800">
+                        <div className="w-8 text-center font-bold text-sm-text text-gray-800" aria-live="polite">
                           {qty}
                         </div>
 
                         <button
+                          type="button"
                           onClick={() => updateQuantity(service, 1)}
                           disabled={isCustomerIncomplete}
+                          aria-label={`Increase quantity of ${service.name}`}
                           className={`w-10 h-8 flex items-center justify-center rounded-md transition-all active:scale-95 ${
                             isCustomerIncomplete 
                               ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
@@ -175,7 +200,6 @@ export const ServiceSelector = ({
           ))
         )}
         
-        {/* ... (Current Selection section remains the same) */}
          <AnimatePresence>
           {selectedServices.length > 0 && (
             <motion.div 
@@ -183,7 +207,6 @@ export const ServiceSelector = ({
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
             >
-              {/* SELECTION HEADER: text-micro uppercase */}
               <h3 className="text-micro font-bold text-gray-700 mb-3 ml-1 uppercase tracking-wider">Current Selection</h3>
               <div className="space-y-3">
                 {selectedServices.map((service, index) => (
@@ -200,11 +223,9 @@ export const ServiceSelector = ({
                       </div>
 
                       <div className="flex flex-col">
-                        {/* ITEM NAME: text-base-text */}
                         <span className="text-base-text font-bold text-gray-900 leading-tight">
                           {service.service_name}
                         </span>
-                        {/* ITEM PRICE: text-nano */}
                         <span className="text-micro font-bold text-text-dark/90 uppercase tracking-tight">
                             ₱{Number(service.price_per_kg).toFixed(2)}
                         </span>
@@ -212,9 +233,8 @@ export const ServiceSelector = ({
                     </div>
 
                     <div className=" py-1.5 ">
-                      {/* ITEM TOTAL: text-base-text */}
                       <span className="font-bold text-text-dark text-base-text">
-                        ₱{service.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        ₱{Number(service.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   </motion.div>

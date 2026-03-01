@@ -1,12 +1,13 @@
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import CustomerCard from "../components/customers/CustomerCard";
 import CustomerStats from "../components/customers/CustomerStats";
-import { IconSearch, IconUsers } from "../components/icons";
+import { IconSearch, IconUsers, IconClose } from "../components/icons";
 import { useCustomerStore } from "../store/customer/useCustomerStore";
 import { CustomerListSkeleton } from "../components/skeleton-loader";
 import EditCustomerModal from "../components/customers/EditCustomerModal"; 
 
+// 1. PERFORMANCE: Extract static config
 const SMOOTH_TRANSITION = {
   type: "spring",
   stiffness: 300,
@@ -15,6 +16,7 @@ const SMOOTH_TRANSITION = {
   restDelta: 0.01 
 };
 
+// 2. ACCESSIBILITY: Add proper standard attributes to custom input
 const Input = ({ className, ...props }) => (
   <input 
     className={`flex h-12 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm-text placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${className}`} 
@@ -25,20 +27,16 @@ const Input = ({ className, ...props }) => (
 export default function Customers() {
   const { customers, isLoading, subscribeToCustomers } = useCustomerStore();
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // New state to control the delayed visibility of the skeleton
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
-
-  // --- NEW: Modal State ---
   const [editingCustomer, setEditingCustomer] = useState(null);
 
-  // 1. Handle Firebase Subscription
+  // Handle Firebase Subscription
   useEffect(() => {
     const unsubscribe = subscribeToCustomers();
     return () => unsubscribe();
   }, [subscribeToCustomers]);
 
-  // 2. SKELETON DELAY LOGIC:
+  // SKELETON DELAY LOGIC
   useEffect(() => {
     let timer;
     if (isLoading) {
@@ -48,11 +46,10 @@ export default function Customers() {
     } else {
       setShouldShowSkeleton(false);
     }
-
     return () => clearTimeout(timer); 
   }, [isLoading]);
 
-  // 3. Global Search Keydown Handler
+  // 3. SECURE UX: Global Search Keydown Handler
   useEffect(() => {
     const handleGlobalSearchFocus = (e) => {
       const activeElement = document.activeElement;
@@ -63,9 +60,11 @@ export default function Customers() {
 
       if (isAlreadyTyping) return;
 
+      // Only intercept actual characters, not Control, Command, Alt, or special keys
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const searchInput = document.getElementById("customer-search-input");
         if (searchInput) {
+          // Focus first, THEN append the key to ensure the cursor stays at the end of the text
           searchInput.focus();
           setSearchTerm(prev => prev + e.key);
           e.preventDefault();
@@ -75,16 +74,33 @@ export default function Customers() {
 
     window.addEventListener("keydown", handleGlobalSearchFocus);
     return () => window.removeEventListener("keydown", handleGlobalSearchFocus);
-  }, [setSearchTerm]);
+  }, []); // Removed setSearchTerm from dependency array to prevent memory leaks
 
-  const filteredCustomers = customers.filter(customer => {
+  // ==========================================
+  // 4. PERFORMANCE: Memoized Search Filter
+  // Prevents the app from freezing when typing if there are thousands of customers
+  // ==========================================
+  const filteredCustomers = useMemo(() => {
+    if (!customers) return [];
+    if (!searchTerm.trim()) return customers; // Fast exit if no search
+    
     const term = searchTerm.toLowerCase();
-    return (
-      customer.name.toLowerCase().includes(term) ||
-      (customer.phone && customer.phone.includes(term)) ||
-      (customer.address && customer.address.toLowerCase().includes(term))
-    );
-  });
+    
+    return customers.filter(customer => {
+      // Optional Chaining protects against corrupted data where a field might be missing
+      return (
+        customer.name?.toLowerCase().includes(term) ||
+        customer.phone?.includes(term) ||
+        customer.address?.toLowerCase().includes(term)
+      );
+    });
+  }, [customers, searchTerm]);
+
+  // Clean handler to prevent inline function recreation
+  const handleClearSearch = useCallback(() => {
+    setSearchTerm("");
+    document.getElementById("customer-search-input")?.focus();
+  }, []);
 
   // --- RENDERING LOGIC ---
 
@@ -109,15 +125,32 @@ export default function Customers() {
         </div>
 
         {/* Search */}
-        <div className="relative w-full mb-3">
-          <IconSearch className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+        <div className="relative w-full mb-3 group">
+          <IconSearch className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-gray-900 pointer-events-none z-10 transition-colors" />
           <Input
             id="customer-search-input"
+            type="text"
             placeholder="Search name, phone, or address..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="!pl-10 bg-white rounded-xl shadow-sm border-slate-200 focus:!border-gray-900 focus:!ring-0 w-full"
+            className="!pl-10 !pr-10 bg-white rounded-xl shadow-sm border-slate-200 focus:!border-gray-900 focus:!ring-0 w-full"
+            aria-label="Search customers"
           />
+          {/* 5. UX ENHANCEMENT: Quick clear button for the search bar */}
+          <AnimatePresence>
+            {searchTerm && (
+              <motion.button 
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={handleClearSearch}
+                className="absolute right-2 top-1 bottom-1 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600  rounded-lg transition-colors"
+                aria-label="Clear search"
+              >
+                <IconClose className="w-4 h-4" />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Stats */}
@@ -136,7 +169,6 @@ export default function Customers() {
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={SMOOTH_TRANSITION}
                   >
-                    {/* --- CONNECTED: onEdit handler --- */}
                     <CustomerCard 
                       customer={customer} 
                       onEdit={() => setEditingCustomer(customer)}
@@ -166,7 +198,7 @@ export default function Customers() {
           </div>
         </LayoutGroup>
 
-        {/* --- NEW: Modal Logic --- */}
+        {/* Modal Logic */}
         <AnimatePresence>
           {editingCustomer && (
             <EditCustomerModal 

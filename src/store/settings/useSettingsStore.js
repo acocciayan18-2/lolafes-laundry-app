@@ -3,7 +3,6 @@ import { db } from '../../services/firebase';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 export const useSettingsStore = create((set, get) => ({
-  // 1. ADD ALL NEW FIELDS HERE
   receiptConfig: {
     storeName: "LOLA FE'S LAUNDRY",
     address: "",
@@ -11,8 +10,10 @@ export const useSettingsStore = create((set, get) => ({
     email: "",
     website: "",
     footerMessage: "Clean clothes, Happy life!",
-    showOrderDate: true,  // 👈 Ensure these are here
-    showPrintDate: true,  // 👈 Ensure these are here
+    showOrderDate: true,
+    showPrintDate: true,
+    // 🛡️ NEW: Global toggle for the Print Receipt button visibility
+    showPrintReceipt: true, 
   },
   isLoading: true,
 
@@ -23,12 +24,12 @@ export const useSettingsStore = create((set, get) => ({
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        // Merge fetched data with defaults to avoid missing field errors
         set({ 
           receiptConfig: { ...get().receiptConfig, ...docSnap.data() }, 
           isLoading: false 
         });
       } else {
+        // Initialize Firebase with defaults if document doesn't exist
         await setDoc(docRef, get().receiptConfig);
         set({ isLoading: false });
       }
@@ -38,25 +39,30 @@ export const useSettingsStore = create((set, get) => ({
     }
   },
 
+  // Optimized to handle single field updates (like a toggle) or full forms
   updateReceiptConfig: async (newConfig) => {
     try {
       const docRef = doc(db, "settings", "receipt");
-      // Use { merge: true } so we don't accidentally delete other settings
+      // Merge: true is critical here to prevent overwriting the whole object
       await setDoc(docRef, newConfig, { merge: true });
-      set({ receiptConfig: newConfig });
+      
+      // Update local state immediately for snappy UI
+      set((state) => ({
+        receiptConfig: { ...state.receiptConfig, ...newConfig }
+      }));
+      
       return { success: true };
     } catch (error) {
+      console.error("Update error:", error);
       return { success: false, error };
     }
   },
 
-  // 2. THIS IS THE KEY: Real-time Listener
+  // Real-time Listener: Ensures all admin/staff screens stay in sync
   subscribeToSettings: () => {
     const docRef = doc(db, "settings", "receipt");
-    // Return the unsubscribe function so we can clean up in useEffect
     return onSnapshot(docRef, (snapshot) => {
       if (snapshot.exists()) {
-        
         set({ receiptConfig: snapshot.data(), isLoading: false });
       }
     });

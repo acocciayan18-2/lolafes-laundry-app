@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useActivityStore } from '../../store/activities/useActivityStore';
 import {
   IconActivity,
@@ -8,11 +8,13 @@ import {
   IconServices
 } from "../icons";
 
+// 1. PERFORMANCE: Moved outside component to prevent re-instantiation
 const formatTimeAgo = (dateInput) => {
   if (!dateInput) return '';
   const date = new Date(dateInput);
   const now = new Date();
   const diff = Math.floor((now - date) / 1000);
+  
   if (diff < 60) return 'Just now';
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
@@ -26,11 +28,24 @@ export default function RecentActivity() {
   const cleanupExpiredActivities = useActivityStore((state) => state.cleanupExpiredActivities);
   const fetchActivitiesFromFirebase = useActivityStore((state) => state.fetchActivitiesFromFirebase);
 
+  // 2. UX FIX: The "Tick" state
+  // Forces the component to re-render every 60 seconds so "Just now" becomes "1m ago"
+  // even if the user isn't interacting with the dashboard.
+  const [, setTick] = useState(0);
+
   useEffect(() => {
     cleanupExpiredActivities();
+    
+    // Set up the heartbeat timer
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 60000); // 1 minute
+    
+    return () => clearInterval(interval);
   }, [cleanupExpiredActivities]);
 
-  const getActivityConfig = (item) => {
+  // 3. PERFORMANCE: Memoized Configuration function
+  const getActivityConfig = useCallback((item) => {
     const defaultConfig = { 
       title: item?.customLabel || "Update Logged", 
       icon: <IconOrdersList className="w-5 h-5 text-text-dark/50" /> 
@@ -48,14 +63,15 @@ export default function RecentActivity() {
     }
 
     return { title: item.customLabel || "Status Updated", icon: <IconOrdersList className="w-5 h-5 text-text-dark/50" /> };
-  };
+  }, []);
 
   return (
     <div className="bg-white rounded-2xl border border-app-dark/10 shadow-sm flex flex-col max-h-[450px] min-h-[300px] overflow-hidden">
       
       {/* HEADER */}
+      {/* 4. LAYOUT FIX: Re-arranged divs so the title and button align correctly across the whole header width */}
       <div className="px-5 py-3.5 border-b border-app-dark/5 flex justify-between items-center bg-white">
-        <div className="flex items-center gap-3 pl-5">
+        <div className="flex items-center gap-3">
           <div className="p-1.5 bg-white border border-app-dark/10 rounded-lg text-text-dark shadow-hollow">
             <IconActivity className="w-5 h-5" />
           </div>
@@ -66,7 +82,7 @@ export default function RecentActivity() {
         {activities.length > 0 ? (
           <button 
             onClick={clearHistory}
-            className="text-micro font-bold text-gray-400 hover:text-red-500 transition-colors px-2 py-1"
+            className="text-micro  text-gray-400 hover:text-red-500 transition-colors px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded"
           >
             Clear Local
           </button>
@@ -74,7 +90,7 @@ export default function RecentActivity() {
           <button 
             onClick={fetchActivitiesFromFirebase}
             disabled={isFetching}
-            className={`text-micro font-bold text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 ${isFetching ? 'opacity-50' : ''}`}
+            className={`text-micro text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded ${isFetching ? 'opacity-50 cursor-wait' : ''}`}
           >
             {isFetching ? "Syncing..." : "Fetch from Database"}
           </button>
@@ -86,7 +102,7 @@ export default function RecentActivity() {
           activities.map((item) => {
             const config = getActivityConfig(item);
             return (
-              <div key={item.activity_id} className="flex items-start gap-3.5 group py-1.5">
+              <div key={item.activity_id || item.timestamp} className="flex items-start gap-3.5 group py-1.5">
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-white border border-app-dark/10 shadow-hollow">
                   {config.icon}
                 </div>
@@ -97,6 +113,7 @@ export default function RecentActivity() {
                       {config.title}
                     </p>
                     <p className="text-nano text-text-dark/40 font-bold whitespace-nowrap">
+                      {/* Live updating timestamp */}
                       {formatTimeAgo(item.timestamp)}
                     </p>
                   </div>

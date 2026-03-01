@@ -5,7 +5,22 @@ import {
   updateDoc, serverTimestamp, getDoc, setDoc, deleteDoc 
 } from 'firebase/firestore';
 
-// --- HELPER: DYNAMIC TIME FORMATTER ---
+// ==========================================
+// HELPER: SAFE LOCAL STORAGE
+// Prevents app crashes in Incognito/Strict Privacy modes
+// ==========================================
+const safeStorageGet = (key, fallback) => {
+  try { return localStorage.getItem(key) ?? fallback; } 
+  catch (e) { return fallback; }
+};
+const safeStorageSet = (key, val) => {
+  try { localStorage.setItem(key, val); } 
+  catch (e) { console.warn("Local storage disabled."); }
+};
+
+// ==========================================
+// HELPER: DYNAMIC TIME FORMATTER
+// ==========================================
 const formatVelocity = (ms) => {
   if (!ms || ms <= 0) return "0 secs";
   const seconds = Math.floor(ms / 1000);
@@ -31,26 +46,38 @@ export const useOrderStore = create((set, get) => ({
   },
   isLoading: true,
 
-  // --- NEW: AUTOMATION SETTINGS ---
- settings: {
-    autoPrint: localStorage.getItem('autoPrint') === 'true',
-    // CHANGE: Default to 'browser' for WPS/PDF support
-    defaultPrinter: localStorage.getItem('defaultPrinter') || 'browser', 
+  settings: {
+    autoPrint: safeStorageGet('autoPrint') === 'true',
+    defaultPrinter: safeStorageGet('defaultPrinter', 'browser'), 
   },
 
-  // Action to change printer type (if you want a selector later)
   setDefaultPrinter: (type) => {
-    localStorage.setItem('defaultPrinter', type);
-    set((state) => ({ 
-      settings: { ...state.settings, defaultPrinter: type } 
-    }));
+    safeStorageSet('defaultPrinter', type);
+    set((state) => ({ settings: { ...state.settings, defaultPrinter: type } }));
   },
 
- parseTimestamp: (ts) => {
+  toggleAutoPrint: () => {
+    const newState = !get().settings.autoPrint;
+    safeStorageSet('autoPrint', String(newState));
+    set((state) => ({ settings: { ...state.settings, autoPrint: newState } }));
+  },
+
+  // ==========================================
+  // ROBUST TIME PARSING & LOCK CHECKS
+  // ==========================================
+  parseTimestamp: (ts) => {
     if (!ts) return null;
-    if (typeof ts === 'string') return new Date(ts);
-    if (ts.seconds) return new Date(ts.seconds * 1000);
-    return new Date(ts);
+    try {
+      let dateObj;
+      if (typeof ts === 'string') dateObj = new Date(ts);
+      else if (ts.seconds) dateObj = new Date(ts.seconds * 1000);
+      else if (typeof ts.toDate === 'function') dateObj = ts.toDate();
+      else dateObj = new Date(ts);
+      
+      return isNaN(dateObj.getTime()) ? null : dateObj;
+    } catch (e) {
+      return null;
+    }
   },
 
   isOrderStuck: (order) => {
@@ -60,55 +87,84 @@ export const useOrderStore = create((set, get) => ({
     return (Date.now() - lastUpdate.getTime()) > (48 * 60 * 60 * 1000); 
   },
 
-  // UPDATED: Now locks if status is 'picked_up' OR 'delivered'
   isOrderLocked: (order) => {
     if (!order || !order.updated_at) return false;
-    
     const isTerminalStatus = ['picked_up', 'delivered'].includes(order.status);
     if (!isTerminalStatus) return false;
     
     const completionTime = get().parseTimestamp(order.updated_at);
     if (!completionTime) return false;
-    
-    // THRESHOLD: 10 Minutes (Allows for quick corrections, then locks permanently)
     return (Date.now() - completionTime.getTime()) > (10 * 60 * 1000);
   },
 
-  // --- 2. FIREBASE SUBSCRIPTION ---
+  // ==========================================
+  // FIREBASE SUBSCRIPTION (HIGH PERFORMANCE)
+  // ==========================================
   subscribeToOrders: () => {
     set({ isLoading: true });
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString();
-    const endOfYesterday = new Date(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - 1).toISOString();
-
+    
     const qOrders = query(collection(db, "orders"), orderBy("created_at", "desc"));
     
     return onSnapshot(qOrders, (snapshot) => {
-      const ordersList = snapshot.docs.map(docSnap => {
-        const data = docSnap.data();
-        const safeDate = (field) => {
-          if (!field) return null;
-          if (typeof field.toDate === 'function') return field.toDate().toISOString();
-          return new Date(field).toISOString();
-        };
+      // 1. Midnight Bug Fix: Recalculate "Now" inside the snapshot callback
+      const now = new Date();
+      const startOfTodayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const startOfYesterdayMs = startOfTodayMs - 86400000;
 
-        return {
+      // 2. Metrics Accumulators (Single-Pass Performance)
+      let salesToday = 0;
+      let salesYesterdayTotal = 0;
+      let ordersTodayCount = 0;
+      let ordersYesterdayTotalCount = 0;
+      let revenueAtRisk = 0;
+      let totalVelocityMS = 0;
+      let finishedCount = 0;
+      const staleOrders = [];
+      const ordersList = [];
+
+      snapshot.docs.forEach(docSnap => {
+        const data = docSnap.data();
+        const createdDateMs = get().parseTimestamp(data.created_at)?.getTime() || Date.now();
+        const updatedDateMs = get().parseTimestamp(data.updated_at)?.getTime() || createdDateMs;
+        const totalAmount = Number(data.total_amount) || 0;
+
+        // Build sanitized order object
+        const order = {
           id: docSnap.id,
           ...data,
-          created_date: safeDate(data.created_at) || new Date().toISOString(),
-          updated_at: safeDate(data.updated_at),
-          picked_up_at: safeDate(data.picked_up_at)
+          created_date: new Date(createdDateMs).toISOString(),
+          updated_at: data.updated_at ? new Date(updatedDateMs).toISOString() : null,
+          picked_up_at: data.picked_up_at ? new Date(get().parseTimestamp(data.picked_up_at).getTime()).toISOString() : null,
         };
-      });
+        ordersList.push(order);
 
-      // Calculate Metrics...
-      const salesToday = ordersList.filter(o => o.created_date >= startOfToday && o.is_paid).reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
-      const salesYesterdayTotal = ordersList.filter(o => o.created_date >= startOfYesterday && o.created_date <= endOfYesterday && o.is_paid).reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
-      const revenueAtRisk = ordersList.filter(o => !o.is_paid).reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
-      const staleOrders = ordersList.filter(o => !['picked_up', 'completed'].includes(o.status) && (Date.now() - new Date(o.updated_at || o.created_date).getTime()) > (48 * 60 * 60 * 1000));
-      const finishedOrders = ordersList.filter(o => ['ready', 'completed', 'picked_up'].includes(o.status) && o.updated_at);
-      const totalVelocityMS = finishedOrders.reduce((sum, o) => sum + Math.max(0, new Date(o.updated_at).getTime() - new Date(o.created_date).getTime()), 0);
+        // --- SINGLE PASS METRICS CALCULATOR ---
+        const isPaid = order.is_paid;
+        
+        // Sales & Order Counts
+        if (createdDateMs >= startOfTodayMs) {
+          ordersTodayCount++;
+          if (isPaid) salesToday += totalAmount;
+        } else if (createdDateMs >= startOfYesterdayMs && createdDateMs < startOfTodayMs) {
+          ordersYesterdayTotalCount++;
+          if (isPaid) salesYesterdayTotal += totalAmount;
+        }
+
+        // Revenue at Risk
+        if (!isPaid) revenueAtRisk += totalAmount;
+
+        // Stale Orders
+        const isTerminal = ['picked_up', 'completed', 'delivered'].includes(order.status);
+        if (!isTerminal && (Date.now() - updatedDateMs) > (48 * 60 * 60 * 1000)) {
+          staleOrders.push(order);
+        }
+
+        // Velocity (Speed)
+        if (['ready', 'completed', 'picked_up', 'delivered'].includes(order.status) && data.updated_at) {
+          totalVelocityMS += Math.max(0, updatedDateMs - createdDateMs);
+          finishedCount++;
+        }
+      });
 
       set({ 
         orders: ordersList, 
@@ -116,28 +172,27 @@ export const useOrderStore = create((set, get) => ({
         metrics: {
           salesToday, 
           salesYesterdayTotal,
-          ordersTodayCount: ordersList.filter(o => o.created_date >= startOfToday).length,
-          ordersYesterdayTotalCount: ordersList.filter(o => o.created_date >= startOfYesterday && o.created_date <= endOfYesterday).length,
+          ordersTodayCount,
+          ordersYesterdayTotalCount,
           revenueAtRisk, 
           staleOrders, 
-          topService: 'N/A', // Simplified for brevity
-          avgVelocity: formatVelocity(finishedOrders.length > 0 ? totalVelocityMS / finishedOrders.length : 0),
+          topService: 'N/A', 
+          avgVelocity: formatVelocity(finishedCount > 0 ? totalVelocityMS / finishedCount : 0),
         }
       });
+    }, (error) => {
+      console.error("Firebase Subscription Error:", error);
+      set({ isLoading: false });
     });
   },
 
-  // --- 3. ACTIONS ---
-
-  // Toggles and persistence
-  toggleAutoPrint: () => {
-    const newState = !get().settings.autoPrint;
-    localStorage.setItem('autoPrint', newState);
-    set((state) => ({ settings: { ...state.settings, autoPrint: newState } }));
-  },
-
-
+  // ==========================================
+  // SECURE MUTATION ACTIONS
+  // ==========================================
   togglePaymentStatus: async (orderId, targetStatus, method = 'Cash') => {
+    const order = get().orders.find(o => o.id === orderId);
+    if (get().isOrderLocked(order)) throw new Error("Order is locked.");
+
     const orderRef = doc(db, "orders", orderId);
     await updateDoc(orderRef, {
       is_paid: targetStatus,
@@ -147,65 +202,52 @@ export const useOrderStore = create((set, get) => ({
   },
 
   updateOrderStatus: async (order, newStatus) => {
-    // SECURITY CHECK: Prevent moving a locked order
     if (get().isOrderLocked(order)) {
       throw new Error("This order is locked and cannot be modified.");
     }
 
-    try {
-      const orderRef = doc(db, "orders", order.id); 
-      const updateData = { status: newStatus, updated_at: serverTimestamp() };
+    const orderRef = doc(db, "orders", order.id); 
+    const updateData = { status: newStatus, updated_at: serverTimestamp() };
 
-      if (newStatus === 'picked_up' || newStatus === 'delivered') { 
-        updateData.is_paid = true; 
-        updateData.completed_at = serverTimestamp();
-        if (newStatus === 'picked_up') updateData.picked_up_at = serverTimestamp();
-        if (newStatus === 'delivered') updateData.delivered_at = serverTimestamp();
-      }
-
-      await updateDoc(orderRef, updateData);
-    } catch (e) { 
-      console.error("Firebase Error:", e);
-      throw e; 
+    // Auto-mark as paid and completed on terminal statuses
+    if (newStatus === 'picked_up' || newStatus === 'delivered') { 
+      updateData.is_paid = true; 
+      updateData.completed_at = serverTimestamp();
+      if (newStatus === 'picked_up') updateData.picked_up_at = serverTimestamp();
+      if (newStatus === 'delivered') updateData.delivered_at = serverTimestamp();
     }
+
+    await updateDoc(orderRef, updateData);
   },
 
   updateHandoverMethod: async (orderId, newMethod, newFee, newTotal) => {
-    try {
-      // Find the order in the current list to check its lock status
-      const currentOrder = get().orders.find(o => o.id === orderId);
-      if (currentOrder && get().isOrderLocked(currentOrder)) {
-        throw new Error("Order is delivered/picked up and cannot be edited.");
-      }
+    const order = get().orders.find(o => o.id === orderId);
+    if (get().isOrderLocked(order)) throw new Error("Order is locked.");
 
-      const orderRef = doc(db, "orders", orderId);
-      await updateDoc(orderRef, { 
-        handover_method: newMethod,
-        delivery_fee: Number(newFee),
-        total_amount: Number(newTotal),
-        updated_at: serverTimestamp() 
-      });
-      return true;
-    } catch (error) {
-      console.error("Store Update Error:", error);
-      throw error;
-    }
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, { 
+      handover_method: newMethod,
+      delivery_fee: Number(newFee) || 0,
+      total_amount: Number(newTotal) || 0,
+      updated_at: serverTimestamp() 
+    });
+    return true;
   },
 
   cancelOrder: async (orderId) => {
-    try {
-      const orderRef = doc(db, "orders", orderId);
-      const orderSnap = await getDoc(orderRef);
-      if (orderSnap.exists()) {
-        await setDoc(doc(db, "cancelled_orders", orderId), {
-          ...orderSnap.data(),
-          cancelled_at: serverTimestamp(),
-          status: 'cancelled'
-        });
-        await deleteDoc(orderRef);
-      }
-    } catch (error) {
-      throw error;
+    const order = get().orders.find(o => o.id === orderId);
+    if (get().isOrderLocked(order)) throw new Error("Cannot cancel a completed order.");
+
+    const orderRef = doc(db, "orders", orderId);
+    const orderSnap = await getDoc(orderRef);
+    
+    if (orderSnap.exists()) {
+      await setDoc(doc(db, "cancelled_orders", orderId), {
+        ...orderSnap.data(),
+        cancelled_at: serverTimestamp(),
+        status: 'cancelled'
+      });
+      await deleteDoc(orderRef);
     }
   }
 }));

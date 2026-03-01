@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useOrderStore } from '../../store/orders/useOrderStore';
 import { useUnclaimedStore } from '../../store/orders/useUnclaimedStore';
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
@@ -14,7 +14,19 @@ import {
   IconWallet
 } from '../icons';
 
-// --- SUB-COMPONENT: SLIDING BUTTON (Keeping your design) ---
+// ==========================================
+// HELPER: SAFE DATE PARSING
+// ==========================================
+const getSafeDate = (ts) => {
+  if (!ts) return new Date();
+  if (typeof ts === 'number') return new Date(ts);
+  if (ts.seconds) return new Date(ts.seconds * 1000);
+  if (typeof ts.toDate === 'function') return ts.toDate();
+  const parsed = new Date(ts);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
+// --- SUB-COMPONENT: SLIDING BUTTON ---
 const SwipeToConfirm = ({ onConfirm, isDisabled, isUpdating }) => {
   const x = useMotionValue(0);
   const textOpacity = useTransform(x, [0, 150], [1, 0]);
@@ -27,8 +39,7 @@ const SwipeToConfirm = ({ onConfirm, isDisabled, isUpdating }) => {
         style={{ opacity: isDisabled ? 0.3 : textOpacity }}
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
       >
-        <span className={`text-base-text font-medium 
-          ${isDisabled ? "text-text-dark" : "text-white/50"}`}>
+        <span className={`text-base-text font-medium ${isDisabled ? "text-text-dark" : "text-white/50"}`}>
           {isUpdating ? "Processing..." : isDisabled ? "Payment Locked" : "Slide to Claim"}
         </span>
       </motion.div>
@@ -39,18 +50,25 @@ const SwipeToConfirm = ({ onConfirm, isDisabled, isUpdating }) => {
           dragConstraints={{ left: 0, right: 245 }}
           dragElastic={0.05}
           dragSnapToOrigin
-          onDragEnd={(_, info) => { if (info.offset.x > 200) onConfirm(); }}
+          onDragEnd={(_, info) => { 
+            // Trigger confirm if swiped far enough
+            if (info.offset.x > 200) onConfirm(); 
+          }}
           style={{ x }}
           className="relative z-10 h-full aspect-square bg-emerald-500 rounded-full shadow-lg flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-emerald-400 transition-colors"
+          aria-label="Slide right to confirm claim"
         >
           <IconArrowRight className="w-5 h-5 text-white" />
         </motion.div>
       )}
 
       {(isDisabled || isUpdating) && (
-        <div className={`h-full aspect-square rounded-full flex items-center justify-center
-          ${isUpdating ? "bg-emerald-500" : "bg-slate-200"}`}>
-          {isUpdating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <IconClose className="w-4 h-4 text-text-dark" />}
+        <div className={`h-full aspect-square rounded-full flex items-center justify-center ${isUpdating ? "bg-emerald-500" : "bg-slate-200"}`}>
+          {isUpdating ? (
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <IconClose className="w-4 h-4 text-text-dark" />
+          )}
         </div>
       )}
     </div>
@@ -63,26 +81,50 @@ const UnclaimedOrders = () => {
 
   const { orders, isLoading } = useOrderStore();
   const { unclaimedOrders, computeUnclaimed, markAsClaimed } = useUnclaimedStore();
-  const { showNotification } = useNotificationStore(); // Fixed to use direct hook
+  const showNotification = useNotificationStore((state) => state.showNotification);
 
-  // --- REAL-TIME TICKER LOGIC ---
+  // ==========================================
+  // PERFORMANCE: Smart Ticker Logic
+  // ==========================================
+  // 1. Compute when Firebase orders actually update
   useEffect(() => {
-    // 1. Initial compute when orders arrive
     if (orders.length > 0) computeUnclaimed(orders);
+  }, [orders, computeUnclaimed]);
 
-    // 2. The "Heartbeat": Re-run calculation every 60 seconds
-    // This catches orders that cross the threshold while the user is on the page
-    // No internet is used here; it's purely a local calculation.
+  // 2. The Heartbeat Ticker (Fixed Dependency Bug)
+  useEffect(() => {
     const ticker = setInterval(() => {
-      if (orders.length > 0) {
-        computeUnclaimed(orders);
+      // Use getState() directly to avoid putting `orders` in the dependency array
+      // This stops the interval from being destroyed/recreated 50x a minute
+      const currentOrders = useOrderStore.getState().orders;
+      if (currentOrders.length > 0) {
+        useUnclaimedStore.getState().computeUnclaimed(currentOrders);
       }
     }, 60000); 
 
     return () => clearInterval(ticker);
-  }, [orders, computeUnclaimed]);
+  }, []);
 
-  const handleClaim = async (order) => {
+  // ==========================================
+  // ACCESSIBILITY: Keyboard & Scroll Management
+  // ==========================================
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && !isUpdating) setSelectedOrder(null);
+    };
+    
+    if (selectedOrder) {
+      document.body.style.overflow = 'hidden'; 
+      window.addEventListener('keydown', handleEsc);
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [selectedOrder, isUpdating]);
+
+  const handleClaim = useCallback(async (order) => {
     setIsUpdating(true);
     try {
       await markAsClaimed(order);
@@ -93,14 +135,14 @@ const UnclaimedOrders = () => {
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [markAsClaimed, showNotification]);
 
   if (isLoading || unclaimedOrders.length === 0) return null;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-red-100 flex flex-col max-h-[450px] overflow-hidden relative mt-4">
       
-      {/* --- WIDGET HEADER (Keeping your design) --- */}
+      {/* WIDGET HEADER */}
       <div className="px-5 py-3.5 border-b border-red-50 flex justify-between items-center bg-red-50/30">
         <div className="flex items-center gap-3 pl-2">
           <div className="p-1.5 bg-white border border-red-200 rounded-lg text-red-600 shadow-hollow">
@@ -116,15 +158,12 @@ const UnclaimedOrders = () => {
         </span>
       </div>
 
-      {/* --- LIST SECTION --- */}
+      {/* LIST SECTION */}
       <div className="flex-1 overflow-y-auto p-2 px-3 custom-scrollbar">
         <div className="space-y-1">
           <AnimatePresence mode="popLayout">
             {unclaimedOrders.map((order) => {
-              const readyDate = order.updated_at?.seconds 
-                ? new Date(order.updated_at.seconds * 1000) 
-                : new Date(order.updated_at || order.created_date);
-              
+              const readyDate = getSafeDate(order.updated_at || order.created_date);
               const daysAgo = Math.floor((new Date() - readyDate) / (1000 * 60 * 60 * 24));
 
               return (
@@ -160,12 +199,14 @@ const UnclaimedOrders = () => {
         </div>
       </div>
 
-      {/* --- MODAL POPUP (Keeping your design) --- */}
+      {/* MODAL POPUP */}
       <AnimatePresence>
         {selectedOrder && (
           <div 
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px]"
-            onClick={() => setSelectedOrder(null)}
+            onClick={() => !isUpdating && setSelectedOrder(null)}
+            role="dialog"
+            aria-modal="true"
           >
             <motion.div 
               initial={{ y: 20, opacity: 0 }}
@@ -176,7 +217,9 @@ const UnclaimedOrders = () => {
             >
               <button 
                 onClick={() => setSelectedOrder(null)}
-                className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-50 transition-colors group"
+                disabled={isUpdating}
+                className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-50 transition-colors group disabled:opacity-50"
+                aria-label="Close modal"
               >
                 <IconClose className="w-5 h-5 text-slate-300 group-hover:text-slate-600" />
               </button>
@@ -216,7 +259,7 @@ const UnclaimedOrders = () => {
                     <span className="text-micro font-bold text-text-dark/90 uppercase">Ready Since</span>
                   </div>
                   <span className="text-base-text font-bold text-slate-800">
-                    {new Date(selectedOrder.updated_at || selectedOrder.created_date).toLocaleDateString()}
+                    {getSafeDate(selectedOrder.updated_at || selectedOrder.created_date).toLocaleDateString()}
                   </span>
                 </div>
 
@@ -225,7 +268,10 @@ const UnclaimedOrders = () => {
                     <IconWallet className="w-4 h-4 text-text-dark" />
                     <span className="text-micro font-bold text-text-dark/90 uppercase">Total Amount</span>
                   </div>
-                  <span className="text-base-text font-bold text-emerald-600">₱{selectedOrder.total_amount}</span>
+                  {/* DATA SANITIZATION: Number Formatting */}
+                  <span className="text-base-text font-bold text-emerald-600">
+                    ₱{Number(selectedOrder.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
 
                 <div className="h-px bg-slate-100 w-full" />

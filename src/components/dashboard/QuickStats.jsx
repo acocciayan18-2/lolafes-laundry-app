@@ -23,7 +23,7 @@ export default function QuickStats({ title, value, icon, trend }) {
             
             {/* TREND: Using text-nano (mobile) and text-micro (desktop) */}
             {trend && (
-              <p className="text-micro font-medium text-text-dark/70 mt-2 truncate ">
+              <p className="text-nano md:text-micro font-medium text-text-dark/60 mt-2 truncate">
                 {trend}
               </p>
             )}

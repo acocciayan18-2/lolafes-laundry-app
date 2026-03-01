@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Confetti from "react-confetti";
 import { IconGift, IconStar, IconAward } from "../icons";
+// Ensure you have an IconLoading or use a simple text fallback
 import { useLoyaltyStore } from "../../store/services/useLoyaltyStore"; 
 
 export const LoyaltyStatus = ({
@@ -12,27 +13,62 @@ export const LoyaltyStatus = ({
 }) => {
   const { loyaltySettings } = useLoyaltyStore();
 
+  // 1. New states for async operations and error handling
+  const [isApplying, setIsApplying] = useState(false);
+  const [error, setError] = useState(null);
+
   const [windowDimension, setWindowDimension] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
   });
 
+  // 2. PERFORMANCE: Debounced Resize Listener
   useEffect(() => {
+    let timeoutId;
     const detectSize = () => {
-      setWindowDimension({ width: window.innerWidth, height: window.innerHeight });
+      clearTimeout(timeoutId);
+      // Wait 150ms after the user stops resizing before updating state
+      timeoutId = setTimeout(() => {
+        setWindowDimension({ width: window.innerWidth, height: window.innerHeight });
+      }, 150);
     };
+    
     window.addEventListener("resize", detectSize);
-    return () => window.removeEventListener("resize", detectSize);
+    return () => {
+      window.removeEventListener("resize", detectSize);
+      clearTimeout(timeoutId); // Cleanup to prevent memory leaks
+    };
   }, []);
 
   if (!loyaltySettings?.is_enabled || !customer) return null;
 
-  const currentPoints = customer.loyalty_points !== undefined ? customer.loyalty_points : (customer.order_count || 0);
-  const required = loyaltySettings.orders_required || 10;
+  // 3. MATH SAFETY: Prevent negative numbers and Division by Zero
+  const currentPoints = Math.max(0, customer.loyalty_points !== undefined ? customer.loyalty_points : (customer.order_count || 0));
+  const required = Math.max(1, loyaltySettings.orders_required || 10); // Enforce minimum of 1
+  
   const availableRewards = Math.floor(currentPoints / required);
   const progressToNext = currentPoints % required;
   const neededForNext = required - progressToNext;
   const isRewardInCart = selectedServices?.some((s) => s.is_reward) || false;
+
+  // 4. SECURE HANDLER: Prevent double-clicks and handle backend errors
+  const handleApplyReward = async () => {
+    if (isApplying || isRewardInCart) return;
+
+    setIsApplying(true);
+    setError(null);
+
+    try {
+      if (onApplyFreeService) {
+        await onApplyFreeService(); // Wait for the store/backend to apply it
+      }
+    } catch (err) {
+      console.error("Reward Application Error:", err);
+      setError("Failed to apply reward. Try again.");
+    } finally {
+      setIsApplying(false);
+    }
+  };
 
   return (
     <>
@@ -41,7 +77,7 @@ export const LoyaltyStatus = ({
           <Confetti
             width={windowDimension.width}
             height={windowDimension.height}
-            recycle={false}
+            recycle={false} // Prevents infinite loop memory leak
             numberOfPieces={400}
             gravity={0.15}
             initialVelocityX={10}
@@ -73,11 +109,9 @@ export const LoyaltyStatus = ({
                 )}
               </div>
               <div>
-                {/* HEADER: text-nano */}
                 <h3 className="text-nano font-bold uppercase tracking-widest text-text-dark/40 leading-none">
                   {availableRewards > 0 ? `${availableRewards} Reward${availableRewards > 1 ? 's' : ''} Ready` : "Loyalty Progress"}
                 </h3>
-                {/* STATUS TEXT: text-sm-text */}
                 <p className="text-sm-text font-bold text-text-dark mt-1">
                   {availableRewards > 0
                     ? isRewardInCart 
@@ -88,7 +122,6 @@ export const LoyaltyStatus = ({
               </div>
             </div>
 
-            {/* PROGRESS BADGE: text-nano */}
             <Badge
               className={`text-micro px-2 py-0.5 tracking-tighter ${
                 availableRewards > 0
@@ -100,19 +133,32 @@ export const LoyaltyStatus = ({
             </Badge>
           </div>
 
+          {/* ERROR MESSAGE DISPLAY */}
+          {error && (
+            <div className="mt-1 mb-2 p-1.5 bg-red-50 text-red-500 text-nano rounded-md border border-red-100 text-center">
+              {error}
+            </div>
+          )}
+
           {availableRewards > 0 && (
             <Button
-              onClick={onApplyFreeService}
-              disabled={isRewardInCart}
+              onClick={handleApplyReward}
+              disabled={isRewardInCart || isApplying}
               size="sm"
-              className={`w-full mt-2 !h-9 text-micro font-bold shadow-sm border-none transition-all duration-200  tracking-widest ${
-                isRewardInCart 
+              className={`w-full mt-2 !h-9 text-micro font-bold shadow-sm border-none transition-all duration-200 tracking-widest flex justify-center items-center ${
+                isRewardInCart || isApplying
                   ? "!bg-gray-100 !text-gray-400 cursor-not-allowed" 
                   : "!bg-yellow-500 hover:!bg-yellow-600 !text-white active:scale-95"
               }`}
             >
-              <IconAward className={`w-4 h-4 mr-1.5 ${isRewardInCart ? "!stroke-gray-400" : "!stroke-white"}`} />
-              {isRewardInCart ? "Reward Applied" : "Apply Reward"}
+              {isApplying ? (
+                "Applying..."
+              ) : (
+                <>
+                  <IconAward className={`w-4 h-4 mr-1.5 ${isRewardInCart ? "!stroke-gray-400" : "!stroke-white"}`} />
+                  {isRewardInCart ? "Reward Applied" : "Apply Reward"}
+                </>
+              )}
             </Button>
           )}
         </div>
