@@ -13,6 +13,7 @@ import { useLoyaltyStore } from "../store/services/useLoyaltyStore";
 import { useServiceStore } from "../store/services/useServiceStore";
 import { useNotificationStore } from "../store/ui/useNotificationStore";
 import { startGlobalTour } from "../tours/globalTours";
+import { useSettingsStore } from "../store/settings/useSettingsStore";
 
 // ... other imports
 import { silentPrint } from "../services/printerService"; // Our new hardware logic
@@ -96,7 +97,7 @@ export default function NewOrder() {
   const showNotification = useNotificationStore((state) => state.showNotification);
   const logActivity = useActivityStore((state) => state.logActivity);
   const { services, isLoading, subscribeToServices } = useServiceStore();
-
+const { receiptConfig, fetchSettings } = useSettingsStore();
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
   
 
@@ -222,43 +223,40 @@ const [deliveryFee, setDeliveryFee] = useState(0);
         });
         finalCustomerId = newCust.id;
       }
-      const subtotal = selectedServices.reduce((sum, s) => sum + (Number(s.subtotal) || 0), 0);
-    const finalDeliveryFee = handoverMethod === 'delivery' ? Number(deliveryFee) : 0;
-    const totalAmount = subtotal + finalDeliveryFee;
-
-    const pointsToDeduct = selectedServices.some(s => s.is_reward) ? (loyaltySettings.orders_required || 10) : 0;
-
-    const orderPayload = {
-      customer_id: finalCustomerId, 
-      customer_name: customer.name.trim(),
-      customer_phone: customer.phone.trim(),
-      customer_address: customer.address?.trim() || "",
-      order_number: uniqueOrderNumber, 
-      total_amount: Number(totalAmount), // This now includes delivery
       
-      // ADD THESE NEW FIELDS
-      handover_method: handoverMethod,
-      delivery_fee: finalDeliveryFee,
+      const subtotal = selectedServices.reduce((sum, s) => sum + (Number(s.subtotal) || 0), 0);
+      const finalDeliveryFee = handoverMethod === 'delivery' ? Number(deliveryFee) : 0;
+      const totalAmount = subtotal + finalDeliveryFee;
+      const pointsToDeduct = selectedServices.some(s => s.is_reward) ? (loyaltySettings.orders_required || 10) : 0;
 
-      notes: notes.trim(),
-      payment_method: paymentMethod,
-      is_paid: Boolean(isPaid),
-      loyalty_points_to_deduct: pointsToDeduct,
-      services: selectedServices.map(s => ({
-        service_id: s.id, service_name: s.service_name, quantity: Number(s.quantity || 1),
-        price_per_kg: Number(s.price_per_kg), subtotal: Number(s.subtotal), is_reward: Boolean(s.is_reward)
-      }))
-    };
+      const orderPayload = {
+        customer_id: finalCustomerId, 
+        customer_name: customer.name.trim(),
+        customer_phone: customer.phone.trim(),
+        customer_address: customer.address?.trim() || "",
+        order_number: uniqueOrderNumber, 
+        total_amount: Number(totalAmount),
+        handover_method: handoverMethod,
+        delivery_fee: finalDeliveryFee,
+        notes: notes.trim(),
+        payment_method: paymentMethod,
+        is_paid: Boolean(isPaid),
+        loyalty_points_to_deduct: pointsToDeduct,
+        services: selectedServices.map(s => ({
+          service_id: s.id, service_name: s.service_name, quantity: Number(s.quantity || 1),
+          price_per_kg: Number(s.price_per_kg), subtotal: Number(s.subtotal), is_reward: Boolean(s.is_reward)
+        }))
+      };
+
       await submitOrder(orderPayload);
       logActivity(orderPayload, 'pending');
 
+      // --- UPDATED PRINTING LOGIC ---
       if (settings?.autoPrint) {
         try {
-          // We use the default connection (usb or bluetooth) saved in settings
-          await silentPrint(orderPayload, settings.defaultPrinter || 'usb');
+          // 👈 Pass receiptConfig (branding) as the third argument
+          await silentPrint(orderPayload, settings.defaultPrinter || 'browser', receiptConfig);
         } catch (printErr) {
-          // We catch printer errors so the user can still navigate 
-          // even if the printer is off or disconnected
           console.error("Auto-print failed:", printErr);
           showNotification("Order saved, but printer not found.", "info");
         }

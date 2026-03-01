@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { useActivityStore } from "../../store/activities/useActivityStore";
 import { useOrderStore } from "../../store/orders/useOrderStore";
 import { useNotificationStore } from "../../store/ui/useNotificationStore";
+import { IconLoading, IconReceipt } from "../icons"; 
+import { silentPrint } from "../../services/printerService";
+import { useSettingsStore } from "../../store/settings/useSettingsStore";
+
 import "../../style/OrderCard.css";
 import {
   IconArrowRight, IconCreditCard,
@@ -51,6 +55,9 @@ export default function OrderCard({ order }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isDropUp, setIsDropUp] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const { receiptConfig } = useSettingsStore();
+  const settings = useOrderStore((state) => state.settings);
   
   const dropdownRef = useRef(null);
   const paymentRef = useRef(null);
@@ -154,6 +161,21 @@ export default function OrderCard({ order }) {
   } else {
     currentStatusConfig.completed.nextStatus = 'picked_up';
   }
+
+ const handleManualPrint = async (e) => {
+    e.stopPropagation();
+    setIsPrinting(true);
+    try {
+      // Logic check: Passing receiptConfig ensures the thermal receipt uses Firebase data
+      await silentPrint(order, settings.defaultPrinter || 'browser', receiptConfig); 
+      showNotification("Sending to printer...", "success");
+    } catch (err) {
+      showNotification("Print failed. Check popup blocker.", "error");
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
 
 
   // Filter dropdown options based on Handover Method
@@ -523,26 +545,51 @@ const confirmDeliveryFee = async (e) => {
         </div>
 
         {/* Column 3: Notes & Action */}
-        <div className="flex flex-col justify-between space-y-4">
-          <div className="space-y-2">
-            <h4 className="text-micro font-bold text-text-dark/50 uppercase">Notes</h4>
-            <p className="text-sm-text font-medium text-text-dark/30 leading-snug italic bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/50">
-              {order.special_instructions || order.notes || "No notes provided."}
-            </p>
-          </div>
 
-          {/* Cancel button stays at the bottom of the 3rd column */}
-          {order.status === 'pending' && (
-            <div className="flex justify-end pt-2">
-              <button 
-                onClick={(e) => { e.stopPropagation(); setShowCancelModal(true); }} 
-                className="flex items-center gap-1.5 px-4 py-2 text-micro font-bold text-red-500 hover:bg-red-50 rounded-xl border border-red-100 transition-all active:scale-95"
-              >
-                Cancel Order
-              </button>
-            </div>
-          )}
-        </div>
+        <div className="flex flex-col justify-between space-y-4">
+  <div className="space-y-2">
+    <h4 className="text-micro font-bold text-text-dark/50 uppercase">Notes</h4>
+    <p className="text-sm-text font-medium text-text-dark/30 leading-snug italic bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/50">
+      {order.special_instructions || order.notes || "No notes provided."}
+    </p>
+  </div>
+
+  {/* ACTION ROW: Print & Cancel */}
+  <div className="flex justify-end items-center gap-2 pt-2">
+    
+    {/* NEW: MANUAL PRINT FALLBACK (Positioned at bottom right) */}
+    <button
+  onClick={handleManualPrint}
+  // REMOVED: isLocked from disabled logic
+  disabled={isPrinting} 
+  title="Print Receipt"
+  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-micro font-bold transition-all active:scale-95 ${
+    isPrinting 
+      ? "bg-slate-50 text-slate-400 cursor-wait border-slate-100" 
+      : "bg-white text-text-dark border-slate-200 hover:bg-slate-50 hover:border-app-dark/20 shadow-sm"
+  }`} 
+>
+  {isPrinting ? (
+    <IconLoading className="w-3.5 h-3.5 animate-spin" />
+  ) : (
+    <IconReceipt className="w-3.5 h-3.5 opacity-60" />
+  )}
+  <span>{isPrinting ? "Printing..." : "Print Receipt"}</span>
+</button>
+
+    {/* Cancel button stays here */}
+    {order.status === 'pending' && (
+      <button 
+        onClick={(e) => { e.stopPropagation(); setShowCancelModal(true); }} 
+        className="flex items-center gap-1.5 px-4 py-2 text-micro font-bold text-red-500 hover:bg-red-50 rounded-xl border border-red-100 transition-all active:scale-95"
+      >
+        Cancel Order
+      </button>
+    )}
+  </div>
+</div>
+
+       
 
       </div>
     </motion.div>

@@ -1,7 +1,8 @@
 import { IconSettings } from "../components/icons";
 import PrintTest from "../components/settings/PrintTest";
 import SessionSecurity from "../components/settings/SessionSecurity";
-import AutoPrintToggle from "../components/settings/AutoPrintToggle"; // New Import
+import AutoPrintToggle from "../components/settings/AutoPrintToggle";
+import ReceiptConfiguration from "../components/settings/ReceiptConfiguration"; // New Import
 
 const Settings = () => {
   return (
@@ -22,13 +23,18 @@ const Settings = () => {
         {/* SETTINGS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
           
-          {/* Hardware & Testing */}
+          {/* 1. Branding & Receipts (Full Width for Preview) */}
+          <div className="md:col-span-2">
+             <ReceiptConfiguration />
+          </div>
+
+          {/* 2. Hardware & Testing */}
           <PrintTest />
 
-          {/* Automation & Printing Logic */}
+          {/* 3. Automation & Printing Logic */}
           <AutoPrintToggle />
 
-          {/* Session & Security */}
+          {/* 4. Session & Security (Full Width) */}
           <div className="md:col-span-2">
              <SessionSecurity />
           </div>

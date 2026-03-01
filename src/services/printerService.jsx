@@ -1,17 +1,101 @@
 import EscPosEncoder from 'esc-pos-encoder';
 
-export const silentPrint = async (order, type) => {
-  // If using Hardware (Wired/BT), use the library
+/**
+ * HELPER: Safely converts Firebase Timestamps or Strings into readable dates
+ */
+const formatSafeDate = (dateSource) => {
+  if (!dateSource) return "N/A";
+  
+  let date;
+  // If it's a Firebase Timestamp {seconds, nanoseconds}
+  if (dateSource && typeof dateSource === 'object' && 'seconds' in dateSource) {
+    date = new Date(dateSource.seconds * 1000);
+  } else {
+    // If it's already a Date object or a valid ISO string
+    date = new Date(dateSource);
+  }
+
+  // Check if date is actually valid
+  if (isNaN(date.getTime())) return "Invalid Date";
+
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+export const silentPrint = async (order, type, config) => {
+  // 1. Destructure all dynamic configuration fields
+  const { 
+    storeName, address, phone, email, website, footerMessage,
+    showOrderDate, showPrintDate 
+  } = config || {};
+
+  // 2. Prepare the date labels
+  const orderDateLabel = formatSafeDate(order.created_at || order.created_date);
+  const printDateLabel = new Date().toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  // --- HARDWARE PRINTING (USB / BLUETOOTH) ---
   if (type === 'usb' || type === 'bluetooth') {
     const encoder = new EscPosEncoder();
-    const receiptData = encoder
+    let result = encoder
       .initialize()
       .align('center')
-      .line("LOLA FE'S LAUNDRY")
-      .line(`ORDER: #${order.order_number}`)
+      .size('large')
+      .line(storeName || "LOLA FE'S LAUNDRY")
+      .size('normal');
+
+    // Dynamic Header Info
+    if (address) result.line(address);
+    if (phone) result.line(`Tel: ${phone}`);
+    if (email) result.line(email);
+    if (website) result.line(website);
+    
+    result.line("--------------------------------")
+      .size('large').bold(true).line(order.customer_name.toUpperCase()).bold(false).size('normal')
+      .line(`ORDER ID: #${order.order_number}`)
+      .line("--------------------------------");
+
+    // Dynamic Timestamps
+    if (showOrderDate) result.align('left').line(`ORDERED: ${orderDateLabel}`);
+    if (showPrintDate) result.align('left').line(`PRINTED: ${printDateLabel}`);
+    if (showOrderDate || showPrintDate) result.line("--------------------------------");
+
+    // Services Table
+    order.services?.forEach(s => {
+      result.table(
+        [{ width: 20, align: 'left' }, { width: 4, align: 'center' }, { width: 8, align: 'right' }],
+        [[s.service_name, (s.quantity || s.weight_kg || 1).toString(), `P${Number(s.subtotal || 0)}`]]
+      );
+    });
+
+    if (order.delivery_fee > 0) {
+      result.line(`DELIVERY FEE: P${order.delivery_fee}`);
+    }
+
+    result.line("--------------------------------")
+      .align('right')
+      .size('large')
+      .bold(true)
+      .line(`TOTAL: ₱${Number(order.total_amount).toLocaleString()}`)
+      .size('normal')
+      .bold(false)
       .newline()
-      .cut()
-      .encode();
+      .align('center')
+      .line(footerMessage || "THANK YOU!")
+      .newline()
+      .cut();
+
+    const receiptData = result.encode();
 
     try {
       if (type === 'usb') {
@@ -34,95 +118,101 @@ export const silentPrint = async (order, type) => {
     } catch (error) {
       return { success: false, error: error.message };
     }
-  } 
-
-  // --- FALLBACK FOR TESTING (WPS / PDF / DOCS) ---
-  // --- Inside printerService.js ---
-
-if (type === 'browser') {
-  try {
-    // 1. Create a clean receipt window
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    
-    // 2. Write the receipt content
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Lola Fe's Receipt Test</title>
-          <style>
-            body { 
-              font-family: 'Courier New', Courier, monospace; 
-              width: 80mm; /* Standard thermal width for testing */
-              margin: 0 auto; 
-              padding: 20px;
-              background-color: #f9f9f9;
-            }
-            .receipt {
-              background: white;
-              padding: 15px;
-              border: 1px dashed #ccc;
-            }
-            .center { text-align: center; }
-            .right { text-align: right; }
-            .line { border-top: 1px dashed black; margin: 10px 0; }
-            table { width: 100%; font-size: 12px; }
-            .btn-print { 
-              display: block; width: 100%; padding: 10px; 
-              background: #000; color: #fff; border: none; 
-              margin-bottom: 20px; cursor: pointer; border-radius: 8px;
-            }
-            @media print {
-              .btn-print { display: none; } /* Hide the button when printing starts */
-              body { background: white; padding: 0; }
-              .receipt { border: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <button class="btn-print" onclick="window.print()">Send to WPS / Printer</button>
-          
-          <div class="receipt">
-            <div class="center">
-              <h2 style="margin:0">LOLA FE'S LAUNDRY</h2>
-              <p style="font-size:10px">Thermal Receipt Test</p>
-            </div>
-            <div class="line"></div>
-            <p><strong>ORDER:</strong> #${order.order_number}</p>
-            <p><strong>CUSTOMER:</strong> ${order.customer_name}</p>
-            <div class="line"></div>
-            <table>
-              <thead>
-                <tr>
-                  <th align="left">Service</th>
-                  <th align="center">Qty</th>
-                  <th align="right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${order.services.map(s => `
-                  <tr>
-                    <td>${s.service_name}</td>
-                    <td align="center">${s.quantity}</td>
-                    <td align="right">P${s.total_amount}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-            <div class="line"></div>
-            <h3 class="right">TOTAL: P${order.total_amount}</h3>
-            <div class="center" style="margin-top:20px; font-size:10px;">
-              <p>Verify your printer settings</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `);
-    
-    printWindow.document.close();
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: "Popup blocked! Allow popups in Chrome settings." };
   }
-}
+
+  // --- BROWSER / PDF FALLBACK ---
+  if (type === 'browser') {
+    try {
+      const printWindow = window.open('', '_blank', 'width=400,height=600');
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Receipt - ${order.customer_name}</title>
+            <style>
+              body { 
+                font-family: 'Courier New', Courier, monospace; 
+                width: 72mm; 
+                margin: 0 auto; 
+                padding: 10px;
+                color: #000;
+              }
+              .center { text-align: center; }
+              .line { border-top: 1px dashed black; margin: 10px 0; }
+              .customer-name { 
+                font-size: 22px; 
+                font-weight: 900; 
+                text-transform: uppercase;
+                margin: 5px 0;
+              }
+              .timestamp-box { font-size: 10px; margin: 10px 0; line-height: 1.4; }
+              table { width: 100%; border-collapse: collapse; }
+              td { padding: 4px 0; font-size: 13px; }
+              .total-row { font-size: 18px; font-weight: bold; margin-top: 15px; text-align: right; }
+              .btn-print { 
+                display: block; width: 100%; padding: 12px; background: #000; color: #fff; 
+                border: none; margin-bottom: 20px; cursor: pointer; border-radius: 4px; font-weight: bold;
+              }
+              @media print { .btn-print { display: none; } body { padding: 0; width: 100%; } }
+            </style>
+          </head>
+          <body>
+            <button class="btn-print" onclick="window.print()">PRINT RECEIPT</button>
+            <div class="receipt">
+              <div class="center">
+                <h3 style="margin:0">${storeName || "LOLA FE'S LAUNDRY"}</h3>
+                <div style="font-size:10px">
+                  ${address ? `<div>${address}</div>` : ''}
+                  ${phone ? `<div>Tel: ${phone}</div>` : ''}
+                  ${email ? `<div>Email: ${email}</div>` : ''}
+                  ${website ? `<div>Web: ${website}</div>` : ''}
+                </div>
+                <div class="line"></div>
+                <div class="customer-name">${order.customer_name}</div>
+                <div style="font-size: 14px; font-weight: bold;">ORDER ID: #${order.order_number}</div>
+              </div>
+
+              <div class="timestamp-box">
+                ${showOrderDate ? `<div style="display:flex; justify-content:space-between"><span>ORDERED:</span> <span>${orderDateLabel}</span></div>` : ''}
+                ${showPrintDate ? `<div style="display:flex; justify-content:space-between"><span>PRINTED:</span> <span>${printDateLabel}</span></div>` : ''}
+              </div>
+
+              <div class="line"></div>
+              <table>
+                <tbody>
+                  ${order.services.map(s => `
+                    <tr>
+                      <td align="left">${s.service_name} x${s.quantity || s.weight_kg}</td>
+                      <td align="right">₱${Number(s.subtotal || 0).toLocaleString()}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+
+              ${order.delivery_fee > 0 ? `
+                <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:12px;">
+                  <span>Delivery Fee:</span>
+                  <span>₱${Number(order.delivery_fee).toLocaleString()}</span>
+                </div>
+              ` : ''}
+
+              <div class="line"></div>
+              <div class="total-row">TOTAL: ₱${Number(order.total_amount).toLocaleString()}</div>
+
+              <div class="center" style="margin-top:30px; font-size:11px;">
+                <p style="text-transform: uppercase; font-weight: bold;">${footerMessage || "THANK YOU FOR YOUR BUSINESS!"}</p>
+                <p style="opacity: 0.5">--- End of Receipt ---</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: "Popup blocked! Please enable popups." };
+    }
+  }
 };

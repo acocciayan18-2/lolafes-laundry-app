@@ -1,23 +1,25 @@
 import { create } from 'zustand';
 import { useOrderStore } from './useOrderStore';
 
-// src/store/orders/useUnclaimedStore.js
-
 export const useUnclaimedStore = create((set, get) => ({
   unclaimedOrders: [],
   
   computeUnclaimed: (allOrders) => {
     const now = new Date();
-    const OVERDUE_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000; 
+    
+    // --- TEST THRESHOLD: 5 SECONDS ---
+    const OVERDUE_THRESHOLD_MS = 5000; 
 
     const overdue = allOrders.filter((order) => {
-      // Ensure we are checking the correct status ('ready' or 'completed')
+      // 1. Logic Check: Must be in a "Waiting" state
       if (order.status !== 'completed' && order.status !== 'ready') return false;
 
+      // 2. Safe Date Parsing (Handling Firebase Timestamps or Strings)
       const readyDate = order.updated_at?.seconds 
         ? new Date(order.updated_at.seconds * 1000) 
         : new Date(order.updated_at || order.created_date);
 
+      // 3. Comparison
       return (now - readyDate) >= OVERDUE_THRESHOLD_MS;
     });
 
@@ -27,12 +29,10 @@ export const useUnclaimedStore = create((set, get) => ({
   markAsClaimed: async (order) => {
     const { updateOrderStatus } = useOrderStore.getState();
     
-    // 1. Validator: Payment Check
     if (!order.is_paid) {
       throw new Error("Cannot claim unpaid orders!");
     }
 
-    // 2. Pass the FULL order object to the central store
     return await updateOrderStatus(order, 'picked_up');
   }
 }));

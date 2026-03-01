@@ -635,6 +635,45 @@ export const IconDelivery = ({ className = "" }) => (
   </svg>
 );
 
+export const IconReceipt = ({ className = "w-6 h-6" }) => (
+  <svg 
+    className={className}
+    fill="none" 
+    stroke="currentColor" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    strokeWidth="1.5" 
+    viewBox="0 0 24 24" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M13 15h2M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2ZM9 7h6-6Zm0 4h6-6Z" />
+  </svg>
+);
+
+export const IconLoading = ({ className = "w-6 h-6" }) => (
+  <svg 
+    className={className} 
+    width="24" 
+    height="24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    strokeWidth="1.5" 
+    viewBox="0 0 24 24" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M12 6V3" />
+    <path d="m16.25 7.752 2.15-2.15" />
+    <path d="M18 12h3" />
+    <path d="m16.25 16.25 2.15 2.15" />
+    <path d="M12 18v3" />
+    <path d="M7.75 16.25 5.6 18.4" />
+    <path d="M6 12H3" />
+    <path d="M7.75 7.752 5.6 5.602" />
+  </svg>
+);
+
 export const IconHandover = ({ className = "" }) => (
   <svg 
     viewBox="0 0 640 640" 
