@@ -10,6 +10,7 @@ const CustomerCard = ({ customer, onEdit }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   
+  // 1. ADDED: Loading state for network requests
   const [isDeleting, setIsDeleting] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   
