@@ -77,15 +77,12 @@ export default function TopCustomers({ range }) {
                     <div className="min-w-0 flex-1">
                       {/* NAME: text-base-text (15px) */}
                       <p 
-                        className="text-sm-text text-text-dark font-bold leading-tight uppercase truncate " 
+                        className="text-base-text text-text-dark font-bold leading-tight uppercase truncate " 
                         title={customer.name}
                       >
                         {customer.name}
                       </p>
-                      {/* PHONE: text-micro (11px) */}
-                      <p className="text-micro font-medium text-text-dark/70 truncate lowercase">
-                        {customer.phone}
-                      </p>
+                     
                     </div>
                   </div>
 

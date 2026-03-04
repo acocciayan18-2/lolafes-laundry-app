@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useCustomerStore } from "../../store/customer/useCustomerStore";
 import { IconSearch, IconUserPlus, IconUsers } from "../icons";
 
@@ -23,6 +23,24 @@ export const CustomerForm = ({
     const unsubscribe = subscribeToCustomers();
     return () => unsubscribe();
   }, [subscribeToCustomers]);
+
+  const phoneInputRef = useRef(null);
+  const addressInputRef = useRef(null);
+
+  // 2. Navigation Handlers
+  const handleNameKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault(); // Prevent form submission
+      phoneInputRef.current?.focus();
+    }
+  };
+
+  const handlePhoneKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addressInputRef.current?.focus();
+    }
+  };
 
   // ==========================================
   // 1. PERFORMANCE: Memoized Search Filtering
@@ -204,6 +222,8 @@ export const CustomerForm = ({
                     disabled={isSubmitting}
                     readOnly={!!selectedCustomerId}
                     onChange={(e) => handleTextChange('name', e.target.value)}
+                    onKeyDown={handleNameKeyDown} 
+                      enterKeyHint="next"
                     placeholder="Enter Customer Name"
                     className={`text-sm-text ${
                       selectedCustomerId 
@@ -213,6 +233,7 @@ export const CustomerForm = ({
                   />
                   <div className="flex flex-col relative">
                     <Input
+                    ref={phoneInputRef}
                       type="tel"
                       inputMode="numeric"
                       label="Contact Number"
@@ -221,6 +242,8 @@ export const CustomerForm = ({
                       disabled={isSubmitting}
                       readOnly={!!selectedCustomerId}
                       onChange={handlePhoneChange}
+                      onKeyDown={handlePhoneKeyDown} 
+              enterKeyHint="next"
                       placeholder="09XX XXX XXXX"
                       className={`text-sm-text transition-all ${
                         selectedCustomerId 
@@ -260,12 +283,14 @@ export const CustomerForm = ({
                   </div>
                 </div>
                 <Input
+                ref={addressInputRef}
                   label="Address"
                   id="customer-address"
                   value={customer.address}
                   disabled={isSubmitting}
                   readOnly={!!selectedCustomerId}
                   onChange={(e) => handleTextChange('address', e.target.value)}
+                  enterKeyHint="done"
                   placeholder="Customer Address (Optional)"
                   className={`text-sm-text ${
                     selectedCustomerId 

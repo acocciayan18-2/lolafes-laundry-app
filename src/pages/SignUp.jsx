@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { LoginPopup } from "../modal/LoginPopup";
 import { auth } from "../services/firebase";
 import "../style/signup.css";
+import { useRef } from "react";
 import { IconAtSymbol, IconLock, IconEyeOpen, IconEyeClosed, IconCheck } from "../components/icons";
 
 // ----------------------------------------------------------------------
@@ -29,6 +30,7 @@ const EMAILJS_CONFIG = {
 
 export default function SignUp() {
   const navigate = useNavigate();
+  const passwordInputRef = useRef(null);
 
   // Form State
   const [email, setEmail] = useState("");
@@ -73,6 +75,13 @@ export default function SignUp() {
       number: /\d/.test(val),
       special: /[!@#$%^&*()_,.?":{}|<>]/.test(val),
     });
+  };
+
+  const handleEmailKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Stops the form from submitting prematurely
+      passwordInputRef.current?.focus(); // Moves the blinking cursor
+    }
   };
 
   const handleCancel = () => {
@@ -195,6 +204,9 @@ export default function SignUp() {
             <div className="inputForm">
               <IconAtSymbol/>
               <input
+                
+                onKeyDown={handleEmailKeyDown}  
+                enterKeyHint="next"
                 type="email"
                 id="email"
                 className="input"
@@ -215,6 +227,7 @@ export default function SignUp() {
               <IconLock/>
               <input
                 type={showPassword ? "text" : "password"}
+  ref={passwordInputRef}
                 id="password"
                 className="input"
                 placeholder="Enter your password"
@@ -235,28 +248,32 @@ export default function SignUp() {
 
           {/* Confirm Password Field */}
           <div className="mb-2 text-start">
-            <label htmlFor="confirmPassword" className="form-label text-text-dark">Confirm Password</label>
-            <div className="inputForm pwd-signup-con">
-              <IconLock/>
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                id="confirmPassword"
-                className="input"
-                placeholder="Re-enter your password"
-                required
-                autoComplete="off"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={isOtpSent}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? <IconEyeClosed /> : <IconEyeOpen />}
-              </button>
-            </div>
-          </div>
+              <label htmlFor="confirmPassword" className="form-label text-text-dark">Confirm Password</label>
+              <div className="inputForm pwd-signup-con">
+                <IconLock/>
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  className="input"
+                  placeholder="Re-enter your password"
+                  required
+                  autoComplete="off"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    return false;
+                  }}
+                  disabled={isOtpSent}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <IconEyeClosed /> : <IconEyeOpen />}
+                </button>
+              </div>
+            </div>      
 
           {/* Matching Indicator */}
           <div className="mb-4">
@@ -289,22 +306,28 @@ export default function SignUp() {
 
           {/* OTP Field */}
           {isOtpSent && (
-            <div className="mb-2 animate-fade-in">
-              <label htmlFor="otp" className="block text-sm font-normal text-text-dark mb-3">
-                Enter the OTP sent to the registered admin email.
-              </label>
-              <input
-                type="text"
-                id="otp"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 tracking-[0.5em] focus:ring-1 focus:ring-app-dark focus:outline-none text-center tracking-widest text-lg !font-bold"
-                placeholder="000000"
-                value={enteredOtp}
-                onChange={(e) => setEnteredOtp(e.target.value)}
-                required
-                maxLength={6}
-              />
-            </div>
-          )}
+              <div className="mb-2 animate-fade-in">
+                <label htmlFor="otp" className="block text-sm font-normal text-text-dark mb-3">
+                  Enter the OTP sent to the registered admin email.
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric" 
+                  pattern="[0-9]*"  
+                  id="otp"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 tracking-[0.5em] focus:ring-1 focus:ring-app-dark focus:outline-none text-center tracking-widest text-lg !font-bold"
+                  placeholder="000000"
+                  value={enteredOtp}
+                  onChange={(e) => {
+                  
+                    const onlyNumbers = e.target.value.replace(/\D/g, "");
+                    setEnteredOtp(onlyNumbers);
+                  }}
+                  required
+                  maxLength={6}
+                />
+              </div>
+            )}
 
           {/* Submit Button */}
           <button

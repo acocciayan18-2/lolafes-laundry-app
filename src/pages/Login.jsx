@@ -1,63 +1,47 @@
-import {
-  browserLocalPersistence,
-  sendPasswordResetEmail,
-  setPersistence,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
-import { useState } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ForgotPassword from "../modal/ForgotPassword";
 import { LoginPopup } from "../modal/LoginPopup";
-import { auth } from "../services/firebase";
+import { useLoginStore } from "../store/auth/useLoginStore"; // Import the new store
 import "../style/login.css";
 import { IconAtSymbol, IconLock, IconEyeOpen, IconEyeClosed } from "../components/icons";
-
-
 
 export default function Login() {
   const navigate = useNavigate();
 
+  // --- GLOBAL STORE ---
+  const { 
+    isLoginLoading, 
+    isResetLoading, 
+    popup, 
+    clearPopup, 
+    loginUser, 
+    resetPassword 
+  } = useLoginStore();
+
+  // --- LOCAL UI STATE ---
+  // We keep typed input local to prevent the whole app from re-rendering on every keystroke
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  const [popupMessage, setPopupMessage] = useState("");
-  const [popupType, setPopupType] = useState("");
-
   const [showForgotPopup, setShowForgotPopup] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
-  const [isResetLoading, setIsResetLoading] = useState(false);
 
-  // --- VALIDATION LOGIC ---
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const isFormValid = emailRegex.test(loginEmail) && loginPassword.length >= 1;
+  // --- REFS FOR ACCESSIBILITY ---
+  const passwordInputRef = useRef(null);
 
-  const triggerPopup = (msg, type) => {
-    setPopupMessage(msg);
-    setPopupType(type);
-    setTimeout(() => setPopupMessage(""), 3000);
-  };
+  // --- VALIDATION ---
+  const isFormValid = useMemo(() => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(loginEmail.trim()) && loginPassword.length >= 6;
+  }, [loginEmail, loginPassword]);
 
-  const handleForgotPassword = async () => {
-    if (!resetEmail.trim()) {
-      triggerPopup("Please enter your email.", "error");
-      return;
-    }
-    try {
-      setIsResetLoading(true);
-      await sendPasswordResetEmail(auth, resetEmail);
-      triggerPopup("Reset link sent! Check your email.", "success");
-      setShowForgotPopup(false);
-      setResetEmail("");
-    } catch (error) {
-      if (error.code === "auth/user-not-found") {
-        triggerPopup("❌ This email is not registered.", "error");
-      } else {
-        triggerPopup("❌ " + error.message, "error");
-      }
-    } finally {
-      setIsResetLoading(false);
+  // --- HANDLERS ---
+  const handleEmailKeyDown = (e) => {
+    // Intercept the "Enter" key to focus password instead of submitting
+    if (e.key === 'Enter') {
+      e.preventDefault(); 
+      passwordInputRef.current?.focus();
     }
   };
 
@@ -65,36 +49,27 @@ export default function Login() {
     e.preventDefault();
     if (isLoginLoading || !isFormValid) return;
 
-    setIsLoginLoading(true);
-
-    try {
-      await setPersistence(auth, browserLocalPersistence);
-      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
-      const user = userCredential.user;
-
-      if (!user.emailVerified) {
-        triggerPopup("Please verify your email before logging in.", "error");
-        await auth.signOut();
-        return;
-      }
-
-      triggerPopup("Login successful!", "success");
-      setTimeout(() => navigate("/main"), 1000);
-    } catch (error) {
-      console.error(error);
-      triggerPopup("Invalid email or password.", "error");
-      setLoginPassword("");
-    } finally {
-      setIsLoginLoading(false);
+    // Call the store. If login fails, it returns false so we can clear the password securely.
+    const isSuccess = await loginUser(loginEmail, loginPassword, navigate);
+    if (!isSuccess) {
+      setLoginPassword(""); 
     }
+  };
+
+  const handleForgotPassword = () => {
+    resetPassword(resetEmail, () => {
+      // Callback executes only on success
+      setShowForgotPopup(false);
+      setResetEmail("");
+    });
   };
 
   return (
     <div className="login-container">
       <LoginPopup
-        message={popupMessage}
-        type={popupType}
-        onClose={() => setPopupMessage("")}
+        message={popup.message}
+        type={popup.type}
+        onClose={clearPopup}
       />
 
       <div className="login-card">
@@ -113,7 +88,7 @@ export default function Login() {
         </h3>
         <p className="text-center !text-text-dark/70">Log in to continue</p>
 
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleLogin} noValidate>
           <div className="mb-3 text-start">
             <label htmlFor="login-email" className="form-label text-text-dark">Email</label>
             <div className="inputForm mb-3 text-start">
@@ -124,9 +99,11 @@ export default function Login() {
                 className="input text-text-dark"
                 placeholder="Enter your Email"
                 required
-                autoComplete="off"
+                autoComplete="email"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
+                onKeyDown={handleEmailKeyDown} // Added KeyDown Listener
+                disabled={isLoginLoading}
               />
             </div>
           </div>
@@ -136,14 +113,16 @@ export default function Login() {
             <div className="inputForm pwd-login-con">
               <IconLock/>
               <input
+                ref={passwordInputRef} // Attached the Ref here
                 type={showPassword ? "text" : "password"}
                 id="login-password"
                 className="input text-text-dark"
                 placeholder="********"
                 required
-                autoComplete="off"
+                autoComplete="current-password"
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
+                disabled={isLoginLoading}
               />
               <button
                 type="button"

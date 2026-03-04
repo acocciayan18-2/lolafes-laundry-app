@@ -7,26 +7,23 @@ import SignUp from "./pages/SignUp";
 import { AuthProvider } from "./security/AuthContext";
 import ProtectedRoute from "./security/ProtectedRoute";
 
-// --- NEW IMPORTS ---
+// --- GLOBAL NOTIFICATION IMPORTS ---
 import { LoginPopup } from "./modal/LoginPopup";
 import { useNotificationStore } from "./store/ui/useNotificationStore";
 
 function App() {
-  // 1. EXTRACT NOTIFICATION STATE (This was missing)
-  const { message, type, hideNotification } = useNotificationStore();
+  // 1. EXTRACT NOTIFICATION STATE (Using your exact store keys)
+  const message = useNotificationStore((state) => state.message);
+  const type = useNotificationStore((state) => state.type);
+  const hideNotification = useNotificationStore((state) => state.hideNotification);
 
-  // 2. EXTRACT SETTINGS ACTIONS
   const subscribe = useSettingsStore(state => state.subscribeToSettings);
   const fetchSettings = useSettingsStore(state => state.fetchSettings);
 
   useEffect(() => {
-    // Initial fetch from Firebase
     fetchSettings(); 
-    
-    // Start real-time listener and store the unsubscribe function
     const unsubscribe = subscribe(); 
     
-    // Cleanup on unmount
     return () => {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
@@ -42,7 +39,10 @@ function App() {
       }}
     >
       <AuthProvider>
-        {/* 3. GLOBAL NOTIFICATION COMPONENT (Now has access to state) */}
+        {/* 2. GLOBAL NOTIFICATION COMPONENT 
+            This will now show up on ANY page (Login, Signup, or MainApp)
+            whenever you call showNotification from any store.
+        */}
         {message && (
           <LoginPopup 
             message={message} 
@@ -56,7 +56,6 @@ function App() {
           <Route path="/signup" element={<SignUp />} />
 
           <Route element={<ProtectedRoute />}>
-            {/* Using /* for nested routes inside MainApp */}
             <Route path="/main/*" element={<MainApp />} />
           </Route>
 

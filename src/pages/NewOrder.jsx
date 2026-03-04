@@ -1,5 +1,5 @@
 import { collection, getDocs, limit, query, where } from 'firebase/firestore';
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback, forwardRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CustomerForm } from "../components/orders/CustomerForm";
 import { LoyaltyStatus } from "../components/orders/LoyaltyStatus";
@@ -12,7 +12,6 @@ import { useNewOrderStore } from "../store/new-order/useNewOrderStore";
 import { useLoyaltyStore } from "../store/services/useLoyaltyStore";
 import { useServiceStore } from "../store/services/useServiceStore";
 import { useNotificationStore } from "../store/ui/useNotificationStore";
-import { startGlobalTour } from "../tours/globalTours";
 import { useSettingsStore } from "../store/settings/useSettingsStore";
 import { silentPrint } from "../services/printerService"; 
 import { useOrderStore } from "../store/orders/useOrderStore"; 
@@ -55,7 +54,7 @@ const Button = ({ children, variant = "primary", size = "md", className = "", ..
   );
 };
 
-const Input = ({ label, id, className = "", ...props }) => (
+const Input = forwardRef(({ label, id, className = "", ...props }, ref) => (
   <div className="w-full space-y-1">
     {label && (
       <label htmlFor={id} className="text-sm-text font-medium text-text-dark ml-1">
@@ -63,6 +62,7 @@ const Input = ({ label, id, className = "", ...props }) => (
       </label>
     )}
     <input 
+      ref={ref} // <--- THIS IS THE KEY: It connects the external ref to this tag
       id={id} 
       className={`
         w-full h-11 px-4 rounded-xl border border-gray-300 transition-all 
@@ -74,7 +74,10 @@ const Input = ({ label, id, className = "", ...props }) => (
       {...props} 
     />
   </div>
-);
+));
+
+Input.displayName = "Input";
+
 
 const Badge = ({ children, className = "" }) => (
   <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${className}`}>{children}</span>
@@ -295,13 +298,7 @@ export default function NewOrder() {
     return () => window.removeEventListener("keydown", handleGlobalKeyPress);
   }, []);
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    if (searchParams.get('tour') === 'active') {
-      setForceReveal(true);
-      setTimeout(() => startGlobalTour(navigate, 3), 700);
-    }
-  }, [location.search, navigate]);
+  
 
   const [forceReveal, setForceReveal] = useState(false);
 

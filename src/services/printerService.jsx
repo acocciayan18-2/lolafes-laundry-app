@@ -1,47 +1,30 @@
 import EscPosEncoder from 'esc-pos-encoder';
 
-/**
- * HELPER: Safely converts Firebase Timestamps or Strings into readable dates
- */
 const formatSafeDate = (dateSource) => {
   if (!dateSource) return "N/A";
-  
   let date;
-  // If it's a Firebase Timestamp {seconds, nanoseconds}
   if (dateSource && typeof dateSource === 'object' && 'seconds' in dateSource) {
     date = new Date(dateSource.seconds * 1000);
   } else {
-    // If it's already a Date object or a valid ISO string
     date = new Date(dateSource);
   }
-
-  // Check if date is actually valid
   if (isNaN(date.getTime())) return "Invalid Date";
-
   return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   });
 };
 
 export const silentPrint = async (order, type, config) => {
-  // 1. Destructure all dynamic configuration fields
   const { 
     storeName, address, phone, email, website, footerMessage,
     showOrderDate, showPrintDate 
   } = config || {};
 
-  // 2. Prepare the date labels
   const orderDateLabel = formatSafeDate(order.created_at || order.created_date);
   const printDateLabel = new Date().toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   });
 
   // --- HARDWARE PRINTING (USB / BLUETOOTH) ---
@@ -54,7 +37,6 @@ export const silentPrint = async (order, type, config) => {
       .line(storeName || "LOLA FE'S LAUNDRY")
       .size('normal');
 
-    // Dynamic Header Info
     if (address) result.line(address);
     if (phone) result.line(`Tel: ${phone}`);
     if (email) result.line(email);
@@ -65,12 +47,10 @@ export const silentPrint = async (order, type, config) => {
       .line(`ORDER ID: #${order.order_number}`)
       .line("--------------------------------");
 
-    // Dynamic Timestamps
     if (showOrderDate) result.align('left').line(`ORDERED: ${orderDateLabel}`);
     if (showPrintDate) result.align('left').line(`PRINTED: ${printDateLabel}`);
     if (showOrderDate || showPrintDate) result.line("--------------------------------");
 
-    // Services Table
     order.services?.forEach(s => {
       result.table(
         [{ width: 20, align: 'left' }, { width: 4, align: 'center' }, { width: 8, align: 'right' }],
@@ -78,9 +58,12 @@ export const silentPrint = async (order, type, config) => {
       );
     });
 
-    if (order.delivery_fee > 0) {
-      result.line(`DELIVERY FEE: P${order.delivery_fee}`);
-    }
+    result.line("--------------------------------");
+    result.align('left')
+      .line(`PAYMENT METHOD: ${order.payment_method?.toUpperCase() || "CASH"}`)
+      .line(`PAYMENT STATUS: ${order.payment_status?.toUpperCase() || "UNPAID"}`);
+
+    if (order.delivery_fee > 0) result.line(`DELIVERY FEE: ₱${order.delivery_fee}`);
 
     result.line("--------------------------------")
       .align('right')
@@ -125,35 +108,23 @@ export const silentPrint = async (order, type, config) => {
     try {
       const printWindow = window.open('', '_blank', 'width=400,height=600');
       
-      printWindow.document.write(`
+      // DEPRECATION FIX: Use innerHTML instead of document.write
+      const receiptHtml = `
         <!DOCTYPE html>
         <html>
           <head>
             <title>Receipt - ${order.customer_name}</title>
             <style>
-              body { 
-                font-family: 'Courier New', Courier, monospace; 
-                width: 72mm; 
-                margin: 0 auto; 
-                padding: 10px;
-                color: #000;
-              }
+              body { font-family: 'Courier New', Courier, monospace; width: 72mm; margin: 0 auto; padding: 10px; color: #000; }
               .center { text-align: center; }
               .line { border-top: 1px dashed black; margin: 10px 0; }
-              .customer-name { 
-                font-size: 22px; 
-                font-weight: 900; 
-                text-transform: uppercase;
-                margin: 5px 0;
-              }
-              .timestamp-box { font-size: 10px; margin: 10px 0; line-height: 1.4; }
+              .customer-name { font-size: 20px; font-weight: 900; text-transform: uppercase; margin: 5px 0 3px 0; }
+              .timestamp-box { font-size: 11px; margin: 5px 0; line-height: 1.4; }
               table { width: 100%; border-collapse: collapse; }
-              td { padding: 4px 0; font-size: 13px; }
-              .total-row { font-size: 18px; font-weight: bold; margin-top: 15px; text-align: right; }
-              .btn-print { 
-                display: block; width: 100%; padding: 12px; background: #000; color: #fff; 
-                border: none; margin-bottom: 20px; cursor: pointer; border-radius: 4px; font-weight: bold;
-              }
+              td { padding: 2px 0; font-size: 13px; }
+              .total-row { font-size: 19px; font-weight: bold; margin-top: 10px; text-align: right; }
+              .payment-info { font-size: 11px; text-transform: uppercase; }
+              .btn-print { display: block; width: 100%; padding: 12px; background: #000; color: #fff; border: none; margin-bottom: 20px; cursor: pointer; border-radius: 4px; font-weight: bold; }
               @media print { .btn-print { display: none; } body { padding: 0; width: 100%; } }
             </style>
           </head>
@@ -162,7 +133,7 @@ export const silentPrint = async (order, type, config) => {
             <div class="receipt">
               <div class="center">
                 <h3 style="margin:0">${storeName || "LOLA FE'S LAUNDRY"}</h3>
-                <div style="font-size:10px">
+                <div style="font-size:11px">
                   ${address ? `<div>${address}</div>` : ''}
                   ${phone ? `<div>Tel: ${phone}</div>` : ''}
                   ${email ? `<div>Email: ${email}</div>` : ''}
@@ -170,12 +141,29 @@ export const silentPrint = async (order, type, config) => {
                 </div>
                 <div class="line"></div>
                 <div class="customer-name">${order.customer_name}</div>
-                <div style="font-size: 14px; font-weight: bold;">ORDER ID: #${order.order_number}</div>
+                <div style="font-size: 15px; font-weight: bold;">#${order.order_number}</div>
               </div>
 
               <div class="timestamp-box">
                 ${showOrderDate ? `<div style="display:flex; justify-content:space-between"><span>ORDERED:</span> <span>${orderDateLabel}</span></div>` : ''}
                 ${showPrintDate ? `<div style="display:flex; justify-content:space-between"><span>PRINTED:</span> <span>${printDateLabel}</span></div>` : ''}
+              </div>
+
+              <div class="payment-info">
+                <div style="display:flex; justify-content:space-between">
+                  <span>Payment Method:</span>
+                  <span style="font-weight:bold">${order.payment_method || "CASH"}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between">
+                  <span>Payment Status:</span>
+                  <span style="font-weight:bold">${order.payment_status || "UNPAID"}</span>
+                </div>
+                ${order.delivery_fee > 0 ? `
+                  <div style="display:flex; justify-content:space-between; margin-top:2px;">
+                    <span>Delivery Fee:</span>
+                    <span>₱${Number(order.delivery_fee).toLocaleString()}</span>
+                  </div>
+                ` : ''}
               </div>
 
               <div class="line"></div>
@@ -190,26 +178,22 @@ export const silentPrint = async (order, type, config) => {
                 </tbody>
               </table>
 
-              ${order.delivery_fee > 0 ? `
-                <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:12px;">
-                  <span>Delivery Fee:</span>
-                  <span>₱${Number(order.delivery_fee).toLocaleString()}</span>
-                </div>
-              ` : ''}
-
               <div class="line"></div>
               <div class="total-row">TOTAL: ₱${Number(order.total_amount).toLocaleString()}</div>
 
-              <div class="center" style="margin-top:30px; font-size:11px;">
-                <p style="text-transform: uppercase; font-weight: bold;">${footerMessage || "THANK YOU FOR YOUR BUSINESS!"}</p>
+              <div class="center" style="margin-top:15px; font-size:11px;">
+                <p style="text-transform: uppercase; font-weight: bold;">${footerMessage || "THANK YOU FOR YOUR COMING!"}</p>
                 <p style="opacity: 0.5">--- End of Receipt ---</p>
               </div>
             </div>
           </body>
         </html>
-      `);
-      
+      `;
+
+      // Assigning the HTML content directly to the document body
+      printWindow.document.body.parentElement.innerHTML = receiptHtml;
       printWindow.document.close();
+      
       return { success: true };
     } catch (error) {
       return { success: false, error: "Popup blocked! Please enable popups." };
