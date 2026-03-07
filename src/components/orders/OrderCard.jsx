@@ -156,7 +156,7 @@ export default function OrderCard({ order, tick }) {
     const unsubscribe = fetchPaymentMethods();
     return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
   }, [fetchPaymentMethods]);
-  
+
   const isStuck = isOrderStuck(order);
   const isUnclaimed = isOrderUnclaimed(order);
   const isLocked = isOrderLocked(order);
@@ -303,7 +303,7 @@ export default function OrderCard({ order, tick }) {
                       e.stopPropagation();
                       if (!isLocked) setShowHandoverModal(true);
                     }} 
-                    className={`text-nano font-medium uppercase px-1 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-sm ${
+                    className={`text-nano font-medium uppercase  px-1 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-sm ${
                       isLocked ? 'cursor-default opacity-80' : 'hover:scale-105 active:scale-95'
                     } ${
                       order.handover_method === 'delivery' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'

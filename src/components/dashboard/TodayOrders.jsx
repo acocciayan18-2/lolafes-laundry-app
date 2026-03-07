@@ -153,11 +153,10 @@ export default function TodayOrders({ orders = [], isLoading }) {
                       {order.status === 'picked_up' && handoverType === 'delivery' ? "Delivered" : cfg.label}
                     </span>
                     
-                    {/* ✨ HANDOVER BADGE */}
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1 uppercase tracking-tighter
+                    <span className={`text-nano font-bold px-1.5 py-0.5 rounded border flex items-center gap-1 uppercase
                       ${handoverObj.theme.bg} ${handoverObj.theme.text} ${handoverObj.theme.border}
                     `}>
-                      <HandoverIcon className="w-2.5 h-2.5" />
+                      <HandoverIcon className="w-3 h-3" />
                       {handoverObj.label}
                     </span>
                   </div>
