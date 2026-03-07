@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion"; // ✨ Added Framer Motion for the toggle
 import { Badge, Button, Input } from "../../pages/Services";
 import { useActivityStore } from "../../store/activities/useActivityStore";
 import { useNotificationStore } from "../../store/ui/useNotificationStore"; 
@@ -98,7 +99,6 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   
-  // Removed transition-all duration-200 so the card snaps instantly between edit/delete/normal views
   const containerBase = "w-full rounded-xl border px-4 py-2 shadow-sm";
   const isNew = !service.id;
 
@@ -111,7 +111,6 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
       return;
     }
     
-    // Explicitly handles 0, strictly blocks empty strings or negative numbers
     const priceStr = String(tempData.price_per_kg ?? "").trim();
     if (priceStr === "") {
       showNotification("Service price is required.", "error");
@@ -144,13 +143,15 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
         const LOG_SUBJECT = `SVC-${id || 'NEW'}`;
 
         let logData = {
-          // Used ?? to ensure a valid 0 price isn't overridden by the old price
           customer_name: data?.name || service.name,
           total_amount: data?.price_per_kg ?? service.price_per_kg, 
           order_number: LOG_SUBJECT
         };
 
+        // ✨ Added Notification calls for every successful action
         if (actionFn === onSave) {
+          showNotification(isNew ? "Service created successfully!" : "Service updated!", "success");
+          
           if (isNew) {
             logActivity(logData, 'pending', { action: 'created', label: 'Service Created' });
           } else {
@@ -166,14 +167,16 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
           }
         } else if (actionFn === onToggle) {
           const newState = !service.is_active;
+          showNotification(newState ? "Service enabled!" : "Service disabled!", "success");
           logActivity(logData, newState ? 'ready' : 'picked_up', { action: 'status_update', label: newState ? 'Service Enabled' : 'Service Disabled' });
         } else if (actionFn === onDelete) {
+          showNotification("Service deleted permanently.", "success");
           logActivity(logData, 'picked_up', { action: 'status_update', label: 'Service Deleted' });
         }
       }
       setShowConfirmDelete(false);
     } catch (err) {
-      console.error("Logging error:", err);
+      console.error("Action error:", err);
       showNotification("Action failed. Please try again.", "error");
     } finally {
       setIsProcessing(false);
@@ -186,12 +189,12 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
       <div className={`${containerBase} border-app-dark/20 bg-app-light p-4 relative z-0`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="bg-red-600 p-2 rounded-lg shrink-0">
+            <div className="bg-rose-600 p-2 rounded-lg shrink-0">
               <IconTrash className="w-5 h-5 text-white stroke-white" />
             </div>
             <div>
               <h3 className="text-base-text font-medium text-text-dark">Delete this service?</h3>
-              <p className="text-sm-text text-red-700 font-medium">This will permanently remove {service.name}.</p>
+              <p className="text-sm-text text-rose-700 font-medium">This will permanently remove {service.name}.</p>
             </div>
           </div>
 
@@ -205,7 +208,7 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
               Cancel
             </Button>
             <Button 
-              className="flex-1 md:w-32 !bg-red-600 text-white text-sm-text font-medium h-9 shadow-sm active:scale-95 transition-transform disabled:opacity-70 disabled:cursor-wait" 
+              className="flex-1 md:w-32 !bg-rose-600 text-white text-sm-text font-medium h-9 shadow-sm active:scale-95 transition-transform disabled:opacity-70 disabled:cursor-wait" 
               onClick={() => handleAction(onDelete, service.id, service)} 
               disabled={isProcessing}
             >
@@ -302,46 +305,48 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
               <div className="flex flex-wrap gap-2 mt-1">
                 <Badge className="bg-blue-100/50 text-blue-700 border-blue-200 px-3 py-0.5">{serviceTypeLabels[service.type] || service.type}</Badge>
                 <Badge className="bg-white text-gray-600 border-gray-200 px-2 font-bold py-0.5">₱{Number(service.price_per_kg).toFixed(2)}</Badge>
-                <Badge className={`py-0.5 ${service.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>{service.is_active ? "Active" : "Inactive"}</Badge>
+                <Badge className={`py-0.5 ${service.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{service.is_active ? "Active" : "Inactive"}</Badge>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex !flex-row md:flex-col items-center justify-end gap-2 shrink-0 ml-auto">
-          {service.is_active && (
-            <Button variant="outline" className="flex-1 md:w-28 text-sm-text font-medium px-3 border-gray-100 hover:bg-app-dark/5 transition-colors active:scale-95" onClick={() => onEdit(service)}>
+        {/* ✨ Replaced Enable/Disable Button with Toggle Switch */}
+        <div className="flex flex-row items-center justify-end gap-4 shrink-0 ml-auto">
+          {service.is_active ? (
+            <Button variant="outline" className="text-sm-text font-medium px-3 border-gray-100 hover:bg-app-dark/5 transition-colors active:scale-95" onClick={() => onEdit(service)}>
               <IconEdit2 className="w-3 h-3 mr-1" /> Edit
             </Button>
-          )}
-          <div className="flex flex-row gap-2 justify-end">
-            {!service.is_active && (
-              <Button 
-                onClick={() => setShowConfirmDelete(true)} 
-                className="px-2.5 bg-transparent text-red-600 shrink-0 hover:bg-red-50 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-red-500 rounded-md"
-                aria-label="Delete service"
-              >
-                <IconTrash className="w-5 h-5 text-text-dark/80 stroke-text-dark/80" />
-              </Button>
-            )}
+          ) : (
             <Button 
-              onClick={() => handleAction(onToggle, service.id, service)} 
-              className={`
-                 flex-1 md:w-28 text-sm-text font-medium px-3 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-wait
-                ${service.is_active 
-                  ? "bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-900/20" 
-                  : "bg-green-700 hover:bg-green-800 text-white shadow-md shadow-emerald-900/20"
-                }
-              `} 
-              disabled={isProcessing}
+              onClick={() => setShowConfirmDelete(true)} 
+              className="px-2.5 py-1 bg-transparent text-rose-600 shrink-0 hover:bg-rose-50 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-rose-500 rounded-md transition-colors"
+              aria-label="Delete service"
             >
-              {isProcessing ? (
-                <div className="w-3 h-3 border-1 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
-              ) : (
-                service.is_active ? "Disable" : "Enable"
-              )}
+              <IconTrash className="w-5 h-5 text-text-dark/80 stroke-text-dark/80 hover:text-rose-600 hover:stroke-rose-600 transition-colors" />
             </Button>
-          </div>
+          )}
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+
+          {/* iOS Style Toggle Switch */}
+          <button
+            type="button"
+            onClick={() => handleAction(onToggle, service.id, service)}
+            disabled={isProcessing}
+            className={`relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none disabled:opacity-50 flex-shrink-0 ${
+              service.is_active ? 'bg-emerald-500' : 'bg-rose-600'
+            }`}
+          >
+            <motion.div
+              animate={{ x: service.is_active ? 26 : 2 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm flex items-center justify-center"
+            >
+              {isProcessing && <div className="w-2.5 h-2.5 border border-slate-300 border-t-emerald-500 rounded-full animate-spin" />}
+            </motion.div>
+          </button>
         </div>
       </div>
     </div>

@@ -61,15 +61,16 @@ export const silentPrint = async (order, type, config) => {
     result.line("--------------------------------");
     result.align('left')
       .line(`PAYMENT METHOD: ${order.payment_method?.toUpperCase() || "CASH"}`)
-      .line(`PAYMENT STATUS: ${order.payment_status?.toUpperCase() || "UNPAID"}`);
+      // ✅ FIXED: Using is_paid boolean
+      .line(`PAYMENT STATUS: ${order.is_paid ? "PAID" : "UNPAID"}`);
 
-    if (order.delivery_fee > 0) result.line(`DELIVERY FEE: ₱${order.delivery_fee}`);
+    if (order.delivery_fee > 0) result.line(`DELIVERY FEE: P${order.delivery_fee}`);
 
     result.line("--------------------------------")
       .align('right')
       .size('large')
       .bold(true)
-      .line(`TOTAL: ₱${Number(order.total_amount).toLocaleString()}`)
+      .line(`TOTAL: P${Number(order.total_amount).toLocaleString()}`)
       .size('normal')
       .bold(false)
       .newline()
@@ -108,7 +109,6 @@ export const silentPrint = async (order, type, config) => {
     try {
       const printWindow = window.open('', '_blank', 'width=400,height=600');
       
-      // DEPRECATION FIX: Use innerHTML instead of document.write
       const receiptHtml = `
         <!DOCTYPE html>
         <html>
@@ -156,7 +156,7 @@ export const silentPrint = async (order, type, config) => {
                 </div>
                 <div style="display:flex; justify-content:space-between">
                   <span>Payment Status:</span>
-                  <span style="font-weight:bold">${order.payment_status || "UNPAID"}</span>
+                  <span style="font-weight:bold">${order.is_paid ? "PAID" : "UNPAID"}</span>
                 </div>
                 ${order.delivery_fee > 0 ? `
                   <div style="display:flex; justify-content:space-between; margin-top:2px;">
@@ -190,7 +190,6 @@ export const silentPrint = async (order, type, config) => {
         </html>
       `;
 
-      // Assigning the HTML content directly to the document body
       printWindow.document.body.parentElement.innerHTML = receiptHtml;
       printWindow.document.close();
       

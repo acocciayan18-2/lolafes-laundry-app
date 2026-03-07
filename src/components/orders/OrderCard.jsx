@@ -5,13 +5,16 @@ import { useOrderStore } from "../../store/orders/useOrderStore";
 import { useNotificationStore } from "../../store/ui/useNotificationStore";
 import { silentPrint } from "../../services/printerService";
 import { useSettingsStore } from "../../store/settings/useSettingsStore";
+import { usePaymentSettingsStore } from "../../store/settings/usePaymentSettingsStore"; 
+import PaymentUpdateModal from "./PaymentUpdateModal";
+import ChangeHandoverModal from "./ChangeHandoverModal"; 
 
 import "../../style/OrderCard.css";
 import {
-  IconArrowRight, IconCreditCard, IconDelivery, IconDoubleCheck,
-  IconGCash, IconHandover, IconInfo, IconMapPin, IconPhone,
+  IconArrowRight, IconDelivery, IconDoubleCheck,
+  IconHandover, IconInfo, IconMapPin, IconPhone,
   IconShirt, IconStatusCompleted, IconStatusPending, IconStatusPickedUp,
-  IconStatusProcessing, IconStatusReady, IconWallet, IconLoading, IconReceipt
+  IconStatusProcessing, IconStatusReady, IconLoading, IconReceipt
 } from "../icons";
 import CancelOrderModal from "./CancelOrderModal";
 
@@ -37,35 +40,144 @@ const statusOptions = [
   { value: "delivered", label: "Delivered", icon: IconStatusPickedUp }
 ];
 
-export default function OrderCard({ order }) {
-  // --- UI States ---
+export default function OrderCard({ order, tick }) {
   const [showPaymentPopover, setShowPaymentPopover] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [isDropUp, setIsDropUp] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [isEditingFee, setIsEditingFee] = useState(false);
-  const [tempFee, setTempFee] = useState(order.delivery_fee || 0);
+  
+  const [showHandoverModal, setShowHandoverModal] = useState(false);
 
-  // --- Refs ---
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [tempNotes, setTempNotes] = useState(order.special_instructions || order.notes || "");
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+
   const dropdownRef = useRef(null);
   const paymentRef = useRef(null);
-  const cardRef = useRef(null); // Added to prevent weird scrolling bugs
+  const cardRef = useRef(null);
 
-  // --- Stores ---
+  const { methods, fetchPaymentMethods } = usePaymentSettingsStore(); 
   const { receiptConfig } = useSettingsStore();
   const settings = useOrderStore((state) => state.settings);
-  const { 
-    cancelOrder, updateOrderStatus, togglePaymentStatus, 
-    isOrderStuck, isOrderLocked, parseTimestamp, updateHandoverMethod,
+ const { 
+    cancelOrder, updateOrderStatus, togglePaymentStatus, isOrderUnclaimed,
+    isOrderStuck, isOrderLocked, parseTimestamp, updateHandoverMethod, updateOrderNotes
   } = useOrderStore();
   const { showNotification } = useNotificationStore();
   const { logActivity } = useActivityStore();
 
-  // --- Derived Data (Memoized for Speed) ---
-  const isStuck = useMemo(() => isOrderStuck(order), [order, isOrderStuck]);
-  const isLocked = useMemo(() => isOrderLocked(order), [order, isOrderLocked]);
+  // 1. LOGGING: Notes Auto-save
+  const handleSaveNotes = async (e) => {
+    if (e) e.stopPropagation();
+    const originalNotes = order.special_instructions || order.notes || "";
+    const cleanTempNotes = tempNotes.trim();
+
+    if (cleanTempNotes === originalNotes.trim()) {
+      setIsEditingNotes(false);
+      return; 
+    }
+
+    setIsSavingNotes(true);
+    try {
+      await updateOrderNotes(order.id, cleanTempNotes);
+      // ✨ LOG ACTIVITY
+      logActivity(order, order.status, { action: 'notes_update', label: `Updated notes: "${cleanTempNotes.substring(0, 20)}..."` });
+      showNotification("Notes auto-saved.", "success");
+      setIsEditingNotes(false);
+    } catch (error) {
+      showNotification("Failed to save notes.", "error");
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
+
+  // 2. LOGGING: Payment Status Toggle
+  const handleTogglePaid = async (e) => {
+    e.stopPropagation();
+    if (isLocked) return;
+    try {
+      const targetStatus = !order.is_paid;
+      await togglePaymentStatus(order.id, targetStatus, order.payment_method || 'Cash');
+      
+      // ✨ LOG ACTIVITY
+      logActivity(order, order.status, { 
+        action: 'payment_update', 
+        label: targetStatus ? "Marked as PAID" : "Marked as UNPAID" 
+      });
+
+      showNotification(targetStatus ? "Marked as PAID" : "Marked as UNPAID", targetStatus ? "success" : "info");
+    } catch (err) {
+      showNotification("Database sync failed.", "error");
+    }
+  };
+
+  // 3. LOGGING: Manual Print
+  const handleManualPrint = async (e) => {
+    e.stopPropagation();
+    setIsPrinting(true);
+    try {
+      await silentPrint(order, settings.defaultPrinter || 'browser', receiptConfig); 
+      
+      // ✨ LOG ACTIVITY
+      logActivity(order, order.status, { action: 'print', label: "Reprinted Receipt" });
+      
+      showNotification("Sending to printer...", "success");
+    } catch (err) {
+      showNotification("Print failed.", "error");
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  // 4. LOGGING: Handover Method Change
+  const handleConfirmHandoverChange = async (newMethod, appliedFee, newTotal) => {
+    try {
+      await updateHandoverMethod(order.id, newMethod, appliedFee, newTotal);
+      
+      // ✨ LOG ACTIVITY
+      logActivity(order, order.status, { 
+        action: 'handover_update', 
+        label: `Switched to ${newMethod.toUpperCase()} (Fee: ₱${appliedFee})` 
+      });
+
+      setShowHandoverModal(false);
+      showNotification(`Handover updated to ${newMethod}.`, "success");
+    } catch (err) {
+      showNotification("Failed to update handover.", "error");
+    }
+  };
+
+  // 5. CORRECT HANDLING: Cancel Order & Loyalty Points
+ const handleConfirmCancel = async (reason) => {
+    try {
+      // Just pass the ID and the reason. The database will perfectly reverse the points!
+      await cancelOrder(order.id, reason); 
+
+      logActivity(order, "cancelled", { 
+        action: 'cancel', 
+        label: `Cancelled: ${reason}` 
+      });
+
+      showNotification(`Order cancelled. Balance adjusted.`, "success");
+      setShowCancelModal(false);
+    } catch (err) {
+      showNotification(err.message, "error");
+    }
+  };
+  
+  // ACTIVITY LOGGER
+
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = fetchPaymentMethods();
+    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
+  }, [fetchPaymentMethods]);
+
+  const isStuck = useMemo(() => isOrderStuck(order), [order, isOrderStuck, tick]);
+  const isUnclaimed = useMemo(() => isOrderUnclaimed(order), [order, isOrderUnclaimed, tick]);
+  const isLocked = useMemo(() => isOrderLocked(order), [order, isOrderLocked, tick]);
   
   const createdDate = useMemo(() => parseTimestamp(order.created_at || order.created_date) || new Date(), [order, parseTimestamp]);
   const handoverDate = useMemo(() => 
@@ -88,176 +200,92 @@ export default function OrderCard({ order }) {
     return true;
   }), [order.handover_method]);
 
-  // --- Handlers (Memoized to prevent unnecessary re-renders of children) ---
+  
+
+  const handleCancelNotesEdit = (e) => {
+    if (e) e.stopPropagation();
+    setTempNotes(order.special_instructions || order.notes || "");
+    setIsEditingNotes(false);
+  };
+
   const handlePaymentClick = useCallback((e) => {
     e.stopPropagation();
     if (!order.is_paid && !isLocked) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      // Ensure popover doesn't go off-screen
-      setIsDropUp((window.innerHeight - rect.bottom) < 160);
-      setShowPaymentPopover(prev => !prev);
+      setShowPaymentModal(true); 
     }
   }, [order.is_paid, isLocked]);
 
-  const handleTogglePaid = async (e) => {
-    e.stopPropagation();
-    if (isLocked) return;
-    try {
-      const targetStatus = !order.is_paid;
-      await togglePaymentStatus(order.id, targetStatus, order.payment_method || 'Cash');
-      showNotification(targetStatus ? "Marked as PAID" : "Marked as UNPAID", targetStatus ? "success" : "info");
-    } catch (err) {
-      showNotification("Database sync failed.", "error");
-    }
-  };
+  
 
-  const selectPaymentMethod = async (method) => {
+  const selectPaymentMethod = async (methodName) => {
     try {
-      await togglePaymentStatus(order.id, true, method); 
-      showNotification(`Order settled via ${method}`, "success");
-      logActivity(order, order.status, { action: 'payment_update', label: `Paid via ${method}` });
-      setShowPaymentPopover(false);
+      await togglePaymentStatus(order.id, true, methodName);
+      // Already had logging, kept intact
+      logActivity(order, order.status, { action: 'payment_update', label: `Paid via ${methodName}` });
+      showNotification(`Order #${order.order_number} settled via ${methodName}`, "success");
+      setShowPaymentModal(false); 
     } catch (err) {
       showNotification("Payment update failed.", "error");
     }
   };
 
-  // 1. Define the mapping outside or inside the component
-const statusLabels = {
-  pending: "Pending",
-  in_progress: "Processing",
-  ready: "Ready",
-  completed: "Completed",
-  picked_up: "Picked Up",
-  delivered: "Delivered",
-  cancelled: "Cancelled"
-};
+  const statusLabels = {
+    pending: "Pending", in_progress: "Processing", ready: "Ready",
+    completed: "Completed", picked_up: "Picked Up", delivered: "Delivered", cancelled: "Cancelled"
+  };
 
-const handleStatusChange = async (e, newStatus) => {
-  e.stopPropagation();
-  
-  // Get the friendly name (e.g., "Processing") or fallback to the key if not found
-  const friendlyStatus = statusLabels[newStatus] || newStatus;
-  
-  const isHandover = newStatus === "picked_up" || newStatus === "delivered";
-  
-  // Validation: Payment check
-  if (isHandover && !order.is_paid) {
-    showNotification(`Order #${order.order_number} must be PAID before handover!`, "error");
+  const cardStyles = useMemo(() => {
+    if (isUnclaimed) return "border-red-500 bg-red-50/5 shadow-red-100";
+    if (isStuck) return "bg-orange-50/5 shadow-orange-100";
+    return "border-gray-200 shadow-sm";
+  }, [isStuck, isUnclaimed]);
+
+  const depthStyles = isOpen ? "z-50 shadow-md" : isExpanded ? "z-40 shadow-lg" : "bg-app-light";
+
+  const handleStatusChange = async (e, newStatus) => {
+    e.stopPropagation();
+    const friendlyStatus = statusLabels[newStatus] || newStatus;
+    const isHandover = newStatus === "picked_up" || newStatus === "delivered";
+    
+    if (isHandover && !order.is_paid) {
+      showNotification(`Order #${order.order_number} must be PAID before handover!`, "error");
+      setIsOpen(false);
+      return;
+    }
+
+    if (isLocked) {
+      showNotification("This order is finalized and locked.", "info");
+      return;
+    }
+
     setIsOpen(false);
-    return;
-  }
+    try {
+      await updateOrderStatus(order, newStatus);
+      // Already had logging, kept intact
+      logActivity(order, newStatus, { action: 'status_update', label: `Moved to ${friendlyStatus}` });
+      showNotification(`Status updated to ${friendlyStatus}`, "success");
+    } catch (err) {
+      showNotification("Could not update status.", "error");
+    }
+  };
 
-  // Validation: Lock check
-  if (isLocked) {
-    showNotification("This order is finalized and locked.", "info");
-    return;
-  }
-
-  setIsOpen(false);
   
-  try {
-    // Execute Database Update
-    await updateOrderStatus(order, newStatus);
-    
-    // 2. Fix: Use friendlyStatus for the Activity Log
-    logActivity(order, newStatus, { 
-      action: 'status_update', 
-      label: `Moved to ${friendlyStatus}` 
-    });
-    
-    // 3. Fix: Use friendlyStatus for the Toast Notification
-    showNotification(`Status updated to ${friendlyStatus}`, "success");
-    
-  } catch (err) {
-    console.error("Status Update Error:", err);
-    showNotification("Could not update status. Check your connection.", "error");
-  }
-};
 
-  const handleManualPrint = async (e) => {
-    e.stopPropagation();
-    setIsPrinting(true);
-    try {
-      await silentPrint(order, settings.defaultPrinter || 'browser', receiptConfig); 
-      showNotification("Sending to printer...", "success");
-    } catch (err) {
-      showNotification("Print failed.", "error");
-    } finally {
-      setIsPrinting(false);
-    }
-  };
-
-  const handleHandoverToggle = async (e) => {
-    e.stopPropagation();
-    if (isLocked) return;
-
-    if (order.handover_method === 'delivery') {
-      const feeToDeduct = Number(order.delivery_fee || 0);
-      const newTotal = Math.max(0, Number(order.total_amount) - feeToDeduct);
-      try {
-         await updateHandoverMethod(order.id, 'pickup', 0, newTotal);
-         showNotification(`Switched to Pickup. ₱${feeToDeduct} removed.`, "info");
-      } catch(err) {
-         showNotification("Failed to switch method.", "error");
-      }
-    } else {
-      setTempFee(order.delivery_fee || 0); // Reset temp fee before showing
-      setIsEditingFee(true);
-    }
-  };
-
-  const confirmDeliveryFee = async (e) => {
-    e.stopPropagation();
-    // 🛡️ VALIDATION: Ensure fee is a valid positive number
-    const feeToAdd = Math.max(0, Number(tempFee) || 0); 
-    const newTotal = Number(order.total_amount) + feeToAdd;
-
-    try {
-      await updateHandoverMethod(order.id, 'delivery', feeToAdd, newTotal);
-      setIsEditingFee(false);
-      showNotification(`Delivery set: +₱${feeToAdd} fee added.`, "success");
-    } catch (err) {
-      showNotification("Error updating fee", "error");
-    }
-  };
-
-  const handleConfirmCancel = async () => {
-    try {
-      await cancelOrder(order.id);
-      showNotification(`Order ${order.order_number} cancelled`, "success");
-      logActivity(order, 'cancelled', { action: 'delete', label: 'Order Cancelled' });
-      setShowCancelModal(false);
-    } catch (err) {
-      showNotification("Cancellation failed", "error");
-    }
-  };
-
-  // --- Click Outside Cleanup ---
   useEffect(() => {
     const handleClick = (e) => {
       if (paymentRef.current && !paymentRef.current.contains(e.target)) setShowPaymentPopover(false);
       if (isOpen && dropdownRef.current && !dropdownRef.current.contains(e.target)) setIsOpen(false);
-      // Optional: Cancel fee editing if they click away
-      if (isEditingFee && cardRef.current && !cardRef.current.contains(e.target)) setIsEditingFee(false); 
     };
-    
-    // Only attach listener if a popup is actually open (Performance boost)
-    if (isOpen || showPaymentPopover || isEditingFee) {
-       document.addEventListener("mousedown", handleClick);
-    }
-    
+    if (isOpen || showPaymentPopover) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [isOpen, showPaymentPopover, isEditingFee]);
+  }, [isOpen, showPaymentPopover]);
 
   return (
     <>
       <div
-        ref={cardRef}
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={`group relative bg-white border transition-all duration-300 mb-3 cursor-pointer rounded-2xl ${
-          isStuck && order.status !== 'picked_up' && order.status !== 'delivered' ? 'border-red-300 bg-red-50/10' : 'shadow-sm'
-        } ${isOpen ? "z-50 shadow-md" : isExpanded ? "z-40 shadow-lg" : "bg-app-light"}`}
+       ref={cardRef}
+       onClick={() => setIsExpanded(!isExpanded)}
+       className={`group relative bg-white border transition-all duration-300 mb-3 cursor-pointer rounded-2xl ${cardStyles} ${depthStyles}`}
       >
         <div className={`absolute left-0 top-0 bottom-0 w-2 rounded-l-2xl ${status.banner}`} />
         
@@ -269,72 +297,52 @@ const handleStatusChange = async (e, newStatus) => {
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-hollow bg-white">
                   <status.icon className="w-5 h-5" />
                 </div>
-                {isStuck && order.status !== 'picked_up' && order.status !== 'delivered' && (
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
-                  </span>
+                {(isStuck || isUnclaimed) && (
+                  <div className="absolute -top-1 -right-1 flex h-4 w-4 z-10">
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isUnclaimed ? 'bg-red-500' : 'bg-orange-500'}`}></span>
+                    <span className={`relative inline-flex rounded-full h-4 w-4 border-2 border-white ${isUnclaimed ? 'bg-red-500' : 'bg-orange-500'}`}></span>
+                  </div>
                 )}
               </div>
               <div className="min-w-0 flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-text-dark text-sm-text uppercase truncate max-w-[150px]">{order.customer_name}</h3>
+                  <h3 
+                    title={order.customer_name} 
+                    className="font-bold text-text-dark text-sm-text truncate max-w-[200px]"
+                  >
+                    {order.customer_name}
+                  </h3>
                   <span className="text-nano font-bold text-text-dark/40 uppercase px-1.5 py-0.5 rounded">
                    {createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} {createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                   
-                  {/* HANDOVER SECTION */}
-                  {isEditingFee ? (
-                    <div className="flex items-center gap-1 animate-in fade-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
-                      <div className="relative">
-                        <span className="absolute text-micro left-2 top-1/2 -translate-y-1/2 text-nano font-bold text-blue-600 pointer-events-none">₱</span>
-                        <input 
-                          type="text" 
-                          inputMode="decimal"
-                          autoFocus
-                          value={tempFee}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9.]/g, '');
-                            if ((val.match(/\./g) || []).length <= 1) setTempFee(val);
-                          }}
-                          onKeyDown={(e) => { if (e.key === 'Enter') confirmDeliveryFee(e); }} // User-friendly Enter key submit
-                          className="w-16 h-7 pl-4 pr-2 text-micro font-bold border border-blue-400 rounded-lg focus:outline-none bg-blue-50 text-blue-700 placeholder:text-blue-300"
-                          placeholder="0"
-                        />
-                      </div>
-                      <button onClick={confirmDeliveryFee} className="h-7 px-2 bg-blue-600 text-white rounded-lg text-nano font-bold hover:bg-blue-700 active:scale-95 transition-all">OK</button>
-                      <button onClick={(e) => { e.stopPropagation(); setIsEditingFee(false); }} className="text-nano font-bold text-rose-600 hover:text-rose-500 px-1">Cancel</button>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={(e) => e.stopPropagation()} 
-                      onDoubleClick={handleHandoverToggle}
-                      title="Double-click to set Delivery Fee"
-                      className={`text-nano font-bold uppercase px-2 py-1 rounded-lg flex items-center gap-1.5 transition-all active:scale-95 select-none hover:brightness-95 shadow-sm ${
-                        order.handover_method === 'delivery' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}
-                    >
-                      {handoverConfig[order.handover_method]?.icon}
-                      {handoverConfig[order.handover_method]?.label}
-                    </button>
-                  )}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isLocked) setShowHandoverModal(true);
+                    }} 
+                    className={`text-nano font-medium uppercase px-1 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-sm ${
+                      isLocked ? 'cursor-default opacity-80' : 'hover:scale-105 active:scale-95'
+                    } ${
+                      order.handover_method === 'delivery' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
+                    }`}
+                  >
+                    {handoverConfig[order.handover_method]?.icon}
+                    {handoverConfig[order.handover_method]?.label}
+                  </button>
+
                 </div>
                 
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-nano font-bold px-2 py-0.5 rounded border bg-white/50">#{order.order_number}</span>
                   <span className={`text-nano font-bold uppercase px-2 py-0.5 rounded border ${status.theme}`}>{status.label}</span>
-                  
                   {handoverDate && (
-                    <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md animate-in fade-in slide-in-from-left-2 duration-500">
-                      <IconDoubleCheck className="w-3 h-3 text-green-700 stroke-green-700" />
+                    <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">
+                      <IconDoubleCheck className="w-3 h-3 text-green-700" />
                       <span className="text-nano font-bold uppercase">
                         {handoverDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} | {handoverDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                  )}
-
-                  {isStuck && order.status !== 'picked_up' && order.status !== 'delivered' && (
-                     <span className="text-nano font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100 uppercase">Stuck</span>
                   )}
                 </div>
               </div>
@@ -343,93 +351,76 @@ const handleStatusChange = async (e, newStatus) => {
             {/* ACTION & PRICING ROW */}
             <div className="flex items-center justify-between lg:justify-end gap-4 w-full lg:w-auto mt-2 lg:mt-0">
               <div className="relative flex flex-col items-start lg:items-end gap-1" ref={paymentRef}>
-                
-                <div className="flex items-center gap-1.5">
-                  <button 
-                    onClick={(e) => e.stopPropagation()} 
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      if (isLocked) return;
-                      if (order.is_paid) handleTogglePaid(e);
-                      else handlePaymentClick(e);
-                    }}
-                    title="Double-click to change status"
-                    className={`text-nano font-bold px-2 py-0.5 rounded border transition-all active:scale-95 select-none ${
-                      isLocked ? 'text-slate-400 bg-slate-100 border-slate-200 cursor-not-allowed' : 
-                      order.is_paid ? 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100 cursor-pointer' : 'text-red-500 bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer'
-                    }`}
-                  >
-                    {order.is_paid ? "PAID" : "UNPAID"}
-                  </button>
+    
+   <div className="flex items-center gap-1.5">
+  <button 
+    onClick={(e) => {
+      e.stopPropagation();
+      // Only allow click if it is UNPAID and NOT LOCKED
+      if (!order.is_paid && !isLocked) {
+        handlePaymentClick(e);
+      }
+    }}
+    // ✨ Disable button if locked OR already paid
+    disabled={isLocked || order.is_paid} 
+    className={`text-nano font-bold px-2 py-0.5 rounded border transition-all ${
+      order.is_paid
+        // Paid state: Static badge, no hover/active effects
+        ? 'text-emerald-600 bg-emerald-50 border-emerald-200 cursor-default' 
+        // Unpaid state: Clickable button
+        : 'text-red-500 bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-95' 
+    } ${isLocked && !order.is_paid ? 'opacity-80 cursor-default hover:bg-red-50 active:scale-100' : ''}`}
+  >
+    {order.is_paid ? "PAID" : "UNPAID"}
+  </button>
 
-                  {order.is_paid && (
-                    <span className={`text-nano font-bold px-1.5 py-0.5 rounded border uppercase animate-in fade-in zoom-in duration-300 ${
-                      isLocked ? 'text-slate-400 border-slate-200' : 'text-emerald-700 bg-emerald-100 border-emerald-200'
-                    }`}>
-                      {order.payment_method || 'Cash'}
-                    </span>
-                  )}
-                </div>
+  {order.is_paid && (
+    <span className="text-nano font-bold px-1.5 py-0.5 rounded border border-emerald-200 bg-emerald-100 text-emerald-700 uppercase animate-in fade-in zoom-in duration-300">
+      {order.payment_method || 'Cash'}
+    </span>
+  )}
+</div>
 
-                <div 
-                  className={`flex flex-col lg:flex-row lg:items-center gap-x-2 gap-y-0.5 ${isLocked || order.is_paid ? 'cursor-default' : 'cursor-pointer'}`}
-                  onClick={(e) => e.stopPropagation()} 
-                  onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    if (!order.is_paid && !isLocked) handlePaymentClick(e);
-                  }}
-                >
-                  {order.handover_method === 'delivery' && order.delivery_fee > 0 && (
-                    <div className="flex justify-start lg:justify-end">
-                      <span className="text-nano font-bold text-blue-600 tracking-tighter whitespace-nowrap pr-1 pt-1 pb-1">
-                        + ₱{order.delivery_fee} DELIVERY
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex flex-col items-start lg:items-end">
-                    <p className={`text-h3 font-bold transition-colors leading-none ${
-                      isLocked ? 'text-slate-400' : 'text-text-dark group-hover/price:text-app-dark'
-                    }`}>
-                      ₱{Number(order.total_amount || 0).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
+    <div className="flex flex-col lg:flex-row lg:items-center lg:gap-2">
+      {/* DELIVERY FEE */}
+      {order.handover_method === 'delivery' && order.delivery_fee > 0 && (
+        <span className="text-nano font-bold text-blue-600 tracking-tighter whitespace-nowrap lg:pt-0.5">
+          + ₱{order.delivery_fee} DELIVERY
+        </span>
+      )}
 
-                <AnimatePresence>
-                  {showPaymentPopover && !isLocked && !order.is_paid && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: isDropUp ? 10 : -10, scale: 0.95 }} 
-                      animate={{ opacity: 1, y: 0, scale: 1 }} 
-                      exit={{ opacity: 0, y: isDropUp ? 10 : -10, scale: 0.95 }} 
-                      className={`absolute right-0 w-36 bg-white border border-slate-200 rounded-xl shadow-xl z-[100] py-1 overflow-hidden ${isDropUp ? "bottom-full mb-2" : "top-6"}`}
-                    >
-                      {[{ label: 'Cash', icon: IconWallet }, { label: 'GCash', icon: IconGCash }, { label: 'Card', icon: IconCreditCard }].map(({ label, icon: Icon }) => (
-                        <button 
-                          key={label} 
-                          onClick={(e) => { e.stopPropagation(); selectPaymentMethod(label); }} 
-                          className="w-full px-3 py-2 text-left text-sm font-medium text-text-dark flex items-center gap-3 transition-colors hover:bg-slate-50"
-                        >
-                          <div className="shrink-0"><Icon className="w-4 h-4" /></div>
-                          <span>{label}</span>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+      {/* TOTAL AMOUNT */}
+      <p className={`text-h3 font-bold transition-colors leading-none ${isLocked ? 'text-slate-400' : 'text-text-dark'}`}>
+        ₱{Number(order.total_amount || 0).toLocaleString()}
+      </p>
+    </div>
 
-              {/* STATUS UPDATE DROPDOWN & NEXT BUTTON */}
+    {/* PAYMENT MODAL */}
+    <AnimatePresence>
+      {!order.is_paid && showPaymentModal && (
+        <PaymentUpdateModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onConfirm={selectPaymentMethod}
+          orderNumber={order.order_number}
+          methods={methods}
+        />
+      )}
+    </AnimatePresence>
+  </div>
+
+              {/* STATUS ACTIONS */}
               <div className="flex items-center gap-1.5" ref={dropdownRef}>
                 <div className="relative">
                   <button 
                     onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} 
                     disabled={isLocked} 
-                    className={`h-8 px-3 text-sm-text font-medium rounded-lg border transition-all ${isLocked ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isOpen ? "bg-app-dark text-white" : "bg-white text-text-dark border-app-dark/20"}`}
+                    className={`h-8 px-3 text-sm-text font-medium rounded-lg border transition-all ${isLocked ? "bg-slate-100 text-slate-400" : isOpen ? "bg-app-dark/5 " : "bg-white text-text-dark border-app-dark/20"}`}
                   >
                     Update
                   </button>
                   <AnimatePresence>
-                    {isOpen &&  (
+                    {isOpen && (
                       <motion.div 
                         initial={{ opacity: 0, scale: 0.95 }} 
                         animate={{ opacity: 1, scale: 1 }} 
@@ -439,8 +430,15 @@ const handleStatusChange = async (e, newStatus) => {
                         {filteredStatusOptions.map((option) => (
                           <button 
                             key={option.value} 
-                            onClick={(e) => handleStatusChange(e, option.value)} 
-                            className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors ${order.status === option.value ? "font-bold bg-slate-50 text-text-dark" : "font-normal text-text-dark/90 hover:bg-slate-50"}`}
+                            onClick={(e) => {
+                              if (order.status === option.value) return;
+                              handleStatusChange(e, option.value);
+                            }} 
+                            className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors ${
+                              order.status === option.value 
+                                ? "font-bold bg-slate-50 pointer-events-none" 
+                                : "font-normal hover:bg-slate-50"
+                            }`}
                           >
                             <span>{option.label}</span>
                             <option.icon className="w-4 h-4 opacity-60" />
@@ -454,12 +452,10 @@ const handleStatusChange = async (e, newStatus) => {
                 {status.nextStatus && (
                   <button 
                     onClick={(e) => handleStatusChange(e, status.nextStatus)}
-                    className="bg-btn-primary hover:bg-btn-primary/90 text-white pl-4 pr-3 py-1.5 rounded-lg shadow-md active:scale-95 flex flex-col items-center justify-center transition-all group"
+                    className="bg-btn-primary hover:bg-btn-primary/90 text-white pl-4 pr-3 py-1.5 rounded-lg shadow-md active:scale-95 flex items-center gap-1.5 transition-all group"
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm-text font-medium">Next</span>
-                      <IconArrowRight className="w-3.5 h-3.5 !text-white group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    <span className="text-sm-text font-medium">Next</span>
+                    <IconArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 )}
               </div>
@@ -473,36 +469,25 @@ const handleStatusChange = async (e, newStatus) => {
                 initial={{ height: 0, opacity: 0 }} 
                 animate={{ height: "auto", opacity: 1 }} 
                 exit={{ height: 0, opacity: 0 }} 
-                transition={{ height: { duration: 0.25, ease: "circOut" }, opacity: { duration: 0.2, ease: "linear" } }}
                 className="px-4 mb-4 overflow-hidden"
               >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-100 pt-4">
-                  
-                  {/* Column 1: Services */}
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-100 pt-4">
                   <div className="space-y-2">
-                    <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5">
-                      <IconShirt className="w-3.5 h-3.5" /> Services
-                    </h4>
+                    <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5"><IconShirt className="w-3.5 h-3.5" /> Services</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {order.services?.map((s, idx) => (
                         <div key={idx} className="bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-lg flex items-center">
-                          <span className="text-sm-text font-medium text-text-dark">{s.service_name}</span>
+                          <span className="text-sm-text font-medium">{s.service_name}</span>
                           <span className="ml-2 text-micro font-bold text-btn-primary">x{s.quantity || s.weight_kg}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Column 2: Contact Details */}
                   <div className="space-y-2">
-                    <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5">
-                      <IconInfo className="w-3.5 h-3.5" /> Contact Details
-                    </h4>
+                    <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5"><IconInfo className="w-3.5 h-3.5" /> Contact Details</h4>
                     <div className="space-y-1.5 text-sm-text font-medium text-text-dark">
-                      <div className="flex items-center gap-2">
-                        <IconPhone className="w-3.5 h-3.5 opacity-60" /> 
-                        {order.customer_phone || "No phone"}
-                      </div>
+                      <div className="flex items-center gap-2"><IconPhone className="w-3.5 h-3.5 opacity-60" /> {order.customer_phone || "No phone"}</div>
                       {order.customer_address && (
                         <div className="flex items-start gap-2">
                           <IconMapPin className="w-3.5 h-3.5 mt-0.5 opacity-60" /> 
@@ -512,16 +497,47 @@ const handleStatusChange = async (e, newStatus) => {
                     </div>
                   </div>
 
-                  {/* Column 3: Notes & Action */}
                   <div className="flex flex-col justify-between space-y-4">
-                    <div className="space-y-2">
-                      <h4 className="text-micro font-bold text-text-dark/50 uppercase">Notes</h4>
-                      <p 
-                        className={`text-sm-text font-medium !text-amber-700 leading-snug italic bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/50 transition-all
-                          ${(!order.special_instructions && !order.notes) ? 'opacity-20' : 'opacity-100'}`}
-                      >
-                        {order.special_instructions || order.notes || "No notes provided."}
-                      </p>
+                    <div className="space-y-2 relative">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-micro font-bold text-text-dark/50 uppercase">Notes</h4>
+                        
+                      </div>
+                      
+                      {isEditingNotes ? (
+                        <div className="relative animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                          <textarea
+                            autoFocus
+                            value={tempNotes}
+                            onChange={(e) => setTempNotes(e.target.value)}
+                            onBlur={handleSaveNotes} 
+                            disabled={isSavingNotes}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') handleCancelNotesEdit(e);
+                            }}
+                            className={`w-full text-sm-text font-medium !text-amber-700 leading-snug italic bg-amber-50 p-2.5 rounded-xl border border-amber-400 focus:border-amber-500 outline-none resize-none min-h-[80px] transition-all shadow-sm ${isSavingNotes ? 'opacity-50' : ''}`}
+                            placeholder="Add notes or special instructions..."
+                          />
+                          
+                          {isSavingNotes && (
+                            <div className="absolute top-2 right-2 bg-white/80 rounded-full p-1 shadow-sm">
+                              <IconLoading className="w-4 h-4 animate-spin text-amber-600" />
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p 
+                          onClick={(e) => e.stopPropagation()} 
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            if (!isLocked) setIsEditingNotes(true);
+                          }}
+                          className={`text-sm-text font-medium !text-amber-700 leading-snug italic bg-amber-50/50 p-2.5 rounded-xl border transition-colors select-none
+                            ${(!order.special_instructions && !order.notes) ? 'opacity-30 border-dashed border-amber-200 hover:opacity-100 cursor-text' : 'border-amber-100/50 hover:border-amber-300 cursor-text'}`}
+                        >
+                          {order.special_instructions || order.notes || "No notes provided"}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex justify-end items-center gap-2 pt-2">
@@ -529,33 +545,34 @@ const handleStatusChange = async (e, newStatus) => {
                         <button
                           onClick={handleManualPrint}
                           disabled={isPrinting} 
-                          title="Print Receipt"
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-micro font-bold transition-all active:scale-95 ${
-                            isPrinting ? "bg-slate-50 text-slate-400 cursor-wait border-slate-100" : "bg-white text-text-dark border-slate-200 hover:bg-slate-50 hover:border-app-dark/20 shadow-sm"
-                          }`} 
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-micro font-bold transition-all ${isPrinting ? "bg-slate-50 text-slate-400" : "bg-white border-slate-200 shadow-sm"}`} 
                         >
                           {isPrinting ? <IconLoading className="w-3.5 h-3.5 animate-spin" /> : <IconReceipt className="w-3.5 h-3.5 opacity-60" />}
-                          <span>{isPrinting ? "Printing..." : "Print Receipt"}</span>
+                          <span>{isPrinting ? "Printing..." : "Print"}</span>
                         </button>
                       )}
-
                       {order.status === 'pending' && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setShowCancelModal(true); }} 
-                          className="flex items-center gap-1.5 px-4 py-2 text-micro font-bold text-red-500 hover:bg-red-50 rounded-xl border border-red-100 transition-all active:scale-95"
-                        >
-                          Cancel Order
-                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); setShowCancelModal(true); }} className="flex items-center gap-1.5 px-4 py-2 text-micro font-bold text-red-500 hover:bg-red-50 rounded-xl border border-red-100">Cancel Order</button>
                       )}
                     </div>
                   </div>
-                </div>
+                  </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
       
+      {/* MODALS */}
+      <ChangeHandoverModal 
+        isOpen={showHandoverModal} 
+        onClose={() => setShowHandoverModal(false)} 
+        onConfirm={handleConfirmHandoverChange} 
+        currentMethod={order.handover_method} 
+        currentTotal={order.total_amount} 
+        currentFee={order.delivery_fee} 
+      />
+
       <CancelOrderModal 
         isOpen={showCancelModal} 
         onClose={() => setShowCancelModal(false)} 

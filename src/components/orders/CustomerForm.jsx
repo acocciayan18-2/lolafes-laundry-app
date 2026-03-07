@@ -216,15 +216,16 @@ export const CustomerForm = ({
               <div className="space-y-4 pt-1">
                 <div className="grid md:grid-cols-2 gap-2">
                  <Input
-                    label="Customer Name"
+                    label="Customer Name *"
                     value={customer.name}
                     id="customer-name"
+                    required={true}
                     disabled={isSubmitting}
                     readOnly={!!selectedCustomerId}
                     onChange={(e) => handleTextChange('name', e.target.value)}
                     onKeyDown={handleNameKeyDown} 
                       enterKeyHint="next"
-                    placeholder="Enter Customer Name"
+                    placeholder="Enter Customer Name "
                     className={`text-sm-text ${
                       selectedCustomerId 
                         ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-700 border-gray-200" 
@@ -235,8 +236,9 @@ export const CustomerForm = ({
                     <Input
                     ref={phoneInputRef}
                       type="tel"
+                      required={true}
                       inputMode="numeric"
-                      label="Contact Number"
+                      label="Contact Number *"
                       value={customer.phone}
                       id="customer-phone"
                       disabled={isSubmitting}
@@ -260,21 +262,21 @@ export const CustomerForm = ({
                       <AnimatePresence>
                         {isPhoneDuplicate && (
                           <motion.span initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                            className="font-bold text-red-600 text-micro ml-1 block">
+                            className="font-medium text-red-600 text-micro ml-1 block">
                             Number already exists!
                           </motion.span>
                         )}
 
                         {!isPhoneDuplicate && isPhoneIncomplete && (
                           <motion.span initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                            className="font-bold text-red-600 text-micro ml-1 block">
+                            className="font-medium text-red-600 text-micro ml-1 block">
                             Enter 11-digit number
                           </motion.span>
                         )}
 
                         {!isPhoneDuplicate && customer.phone.length === 11 && !isPhoneValidFormat && (
                           <motion.span initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                            className="font-bold text-red-600 text-micro ml-1 block">
+                            className="font-medium text-red-600 text-micro ml-1 block">
                            Invalid Format (09XX...)
                           </motion.span>
                         )}
@@ -292,7 +294,7 @@ export const CustomerForm = ({
                   onChange={(e) => handleTextChange('address', e.target.value)}
                   enterKeyHint="done"
                   placeholder="Customer Address (Optional)"
-                  className={`text-sm-text ${
+                  className={`text-sm-text${
                     selectedCustomerId 
                       ? "capitalize focus:outline-none bg-gray-50 cursor-not-allowed text-gray-700 border-gray-200" 
                       : focusClasses

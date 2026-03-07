@@ -89,10 +89,10 @@ export default function PopularServices({ range: initialRange }) {
                 <AnimatePresence>
                   {showInfo && (
                     <div 
-                      className="absolute left-0 top-7 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200"
+                      className="absolute left-[-50px] top-7 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200"
                     > 
                       <p className="text-[13px] text-text-dark/90 leading-relaxed">
-                        Tracks the **Operational Load**. The bar represents the percentage of total orders this service accounts for in the selected period.
+                        Tracks the Operational Load. The bar represents the percentage of total orders this service accounts for in the selected period.
                       </p>
                     </div>
                   )}
@@ -132,7 +132,7 @@ export default function PopularServices({ range: initialRange }) {
                     {service.rank}
                   </span>
                   <div>
-                    <h4 className="text-sm-text font-bold text-text-dark leading-none truncate max-w-[120px]">
+                    <h4 className="text-sm-text font-bold text-text-dark leading-none truncate max-w-[200px]">
                       {service.name}
                     </h4>
                     <p className="text-nano font-bold text-text-dark/50 mt-1 ">

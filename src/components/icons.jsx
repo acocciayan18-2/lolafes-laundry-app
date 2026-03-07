@@ -674,6 +674,53 @@ export const IconLoading = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 
+export const IconMinimizeSidebar = ({ className = "" }) => (
+  <svg 
+    className={className} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    strokeWidth="1.5" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M18 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z" />
+    <path d="M9 4v16" />
+    <path d="m15 10-2 2 2 2" />
+  </svg>
+);
+
+export const IconMaximizeSidebar = ({ className = "" }) => (
+  <svg 
+    className={className}
+    width="24" 
+    height="24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    strokeWidth="1.5" 
+    viewBox="0 0 24 24" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M18 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z" />
+    <path d="M9 4v16" />
+    <path d="m14 10 2 2-2 2" />
+  </svg>
+);
+
+export const IconBan = ({ className = "" }) => (
+  <svg 
+    className={className} 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 640 640" 
+    fill="currentColor"
+  >
+    <path d="M431.2 476.5L163.5 208.8C141.1 240.2 128 278.6 128 320C128 426 214 512 320 512C361.5 512 399.9 498.9 431.2 476.5zM476.5 431.2C498.9 399.8 512 361.4 512 320C512 214 426 128 320 128C278.5 128 240.1 141.1 208.8 163.5L476.5 431.2zM64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576C178.6 576 64 461.4 64 320z"/>
+  </svg>
+);
+
 export const IconHandover = ({ className = "" }) => (
   <svg 
     viewBox="0 0 640 640" 

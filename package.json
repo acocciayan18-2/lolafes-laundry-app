@@ -6,16 +6,20 @@
     "@emailjs/browser": "^4.4.1",
     "clsx": "^2.1.1",
     "cross-env": "^10.0.0",
+    "date-fns": "^4.1.0",
     "driver.js": "^1.4.0",
     "esc-pos-encoder": "^3.0.0",
     "firebase": "^12.3.0",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
+    "react-clock": "^6.0.0",
     "react-confetti": "^6.4.0",
+    "react-day-picker": "^9.14.0",
     "react-dom": "^19.1.1",
     "react-router-dom": "^6.30.2",
     "react-scripts": "5.0.1",
+    "react-time-picker": "^8.0.2",
     "tailwind-merge": "^3.5.0",
     "xlsx": "^0.18.5",
     "zustand": "^5.0.9"
@@ -45,12 +49,12 @@
     ]
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.21",
+    "autoprefixer": "^10.4.27",
     "baseline-browser-mapping": "^2.8.31",
     "eslint-config-react-app": "^7.0.1",
     "jest": "^27.5.1",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17"
+    "postcss": "^8.5.8",
+    "tailwindcss": "^3.4.19"
   },
   "msw": {
     "workerDirectory": [

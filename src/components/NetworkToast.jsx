@@ -1,95 +1,129 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconWifiOff, IconWifiOn } from './icons'; // Adjust path to your icons
+import { IconWifiOff, IconWifiOn } from './icons';
 
 export const NetworkToast = () => {
-  const [isOnline, setIsOnline] = useState(true); // Default to true to prevent flash on load
+  const [isOnline, setIsOnline] = useState(true);
   const [showBackOnline, setShowBackOnline] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
+  const failureCount = useRef(0);
 
   useEffect(() => {
-    // 1. The "Active" Check Function
     const checkConnection = async () => {
+      // If the app is in the background, don't perform the check
+      if (document.visibilityState === 'hidden') return;
+
       try {
-        // Try to fetch a tiny image from a reliable source (like Google or your own backend)
-        // 'no-cors' mode is important to avoid CORS errors
-        await fetch('https://www.google.com/favicon.ico', { 
-          mode: 'no-cors', 
-          cache: 'no-store' 
+        const response = await fetch('https://www.google.com/favicon.ico', {
+          mode: 'no-cors',
+          cache: 'no-store',
+          // Set a short timeout to prevent hanging
+          signal: AbortSignal.timeout(3000) 
         });
+
+        // SUCCESS: Reset failures
+        failureCount.current = 0;
         
-        // If we were offline and now the fetch works, we are back online
         if (!isOnline) {
           setIsOnline(true);
+          setIsDismissed(false); // Reset dismissal on status change
           setShowBackOnline(true);
           setTimeout(() => setShowBackOnline(false), 3000);
         }
       } catch (error) {
-        // If fetch fails, we are definitely offline
-        setIsOnline(false);
-        setShowBackOnline(false);
+        // FALSE POSITIVE PROTECTION: 
+        // Only flag as offline if it fails twice in a row
+        failureCount.current += 1;
+        if (failureCount.current >= 2) {
+          setIsOnline(false);
+          setIsDismissed(false);
+          setShowBackOnline(false);
+        }
       }
     };
 
-    // 2. Listeners for immediate browser events (Good for complete disconnects)
-    const handleBrowserOffline = () => {
-      setIsOnline(false);
-      setShowBackOnline(false);
-    };
-    
-    const handleBrowserOnline = () => {
-      // Even if browser says online, verify with a ping
-      checkConnection();
+    // Listeners for browser events
+    const handleStatusChange = () => {
+      if (navigator.onLine) {
+        // Give the mobile browser 1 second to actually re-establish 
+        // radio connection before pinging
+        setTimeout(checkConnection, 1000);
+      } else {
+        setIsOnline(false);
+      }
     };
 
-    window.addEventListener('online', handleBrowserOnline);
-    window.addEventListener('offline', handleBrowserOffline);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // When user comes back to the app, wait 1.5s before checking
+        // This prevents the "instant fail" while the phone is re-connecting to LTE/WiFi
+        setTimeout(checkConnection, 1500);
+      }
+    };
 
-    // 3. Set up an interval to check every 5 seconds (Polling)
-    // This catches "Connected to WiFi but no Internet" scenarios
-    const intervalId = setInterval(checkConnection, 5000);
+    window.addEventListener('online', handleStatusChange);
+    window.addEventListener('offline', handleStatusChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const intervalId = setInterval(checkConnection, 10000); // Check every 10s instead of 5s to save battery
 
     return () => {
-      window.removeEventListener('online', handleBrowserOnline);
-      window.removeEventListener('offline', handleBrowserOffline);
+      window.removeEventListener('online', handleStatusChange);
+      window.removeEventListener('offline', handleStatusChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(intervalId);
     };
   }, [isOnline]);
 
+  const handleDragEnd = (event, info) => {
+    // If swiped more than 100 pixels to the right, dismiss
+    if (info.offset.x > 100) {
+      setIsDismissed(true);
+    }
+  };
+
   return (
-    <div className="fixed top-4 right-1 z-[99999999999999] flex flex-col gap-2 pointer-events-none w-full max-w-[250px] px-2 ">
+    <div className="fixed top-4 right-1 z-[9999999999] flex flex-col gap-2 pointer-events-none w-full max-w-[280px] px-2">
       <AnimatePresence>
-        {/* OFFLINE STATE - RED */}
-        {!isOnline && (
+        {/* OFFLINE STATE */}
+        {!isOnline && !isDismissed && (
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 300 }}
+            onDragEnd={handleDragEnd}
+            initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 50 }}
-            className="bg-red-500 text-white p-2  rounded-xl shadow-sm flex items-center gap-3 border border-red-600 pointer-events-auto backdrop-blur-sm"
+            exit={{ opacity: 0, x: 100 }}
+            whileTap={{ scale: 0.98 }}
+            className="bg-red-500 text-white p-3 rounded-2xl shadow-xl flex items-center gap-3 border border-red-600 pointer-events-auto backdrop-blur-md  "
           >
-            <div className="w-7 h-7   flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0">
               <IconWifiOff className="w-5 h-5 text-white" />
             </div>
-            <div className="flex-1 !mr-1">
-              <p className="text-sm-text font-medium">No Internet Connection</p>
-              <p className="text-[10px] opacity-90 ">Reconnecting...</p>
+            <div className="flex-1">
+              <p className="text-sm font-bold leading-none">Connection Lost</p>
+              <p className="text-[10px] opacity-80 mt-1">Reconnecting</p>
             </div>
           </motion.div>
         )}
 
-        {/* ONLINE STATE - GREEN */}
-        {isOnline && showBackOnline && (
+        {/* ONLINE STATE */}
+        {isOnline && showBackOnline && !isDismissed && (
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 300 }}
+            onDragEnd={handleDragEnd}
+            initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 50 }}
-            className="bg-emerald-600 text-white p-2  rounded-xl shadow-sm flex items-center gap-3 border border-emerald-700 pointer-events-auto"
+            exit={{ opacity: 0, x: 100 }}
+            className="bg-emerald-600 text-white p-3 rounded-2xl shadow-xl flex items-center gap-3 border border-emerald-700 pointer-events-auto backdrop-blur-md"
           >
-            <div className="w-7 h-7  flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0">
               <IconWifiOn className="w-5 h-5 text-white" />
             </div>
-            <div className="flex-1 !mr-1">
-              <p className="text-sm-text font-medium ">Back Online</p>
-              <p className="text-[10px] opacity-90 ">Connection restored.</p>
+            <div className="flex-1">
+              <p className="text-sm font-bold leading-none">Back Online</p>
+              <p className="text-[10px] opacity-80 mt-1">Restored successfully</p>
             </div>
           </motion.div>
         )}

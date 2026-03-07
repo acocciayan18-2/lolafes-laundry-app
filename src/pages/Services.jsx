@@ -6,6 +6,7 @@ import ServiceCard from "../components/services/ServiceCard";
 import { ServicesSkeleton } from "../components/skeleton-loader";
 import { useServiceStore } from "../store/services/useServiceStore";
 import { LoginPopup } from "../modal/LoginPopup"; 
+import StoreGuard from '../components/settings/StoreGuard';
 
 // --- Constants & Helper Components ---
 export const Button = ({ children, onClick, className = "", variant = "primary", ...props }) => {
@@ -154,6 +155,8 @@ export default function Services() {
   }
 
   return (
+    <StoreGuard> 
+        <div className="min-h-screen bg-app-light p-2">
     <div className="min-h-screen bg-app-light p-2">
       <LoginPopup 
         message={popup.message} 
@@ -171,7 +174,7 @@ export default function Services() {
           <button 
             onClick={addNewService} 
             disabled={editingId !== null}
-            className="group flex items-center justify-center w-9 h-9 shadow-md bg-white rounded-xl border border-text-dark/20 active:scale-95 hover:bg-app-dark/5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-app-dark"
+            className="group flex items-center justify-center w-9 h-9 shadow-md bg-white rounded-xl border border-text-dark/20 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-app-dark"
             title="Add Service"
             aria-label="Add new service"
           >
@@ -242,5 +245,7 @@ export default function Services() {
         </LayoutGroup>
       </div>
     </div>
+     </div>
+      </StoreGuard>
   );
 }

@@ -109,10 +109,10 @@ export default function RecentActivity() {
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap justify-between items-baseline gap-x-2">
-                    <p className="text-sm-text text-text-dark capitalize font-bold truncate max-w-[70%]">
+                    <p className="text-sm-text text-text-dark capitalize font-medium truncate max-w-[70%]">
                       {config.title}
                     </p>
-                    <p className="text-nano text-text-dark/40 font-bold whitespace-nowrap">
+                    <p className="text-nano text-text-dark/40 font-medium whitespace-nowrap">
                       {/* Live updating timestamp */}
                       {formatTimeAgo(item.timestamp)}
                     </p>

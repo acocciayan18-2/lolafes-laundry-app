@@ -26,6 +26,25 @@ const getSafeDate = (ts) => {
   return isNaN(parsed.getTime()) ? new Date() : parsed;
 };
 
+const formatOverdueTime = (readyDate) => {
+  const diffMs = new Date() - readyDate;
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays > 0) {
+    return `${diffDays}d ${diffHours % 24}h Overdue`;
+  }
+  if (diffHours > 0) {
+    return `${diffHours}h ${diffMins % 60}m Overdue`;
+  }
+  if (diffMins > 0) {
+    return `${diffMins}m Overdue`;
+  }
+  return `${diffSecs}s Overdue`; // Perfect for your 3-second/10-second tests!
+};
+
 // --- SUB-COMPONENT: SLIDING BUTTON ---
 const SwipeToConfirm = ({ onConfirm, isDisabled, isUpdating }) => {
   const x = useMotionValue(0);
@@ -92,18 +111,22 @@ const UnclaimedOrders = () => {
   }, [orders, computeUnclaimed]);
 
   // 2. The Heartbeat Ticker (Fixed Dependency Bug)
-  useEffect(() => {
-    const ticker = setInterval(() => {
-      // Use getState() directly to avoid putting `orders` in the dependency array
-      // This stops the interval from being destroyed/recreated 50x a minute
-      const currentOrders = useOrderStore.getState().orders;
-      if (currentOrders.length > 0) {
-        useUnclaimedStore.getState().computeUnclaimed(currentOrders);
-      }
-    }, 60000); 
+ useEffect(() => {
+  if (orders.length > 0) computeUnclaimed(orders);
+}, [orders, computeUnclaimed]);
 
-    return () => clearInterval(ticker);
-  }, []);
+// 2. THE FIX: High-Frequency Heartbeat for Testing
+useEffect(() => {
+  const ticker = setInterval(() => {
+    const currentOrders = useOrderStore.getState().orders;
+    if (currentOrders.length > 0) {
+      // Re-run the unclaimed filter every 5 seconds
+      useUnclaimedStore.getState().computeUnclaimed(currentOrders);
+    }
+  }, 5000); // Changed from 60000 to 5000 (5 seconds)
+
+  return () => clearInterval(ticker);
+}, []);
 
   // ==========================================
   // ACCESSIBILITY: Keyboard & Scroll Management
@@ -150,7 +173,7 @@ const UnclaimedOrders = () => {
           </div>
           <div>
             <h2 className="text-base-text font-bold text-text-dark">Overdue Orders</h2>
-            <p className="text-nano font-medium text-red-600">Unclaimed for 2+ Days</p>
+            <p className="text-nano font-medium text-red-600  tracking-tight">Requires Immediate Action</p>
           </div>
         </div>
         <span className="bg-red-500 text-white text-nano font-bold px-2 py-0.5 rounded-full shadow-sm">
@@ -163,8 +186,9 @@ const UnclaimedOrders = () => {
         <div className="space-y-1">
           <AnimatePresence mode="popLayout">
             {unclaimedOrders.map((order) => {
-              const readyDate = getSafeDate(order.updated_at || order.created_date);
-              const daysAgo = Math.floor((new Date() - readyDate) / (1000 * 60 * 60 * 24));
+              // ⏱️ Get the precise overdue duration
+              const readyDate = getSafeDate(order.completed_at || order.updated_at);
+              const overdueLabel = formatOverdueTime(readyDate);
 
               return (
                 <motion.button
@@ -183,8 +207,9 @@ const UnclaimedOrders = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <h3 className="text-sm-text font-bold text-slate-900 truncate uppercase">{order.customer_name}</h3>
-                        <span className="text-nano font-bold text-red-500 uppercase">
-                          {daysAgo >= 1 ? `${daysAgo} Days Stuck` : 'Just Overdue'}
+                        {/* ⏱️ UPDATED LABEL */}
+                        <span className="text-[10px] font-medium text-red-500  tracking-tighter">
+                          {overdueLabel}
                         </span>
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">

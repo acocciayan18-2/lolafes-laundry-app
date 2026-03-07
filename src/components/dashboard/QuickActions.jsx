@@ -6,7 +6,7 @@ export default function QuickActions() {
   // Extracting common classes makes the component lighter, easier to maintain, 
   // and prevents you from having to update styling in multiple places.
   // Note: I removed 'border-1' as 'border' natively handles the 1px width in Tailwind.
-  const actionButtonClasses = "group flex items-center justify-center w-9 h-9 shadow-md bg-white hover:bg-app-dark/5 active:bg-app-dark/5 rounded-xl border border-text-dark/20 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-app-dark/20";
+  const actionButtonClasses = "group flex items-center justify-center w-9 h-9 shadow-md bg-white  active:bg-app-dark/5 rounded-xl border border-text-dark/20 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-app-dark/20";
 
   return (
     <div 

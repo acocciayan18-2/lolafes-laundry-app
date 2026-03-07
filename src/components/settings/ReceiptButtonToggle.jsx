@@ -1,36 +1,70 @@
-
-import { useSettingsStore } from '../../store/settings/useSettingsStore';
-import { motion } from 'framer-motion'; // Assuming you use framer-motion for your UI
+import { motion } from "framer-motion";
+import { useSettingsStore } from "../../store/settings/useSettingsStore";
+import { useNotificationStore } from "../../store/ui/useNotificationStore"; // ✨ Added
 
 export default function ReceiptButtonToggle() {
   const { receiptConfig, updateReceiptConfig } = useSettingsStore();
+  const showNotification = useNotificationStore((state) => state.showNotification); // ✨ Hook
+  
+  const isEnabled = receiptConfig?.showPrintReceipt ?? true;
 
   const handleToggle = async () => {
-    // We only send the field we want to change; { merge: true } handles the rest
-    await updateReceiptConfig({ 
-      showPrintReceipt: !receiptConfig.showPrintReceipt 
+    // 1. Perform the sync to Firebase
+    const result = await updateReceiptConfig({ 
+      showPrintReceipt: !isEnabled 
     });
+
+    // 2. ✨ Trigger success notification based on the new state
+    if (result?.success) {
+      const message = !isEnabled 
+        ? "Print button is now visible" 
+        : "Print button hidden from cards";
+      
+      showNotification(message, "success");
+    }
   };
 
   return (
-    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-      <div>
-        <h4 className="text-sm font-bold text-slate-800">Order Card Print Button</h4>
-        <p className="text-[11px] text-slate-500">Enable or disable the 'Print Receipt' option on orders.</p>
+    <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2 mb-4 text-app-dark">
+          <h2 className="font-bold text-h3">Order Card Print Button</h2>
+        </div>
+
+        {/* THE MASTER TOGGLE SWITCH */}
+        <button 
+          type="button" 
+          onClick={(e) => {
+            e.preventDefault();
+            handleToggle(); 
+          }}
+          className={`relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none cursor-pointer z-10 ${
+            isEnabled ? 'bg-emerald-500' : 'bg-slate-200'
+          }`}
+        >
+          <motion.div 
+            animate={{ x: isEnabled ? 26 : 2 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm pointer-events-none"
+          />
+        </button>
       </div>
 
-      <button
-        onClick={handleToggle}
-        className={`w-12 h-6 rounded-full transition-colors relative ${
-          receiptConfig.showPrintReceipt ? 'bg-blue-600' : 'bg-slate-300'
-        }`}
-      >
-        <motion.div
-          animate={{ x: receiptConfig.showPrintReceipt ? 24 : 4 }}
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
-        />
-      </button>
+      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100/50">
+        <div className="flex flex-col gap-1">
+          <p className="text-micro text-text-dark/70 leading-relaxed">
+            Toggle the visibility of the 'Print Receipt' button on all order cards.
+          </p>
+        </div>
+        
+        <div className="mt-2 flex items-center gap-2">
+          {/* Status Indicator */}
+          <span className={`w-2 h-2 rounded-full ${isEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+          <span className={`text-micro font-medium ${isEnabled ? 'text-emerald-600' : 'text-slate-400'}`}>
+            {isEnabled ? 'Print Option Active' : 'Print Option Hidden'}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

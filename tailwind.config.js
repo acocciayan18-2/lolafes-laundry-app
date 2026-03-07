@@ -2,7 +2,7 @@
 module.exports = {
   darkMode: 'class',
   content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
+   "./src/**/*.{js,jsx,ts,tsx}",
   ],
   plugins: [],
   theme: {
@@ -21,19 +21,25 @@ module.exports = {
         // Base Theme Colors
         'app-light': '#F9FAFB',
         'app-light-secondary': '#F3f4f6',
-        'app-dark': '#1E1e1e',
+        'app-dark': '#252525',
         'text-dark': '#1F2937',
         'text-light': '#E5E7EB',
         
         // Primary Action
         'btn-primary': '#0284c7',
 
-        // Fixed 5-Status Vibrant Colors
+        
         'status-pending': '#ffb414ff',   // Electric Yellow
         'status-process': '#2563eb',    // Power Blue
         'status-ready': '#059669',      // Rich Emerald
         'status-complete': '#7c3aed',   // Royal Violet
         'status-picked': '#4b5563',     // Steel Gray
+
+        //  'status-pending': '#1F2937',   // Electric Yellow
+        // 'status-process': '#1F2937',    // Power Blue
+        // 'status-ready': '#1F2937',      // Rich Emerald
+        // 'status-complete': '#1F2937',   // Royal Violet
+        // 'status-picked': '#1F2937',     // Steel Gray
       },
       boxShadow: {
         'hollow': 'inset 3px 3px 6px 0px rgba(0, 0, 0, 0.1), inset -3px -3px 6px 0px rgba(255, 255, 255, 1)',

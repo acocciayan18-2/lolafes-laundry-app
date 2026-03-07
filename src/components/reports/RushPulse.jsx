@@ -141,9 +141,9 @@ export default function RushPulse() {
               className="absolute top-0 pointer-events-none transition-all duration-75 ease-out z-10"
               style={{ left: `${hoverData.x}%`, transform: 'translateX(-50%)' }}
             >
-              <div className="bg-app-dark shadow-xl rounded-md px-2 py-1.5 flex flex-col items-center">
-                <span className="text-nano font-bold text-white leading-none whitespace-nowrap">{hoverData.value} orders</span>
-                <span className="text-[8px] text-white/50 lowercase mt-1 font-bold">{hoverData.label}</span>
+              <div className="shadow-md rounded-md border bg-white px-2 py-1.5 flex flex-col items-center">
+                <span className="text-[10px] font-bold text-text-dark leading-none whitespace-nowrap">{hoverData.value} orders</span>
+                <span className="text-[9px] text-text-dark/50 lowercase mt-1 font-bold">{hoverData.label}</span>
               </div>
             </div>
           )}

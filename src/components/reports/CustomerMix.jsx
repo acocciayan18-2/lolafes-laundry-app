@@ -50,7 +50,7 @@ export default function CustomerMix({ range }) {
                 </button>
 
                 {showInfo && (
-                  <div className="absolute right-[-50px] top-full mt-2 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200">
+                  <div className="absolute left-[-50px] top-full mt-2 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200">
                     <p className="text-[13px] text-text-dark/90 leading-relaxed ">
                       This metric tracks the loyalty of your shop. It represents the percentage of unique customers who have returned for more than one service.
                     </p>

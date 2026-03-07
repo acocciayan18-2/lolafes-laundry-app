@@ -12,24 +12,23 @@ import { LoginPopup } from "./modal/LoginPopup";
 import { useNotificationStore } from "./store/ui/useNotificationStore";
 
 function App() {
-  // 1. EXTRACT NOTIFICATION STATE (Using your exact store keys)
   const message = useNotificationStore((state) => state.message);
   const type = useNotificationStore((state) => state.type);
   const hideNotification = useNotificationStore((state) => state.hideNotification);
 
-  const subscribe = useSettingsStore(state => state.subscribeToSettings);
-  const fetchSettings = useSettingsStore(state => state.fetchSettings);
+  const subscribeToSettings = useSettingsStore(state => state.subscribeToSettings);
 
   useEffect(() => {
-    fetchSettings(); 
-    const unsubscribe = subscribe(); 
+    // Calling this once starts the "Live Link" to Firebase immediately
+    const unsubscribe = subscribeToSettings(); 
     
     return () => {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
       }
     };
-  }, [fetchSettings, subscribe]);
+  }, [subscribeToSettings]);
+
 
   return (
     <Router 
@@ -65,5 +64,6 @@ function App() {
     </Router>
   );
 }
+
 
 export default App;

@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { db } from '../../services/firebase';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 export const useSettingsStore = create((set, get) => ({
+  // 1. BRANDING & VISUALS
   receiptConfig: {
     storeName: "LOLA FE'S LAUNDRY",
     address: "",
@@ -12,59 +13,118 @@ export const useSettingsStore = create((set, get) => ({
     footerMessage: "Clean clothes, Happy life!",
     showOrderDate: true,
     showPrintDate: true,
-    // 🛡️ NEW: Global toggle for the Print Receipt button visibility
-    showPrintReceipt: true, 
+    showPrintReceipt: true,
   },
-  isLoading: true,
 
-  fetchSettings: async () => {
-    set({ isLoading: true });
-    try {
-      const docRef = doc(db, "settings", "receipt");
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        set({ 
-          receiptConfig: { ...get().receiptConfig, ...docSnap.data() }, 
-          isLoading: false 
-        });
-      } else {
-        // Initialize Firebase with defaults if document doesn't exist
-        await setDoc(docRef, get().receiptConfig);
-        set({ isLoading: false });
-      }
-    } catch (error) {
-      console.error("Error fetching settings:", error);
-      set({ isLoading: false });
+  // 2. SYSTEM LOGIC & SECURITY
+  systemConfig: {
+    autoPrint: false, 
+    autoLogout: false,
+    ownerPIN: null, // ✨ null indicates setup is required
+    operatingHours: {
+      allowedDays: [],
+      openTime: "08:00",
+      closeTime: "22:00",
+      isEnabled: false
     }
   },
 
-  // Optimized to handle single field updates (like a toggle) or full forms
+  isLoading: true,
+
+  // --- 🛡️ SECURITY LOGIC (INTERNAL HELPERS) ---
+  
+  /**
+   * Scenario: Verify PIN instantly without database lag
+   */
+  verifyPIN: (input) => {
+    const stored = get().systemConfig.ownerPIN;
+    // What-If: No PIN set? Allow access for setup.
+    if (!stored) return true; 
+    return input === stored;
+  },
+
+  /**
+   * Scenario: Setting or Updating the PIN
+   */
+  setOwnerPIN: async (newPin) => {
+    // ✨ FIXED: Changed regex to \d{6} to enforce exactly 6 digits!
+    if (!/^\d{6}$/.test(newPin)) {
+      return { success: false, error: "PIN must be 6 digits" };
+    }
+    return await get().updateSystemConfig({ ownerPIN: newPin });
+  },
+
+  // --- 🔄 DATA SYNCING ---
+
+  subscribeToSettings: () => {
+    set({ isLoading: true });
+    
+    const receiptRef = doc(db, "settings", "receipt");
+    const systemRef = doc(db, "settings", "system");
+
+    const unsubReceipt = onSnapshot(receiptRef, (snap) => {
+      if (snap.exists()) {
+        set((state) => ({ 
+          receiptConfig: { ...state.receiptConfig, ...snap.data() } 
+        }));
+      }
+    });
+
+    const unsubSystem = onSnapshot(systemRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        set((state) => ({ 
+          systemConfig: { 
+            ...state.systemConfig, 
+            ...data,
+            operatingHours: { ...state.systemConfig.operatingHours, ...data.operatingHours }
+          }, 
+          isLoading: false 
+        }));
+      } else {
+        set({ isLoading: false });
+      }
+    });
+
+    return () => {
+      unsubReceipt();
+      unsubSystem();
+    };
+  },
+
   updateReceiptConfig: async (newConfig) => {
     try {
       const docRef = doc(db, "settings", "receipt");
-      // Merge: true is critical here to prevent overwriting the whole object
       await setDoc(docRef, newConfig, { merge: true });
-      
-      // Update local state immediately for snappy UI
-      set((state) => ({
-        receiptConfig: { ...state.receiptConfig, ...newConfig }
-      }));
-      
-      return { success: true };
+      return { success: true }; 
     } catch (error) {
-      console.error("Update error:", error);
+      console.error("Receipt Update Error:", error);
       return { success: false, error };
     }
   },
 
-  // Real-time Listener: Ensures all admin/staff screens stay in sync
-  subscribeToSettings: () => {
-    const docRef = doc(db, "settings", "receipt");
-    return onSnapshot(docRef, (snapshot) => {
-      if (snapshot.exists()) {
-        set({ receiptConfig: snapshot.data(), isLoading: false });
-      }
-    });
+  updateSystemConfig: async (updates) => {
+    try {
+      const docRef = doc(db, "settings", "system");
+      await setDoc(docRef, updates, { merge: true });
+      return { success: true };
+    } catch (error) {
+      console.error("System Update Error:", error);
+      return { success: false, error };
+    }
+  },
+
+  toggleAutoPrint: () => {
+    const current = get().systemConfig.autoPrint;
+    return get().updateSystemConfig({ autoPrint: !current });
+  },
+
+  toggleAutoLogout: () => {
+    const current = get().systemConfig.autoLogout;
+    return get().updateSystemConfig({ autoLogout: !current });
+  },
+
+  setOperatingHours: async (config) => {
+    return await get().updateSystemConfig({ operatingHours: config });
   }
 }));

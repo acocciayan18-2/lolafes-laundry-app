@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState, useRef, useMemo } from 'react'; 
 import { useOrderStore } from '../store/orders/useOrderStore';
 import { useUnclaimedStore } from '../store/orders/useUnclaimedStore'; 
+import StoreGuard from '../components/settings/StoreGuard';
 
 // Component Imports
 import CompactIntelligence from '../components/dashboard/CompactIntelligence';
@@ -145,6 +146,8 @@ export default function Dashboard() {
   if (isLoading && !shouldShowSkeleton) return null;
 
   return (
+     <StoreGuard> 
+            <div className="min-h-screen bg-app-light p-2">
     <div className="min-h-screen bg-app-light text-slate-900 p-2 transition-colors duration-500">
       <div className="max-w-6xl mx-auto px-1 md:px-2">
         <AnimatePresence mode="wait">
@@ -218,5 +221,7 @@ export default function Dashboard() {
         </AnimatePresence>
       </div>
     </div>
+    </div>
+          </StoreGuard>
   );
 }

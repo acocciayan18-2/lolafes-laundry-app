@@ -125,7 +125,7 @@ export default function OrderFilters({
                   role="option"
                   aria-selected={statusFilter === option.value}
                   onClick={() => { setStatusFilter(option.value); setOpenDropdown(null); }} 
-                  className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors tracking-tight hover:bg-gray-50 ${statusFilter === option.value ? "font-bold bg-slate-50 text-blue-600" : "text-text-dark font-normal"}`}
+                  className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors tracking-tight hover:bg-gray-50 ${statusFilter === option.value ? "font-bold bg-slate-50 text-black-600" : "text-text-dark font-normal"}`}
                 >
                   {option.label}
                   {statusFilter === option.value && <IconCheckStroke className="h-3.5 w-3.5" />}
@@ -159,7 +159,7 @@ export default function OrderFilters({
                   role="option"
                   aria-selected={(dateFilter || "all") === option.value}
                   onClick={() => { setDateFilter(option.value); setOpenDropdown(null); }} 
-                  className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors tracking-tight hover:bg-gray-50 ${(dateFilter || "all") === option.value ? "font-bold bg-slate-50 text-blue-600" : "text-text-dark font-normal"}`}
+                  className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors tracking-tight hover:bg-gray-50 ${(dateFilter || "all") === option.value ? "font-bold bg-slate-50 text-black-600" : "text-text-dark font-normal"}`}
                 >
                   {option.label}
                   {(dateFilter || "all") === option.value && <IconCheckStroke className="h-3.5 w-3.5" />}

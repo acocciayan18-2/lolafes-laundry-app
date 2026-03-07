@@ -30,7 +30,7 @@ const Switch = ({ checked, onCheckedChange }) => (
     type="button" 
     onClick={() => onCheckedChange(!checked)}
     className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none 
-      ${checked ? 'bg-green-700' : 'bg-slate-200'}`}
+      ${checked ? 'bg-emerald-500' : 'bg-slate-200'}`}
   >
     <span 
       className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 

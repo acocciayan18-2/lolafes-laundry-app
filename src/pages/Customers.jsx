@@ -6,6 +6,7 @@ import { IconSearch, IconUsers, IconClose } from "../components/icons";
 import { useCustomerStore } from "../store/customer/useCustomerStore";
 import { CustomerListSkeleton } from "../components/skeleton-loader";
 import EditCustomerModal from "../components/customers/EditCustomerModal"; 
+import StoreGuard from '../components/settings/StoreGuard';
 
 // 1. PERFORMANCE: Extract static config
 const SMOOTH_TRANSITION = {
@@ -113,6 +114,8 @@ export default function Customers() {
   }
 
   return (
+     <StoreGuard>
+        <div className="min-h-screen bg-app-light p-2">
     <div className="min-h-screen bg-app-light p-2">
       <div className="max-w-6xl mx-auto px-1 md:px-2">
         
@@ -209,5 +212,7 @@ export default function Customers() {
         </AnimatePresence>
       </div>
     </div>
+     </div>
+      </StoreGuard>
   );
 }

@@ -139,7 +139,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
 
   return (
     <div 
-      className="fixed inset-0 flex items-center justify-center bg-app-dark/20 backdrop-blur-sm z-[100] p-4"
+      className="fixed inset-0 flex items-center justify-center bg-app-dark/40 backdrop-blur-sm z-[100] p-4"
       onClick={!isSubmitting ? onClose : undefined} // Backdrop click to close
       role="dialog"
       aria-modal="true"

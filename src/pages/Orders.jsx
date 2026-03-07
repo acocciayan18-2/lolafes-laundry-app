@@ -8,6 +8,7 @@ import { OrderListSkeleton } from "../components/skeleton-loader";
 import { useActivityStore } from "../store/activities/useActivityStore";
 import { useOrderFilterStore } from "../store/orders/useOrderFilterStore";
 import { useOrderStore } from "../store/orders/useOrderStore";
+import StoreGuard from "../components/settings/StoreGuard";
 
 const SPRING_TRANSITION = {
   type: "spring",
@@ -28,14 +29,25 @@ export default function Orders() {
   } = useOrderFilterStore();
 
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
+  
+  // ⏱️ THE HEARTBEAT: Forces time-based UI (Stuck/Unclaimed) to update in real-time
+  const [tick, setTick] = useState(0);
 
-  // 1. Firebase Subscription
+  // 1. Firebase Subscription (Handles Backend Data Real-Time)
   useEffect(() => {
     const unsubscribe = subscribeToOrders();
     return () => unsubscribe(); 
   }, [subscribeToOrders]);
 
-  // 2. Skeleton Delay Logic
+  // 2. The Heartbeat Timer (Handles Time Passing Real-Time)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick(t => t + 1);
+    }, 5000); // UI recalculates time every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  // 3. Skeleton Delay Logic
   useEffect(() => {
     let timer;
     if (isLoading) {
@@ -48,7 +60,7 @@ export default function Orders() {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  // 3. Global Search Handler (Secured against input bugs)
+  // 4. Global Search Handler
   useEffect(() => {
     const handleGlobalSearchFocus = (e) => {
       const activeElement = document.activeElement;
@@ -59,9 +71,7 @@ export default function Orders() {
 
       if (isAlreadyTyping) return;
 
-      // Only trigger on standard letter/number keys, ignoring shortcuts
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        // Fallback to multiple generic selectors in case the placeholder changes later
         const searchInput = document.querySelector('input[placeholder*="Search name"]') || document.querySelector('input[type="text"]');
         if (searchInput) {
           searchInput.focus();
@@ -88,8 +98,7 @@ export default function Orders() {
   }, [orders, updateOrderStatus, logActivity]);
 
   // ==========================================
-  // 4. PERFORMANCE: useMemo for Derived State
-  // This completely eliminates the double-render cycle and runs instantly.
+  // PERFORMANCE: useMemo for Derived State
   // ==========================================
   const filteredOrders = useMemo(() => {
     if (!orders || orders.length === 0) return [];
@@ -101,17 +110,15 @@ export default function Orders() {
       filtered = filtered.filter(order => order.status === statusFilter);
     }
 
-    // B. Date Filter (OPTIMIZED: Math outside the loop)
+    // B. Date Filter
     if (dateFilter !== "all") {
       const now = new Date();
-      // Using timestamps (integers) is exponentially faster to compare than Date objects
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-      const yesterdayStart = todayStart - 86400000; // 24 hours in milliseconds
+      const yesterdayStart = todayStart - 86400000;
       const last7Start = todayStart - (7 * 86400000);
       const last30Start = todayStart - (30 * 86400000);
 
       filtered = filtered.filter(order => {
-        // Sanitize the date to prevent crashes if a record is missing the timestamp
         if (!order.created_date) return false;
         
         const orderTime = new Date(order.created_date).getTime();
@@ -136,7 +143,7 @@ export default function Orders() {
       );
     }
 
-    // D. Split and Limit Logic (O(N) single pass instead of two .filter passes)
+    // D. Split and Limit Logic
     const active = [];
     const pickedUp = [];
     
@@ -153,11 +160,12 @@ export default function Orders() {
     
   }, [orders, searchTerm, statusFilter, dateFilter]);
 
-
   if (isLoading && shouldShowSkeleton) return <OrderListSkeleton />;
   if (isLoading && !shouldShowSkeleton) return null;
 
   return (
+    <StoreGuard> 
+    <div className="min-h-screen bg-app-light p-2">
     <div className="min-h-screen bg-app-light p-2">
       <motion.div layoutRoot className="max-w-6xl mx-auto px-1 md:px-2">
         <LayoutGroup>
@@ -177,7 +185,7 @@ export default function Orders() {
             </div>
             
             <Link to="/main/neworder">
-              <button className="group flex items-center justify-center w-9 h-9 shadow-md bg-white hover:bg-app-dark/5 active:bg-app-dark/5 rounded-xl border border-text-dark/20 active:scale-95 transition-all duration-200">
+              <button className="group flex items-center justify-center w-9 h-9 shadow-md bg-white  active:bg-app-dark/5 rounded-xl border border-text-dark/20 active:scale-95 transition-all duration-200">
                 <IconAddNewOrder className="w-5 h-5" />
               </button>
             </Link>
@@ -208,7 +216,11 @@ export default function Orders() {
                      exit={{ opacity: 0, scale: 0.98 }}
                      transition={{ ...SPRING_TRANSITION, delay: index * 0.02 }}
                    >
-                     <OrderCard order={order} onStatusUpdate={handleStatusUpdate} />
+                     {/* ⏱️ PASSING THE TICK HERE TO FORCE REAL-TIME TIME UPDATES */}
+                     <OrderCard 
+                       order={order} 
+                       tick={tick} 
+                     />
                    </motion.div>
                  ))
                ) : (
@@ -232,5 +244,7 @@ export default function Orders() {
         </LayoutGroup>
       </motion.div>
     </div>
+    </div>
+  </StoreGuard>
   );
 }

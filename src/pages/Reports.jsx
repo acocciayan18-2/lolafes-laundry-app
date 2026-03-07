@@ -1,6 +1,7 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, memo, useMemo } from "react";
 import { useReportStore } from "../store/reports/useReportStore";
+import { useOrderStore } from "../store/orders/useOrderStore";
 import ExportOrdersButton from "../components/reports/ExportOrdersButton";
 
 // Component Imports
@@ -11,10 +12,10 @@ import SalesPerformance from "../components/reports/SalesPerformance";
 import TopCustomers from "../components/reports/TopCustomers";
 import PopularServicesCard from "../components/reports/PopularServicesCard";
 import { ReportsSkeleton } from "../components/skeleton-loader";
+import { CancelledOrdersList } from "../components/reports/CancelledOrdersList";
+import RewardRecipients from '../components/reports/RewardRecipients';
 
 // --- PERFORMANCE: ISOLATED CLOCK ---
-// This ensures that the 1-second interval only re-renders this tiny component
-// instead of the entire reports dashboard and its heavy charts.
 const ReportHeaderClock = memo(() => {
   const [time, setTime] = useState(new Date());
 
@@ -46,7 +47,7 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.1 },
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
   },
 };
 
@@ -61,98 +62,117 @@ const itemVariants = {
 
 export default function Reports() {
   const { subscribeToReports, isLoading, orders } = useReportStore();
-  const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
+  const { cancelledOrders, subscribeToCancelledOrders } = useOrderStore();
+  
+  const [shouldShowSkeleton, setShouldShowSkeleton] = useState(true);
 
-  // SECURE CHECK: Ensure orders is always an array to prevent .length crashes
-  const hasOrders = useMemo(() => Array.isArray(orders) && orders.length > 0, [orders]);
-
-  // 1. DATA SUBSCRIPTION
   useEffect(() => {
     const unsubscribe = subscribeToReports();
-    return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
-    };
+    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
   }, [subscribeToReports]);
 
-  // 2. LOADING STATE MANAGEMENT (Prevents skeleton flickering)
+  useEffect(() => {
+    const unsubscribe = subscribeToCancelledOrders();
+    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
+  }, [subscribeToCancelledOrders]);
+
+  const totalLost = useMemo(() => {
+    return cancelledOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+  }, [cancelledOrders]);
+
+  const hasOrders = useMemo(() => Array.isArray(orders) && orders.length > 0, [orders]);
+
+  const hasRewards = useMemo(() => {
+    return orders?.some(order => 
+      Number(order.loyalty_points_to_deduct || 0) > 0 || 
+      order.services?.some(s => s.is_reward === true)
+    );
+  }, [orders]);
+
   useEffect(() => {
     let timer;
-    if (isLoading && !hasOrders) {
-      timer = setTimeout(() => setShouldShowSkeleton(true), 400);
+    if (isLoading) {
+      setShouldShowSkeleton(true);
     } else {
-      setShouldShowSkeleton(false);
+      timer = setTimeout(() => setShouldShowSkeleton(false), 300);
     }
     return () => clearTimeout(timer);
-  }, [isLoading, hasOrders]);
-
-  // --- ERROR HANDLING & EMPTY STATES ---
-  if (isLoading && shouldShowSkeleton && !hasOrders) {
-    return <ReportsSkeleton />;
-  }
+  }, [isLoading, orders]);
 
   return (
-    <motion.div 
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-      className="min-h-screen bg-app-light text-slate-900 p-2 overflow-x-hidden"
-    >
-      <div className="max-w-6xl mx-auto px-1 md:px-2 pb-10">
+    <div className="min-h-screen bg-app-light p-2">
+      <div className="max-w-6xl mx-auto px-1 md:px-2 pb-20">
         
-        <motion.header 
-          variants={itemVariants} 
-          className="flex flex-row justify-between items-center px-1"
-        >
+        <header className="flex flex-row justify-between items-center mb-1">
           <div className="flex flex-col">
-            <h1 className="text-h2 font-bold text-text-dark leading-tight">Reports</h1>
+            <h1 className="text-h2 font-bold text-text-dark">Reports</h1>
             <ReportHeaderClock />
           </div>
+          <ExportOrdersButton />
+        </header>
 
-          <div className="shrink-0">
-            <ExportOrdersButton />
-          </div>
-        </motion.header>
+        <AnimatePresence mode="wait">
+          {shouldShowSkeleton ? (
+             <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+               <ReportsSkeleton />
+             </motion.div>
+          ) : !hasOrders ? (
+             <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-20 bg-white rounded-3xl border border-dashed border-slate-200 text-center">
+               <p className="text-slate-400 font-medium italic">No data found.</p>
+             </motion.div>
+          ) : (
+            <motion.div key="content" className="flex flex-col gap-4" variants={containerVariants} initial="hidden" animate="visible">
+              
+              {/* TOP ANCHORS */}
+              <motion.div variants={itemVariants} className="w-full">
+                <KpiCards range="7" />
+              </motion.div>
+              
+              <motion.div variants={itemVariants} className="w-full">
+                <SalesPerformance range="7" />
+              </motion.div>
+              
+              <motion.div variants={itemVariants} className="w-full">
+                <RushPulse range="7" />
+              </motion.div>
 
-        {/* MAIN DASHBOARD GRID */}
-        {!isLoading && !hasOrders ? (
-          <motion.div variants={itemVariants} className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
-            <p className="text-slate-400 font-medium italic text-sm-text">No order data found for reporting.</p>
-          </motion.div>
-        ) : (
-          <motion.div 
-            className="grid grid-cols-1 lg:grid-cols-4 gap-4"
-            variants={containerVariants}
-          >
-            {/* KPI Section */}
-            <motion.div variants={itemVariants} className="lg:col-span-4">
-              <KpiCards range="7" />
+              {/* GALLERY SECTION (Masonry / Columns) */}
+              <div className="columns-1 lg:columns-2 gap-4 w-full mt-2">
+                
+                <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
+                  <CustomerMix range="7" />
+                </motion.div>
+                
+                <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
+                  <TopCustomers range="7" />
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
+                  <PopularServicesCard range="7" />
+                </motion.div>
+
+                {/* CANCELLED ORDERS (Conditional) */}
+                {cancelledOrders.length > 0 && (
+                  <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
+                    <CancelledOrdersList 
+                      cancelledOrders={cancelledOrders} 
+                      totalLost={totalLost} 
+                    />
+                  </motion.div>
+                )}
+
+                {/* REWARD RECIPIENTS (Conditional) */}
+                {hasRewards && (
+                  <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
+                     <RewardRecipients orders={orders} />
+                  </motion.div>
+                )}
+                
+              </div>
             </motion.div>
-
-            {/* Sales Chart Section */}
-            <motion.div variants={itemVariants} className="lg:col-span-4">
-              <SalesPerformance range="7" />
-            </motion.div>
-
-            {/* Rush Analysis Section */}
-            <motion.div variants={itemVariants} className="lg:col-span-4">
-              <RushPulse range="7" />
-            </motion.div>
-
-            {/* Mixed Data Row */}
-            <motion.div variants={itemVariants} className="lg:col-span-2">
-              <CustomerMix range="7" />
-            </motion.div>
-
-            <motion.div variants={itemVariants} className="lg:col-span-2">
-              <TopCustomers range="7" />
-            </motion.div>
-
-            <motion.div variants={itemVariants} className="lg:col-span-2">
-              <PopularServicesCard range="7" />
-            </motion.div>
-          </motion.div>
-        )}
+          )}
+        </AnimatePresence>
       </div>
-    </motion.div>
+    </div>
   );
 }
