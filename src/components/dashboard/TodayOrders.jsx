@@ -47,7 +47,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
   // Track WHICH button was clicked for the loading state
   const [pendingStatus, setPendingStatus] = useState(null);
 
-  const [tick, setTick] = useState(0);
+ const [, setTick] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => setTick(t => t + 1), 5000);
     return () => clearInterval(timer);
@@ -108,6 +108,11 @@ export default function TodayOrders({ orders = [], isLoading }) {
             const unclaimed = isOrderUnclaimed(order);
             const isLocked = isOrderLocked(order);
             
+            // ✨ Handover config resolution
+            const handoverType = order.handover_method || 'pickup';
+            const handoverObj = handoverConfig[handoverType] || handoverConfig.pickup;
+            const HandoverIcon = handoverObj.icon;
+            
             const timeCreated = (() => {
               try {
                 const date = parseTimestamp(order.created_date || order.created_at);
@@ -140,15 +145,25 @@ export default function TodayOrders({ orders = [], isLoading }) {
                       {order.customer_name || "Unknown Customer"}
                     </h3>
                   </div>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span className="text-nano font-bold px-1 py-0.5 rounded border border-app-dark/10 bg-white/50 text-text-dark">#{order.order_number}</span>
+                  <div className="flex items-center flex-wrap gap-1.5 mt-1">
+                    <span className="text-nano font-bold px-1 py-0.5 rounded border border-app-dark/10 bg-white/50 text-text-dark">
+                      #{order.order_number}
+                    </span>
                     <span className={`text-nano font-bold px-1.5 py-0.5 rounded border uppercase ${cfg.theme.bgLight} ${cfg.theme.text} ${cfg.theme.border}`}>
-                      {order.status === 'picked_up' && order.handover_method === 'delivery' ? "Delivered" : cfg.label}
+                      {order.status === 'picked_up' && handoverType === 'delivery' ? "Delivered" : cfg.label}
+                    </span>
+                    
+                    {/* ✨ HANDOVER BADGE */}
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1 uppercase tracking-tighter
+                      ${handoverObj.theme.bg} ${handoverObj.theme.text} ${handoverObj.theme.border}
+                    `}>
+                      <HandoverIcon className="w-2.5 h-2.5" />
+                      {handoverObj.label}
                     </span>
                   </div>
                 </div>
 
-                <div className="text-right">
+                <div className="text-right flex flex-col items-end">
                   <p className="text-nano font-medium lowercase opacity-40">{timeCreated}</p>
                   {unclaimed && <p className="text-[8px] font-medium text-red-600 uppercase tracking-tighter mt-0.5">Unclaimed</p>}
                   {stuck && !unclaimed && <p className="text-[8px] font-medium text-orange-600 uppercase tracking-tighter mt-0.5">Stuck</p>}

@@ -205,7 +205,7 @@ export default function Services() {
           )}
 
           {/* Loyalty Settings Panel */}
-          <div className="relative z-[40] mb-3">
+          <div className="relative z-[10] mb-3">
             <LoyaltySettings />
           </div>
 

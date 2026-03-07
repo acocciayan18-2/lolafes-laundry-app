@@ -8,13 +8,13 @@ export default function ChangeHandoverModal({ isOpen, onClose, onConfirm, curren
   
   const [lockedMethod, setLockedMethod] = useState(currentMethod);
 
-  useEffect(() => {
+ useEffect(() => {
     if (isOpen) {
       setLockedMethod(currentMethod);
       setFee("0");
       setIsSubmitting(false);
     }
-  }, [isOpen]); 
+  }, [isOpen, currentMethod]); 
 
   const isSwitchingToDelivery = lockedMethod === 'pickup';
 

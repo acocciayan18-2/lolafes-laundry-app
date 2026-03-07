@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  IconBan, IconInfo, IconAlertTriangle, IconPhone, 
-  IconMapPin, IconClock, IconReceipt, IconShirt as IconService,
-  IconDoubleCheck, IconHandover, IconDelivery
+  IconBan, IconInfo, IconPhone, 
+  IconMapPin, IconReceipt,
+  IconHandover
 } from "../icons";
 
 // ==========================================
@@ -12,11 +12,7 @@ import {
 const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
   if (!order) return null;
 
-  /**
-   * 🛡️ ROBUST DATE HELPER
-   * Handles Firestore Timestamps, ISO Strings, and Date objects.
-   * Returns: "Thursday, Mar 5, 2026 at 06:17 PM"
-   */
+ 
   const formatFullAuditDate = (ts) => {
     if (!ts) return null;
     let dateObj;

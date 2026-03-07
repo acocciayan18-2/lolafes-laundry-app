@@ -47,7 +47,7 @@ export default function StoreShiftSettings() {
         setSelectedDays(operatingHours.allowedDays.map(d => new Date(d)));
       }
     }
-  }, [systemConfig]);
+ }, [operatingHours]);
 
   const handleSave = async () => {
     if (selectedDays.length === 0 && isEnabled) {

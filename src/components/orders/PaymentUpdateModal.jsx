@@ -25,8 +25,10 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, methods }
 
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape' && !isUpdating) handleClose();
+      // ✨ FIXED: Call onClose() directly since we already check !isUpdating right here
+      if (e.key === 'Escape' && !isUpdating) onClose(); 
     };
+
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleEsc);
@@ -35,7 +37,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, methods }
       document.body.style.overflow = 'unset';
       window.removeEventListener('keydown', handleEsc);
     };
-  }, [isOpen, isUpdating]);
+  }, [isOpen, isUpdating, onClose]); 
 
   const handleClose = () => {
     if (isUpdating) return;

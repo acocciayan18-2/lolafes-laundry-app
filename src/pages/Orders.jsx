@@ -1,11 +1,10 @@
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { IconAddNewOrder, IconShirt } from "../components/icons";
 import OrderCard from "../components/orders/OrderCard";
 import OrderFilters from "../components/orders/OrderFilters";
 import { OrderListSkeleton } from "../components/skeleton-loader";
-import { useActivityStore } from "../store/activities/useActivityStore";
 import { useOrderFilterStore } from "../store/orders/useOrderFilterStore";
 import { useOrderStore } from "../store/orders/useOrderStore";
 import StoreGuard from "../components/settings/StoreGuard";
@@ -19,11 +18,10 @@ const SPRING_TRANSITION = {
 };
 
 export default function Orders() {
-  const { orders, isLoading, subscribeToOrders, updateOrderStatus } = useOrderStore();
-  const logActivity = useActivityStore((state) => state.logActivity);
+ const { orders, isLoading, subscribeToOrders } = useOrderStore();
   
   const { 
-    searchTerm, setSearchTerm, 
+    searchTerm, setSearchTerm,
     statusFilter, setStatusFilter, 
     dateFilter, setDateFilter 
   } = useOrderFilterStore();
@@ -85,17 +83,7 @@ export default function Orders() {
     return () => window.removeEventListener("keydown", handleGlobalSearchFocus);
   }, [setSearchTerm]);
 
-  const handleStatusUpdate = useCallback(async (orderId, newStatus) => {
-    try {
-      const orderToLog = orders?.find(o => o.id === orderId);
-      await updateOrderStatus(orderId, newStatus);
-      if (orderToLog) {
-        logActivity(orderToLog, newStatus);
-      }
-    } catch (error) {
-      console.error("Failed to update status:", error);
-    }
-  }, [orders, updateOrderStatus, logActivity]);
+
 
   // ==========================================
   // PERFORMANCE: useMemo for Derived State

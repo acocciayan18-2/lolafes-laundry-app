@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { 
   IconStatusReady, 
-  IconInfo,
+  
   IconDelivery, 
   IconPackage
 } from "../icons"; 

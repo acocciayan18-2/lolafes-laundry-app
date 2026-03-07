@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { usePaymentSettingsStore } from '../../store/settings/usePaymentSettingsStore';
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
-import { IconTrash, IconPlus, IconStar } from '../icons';
+import { IconTrash,  IconStar } from '../icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PaymentSettings() {

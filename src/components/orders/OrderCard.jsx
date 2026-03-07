@@ -60,7 +60,7 @@ export default function OrderCard({ order, tick }) {
   const { methods, fetchPaymentMethods } = usePaymentSettingsStore(); 
   const { receiptConfig } = useSettingsStore();
   const settings = useOrderStore((state) => state.settings);
- const { 
+  const { 
     cancelOrder, updateOrderStatus, togglePaymentStatus, isOrderUnclaimed,
     isOrderStuck, isOrderLocked, parseTimestamp, updateHandoverMethod, updateOrderNotes
   } = useOrderStore();
@@ -92,25 +92,7 @@ export default function OrderCard({ order, tick }) {
     }
   };
 
-  // 2. LOGGING: Payment Status Toggle
-  const handleTogglePaid = async (e) => {
-    e.stopPropagation();
-    if (isLocked) return;
-    try {
-      const targetStatus = !order.is_paid;
-      await togglePaymentStatus(order.id, targetStatus, order.payment_method || 'Cash');
-      
-      // ✨ LOG ACTIVITY
-      logActivity(order, order.status, { 
-        action: 'payment_update', 
-        label: targetStatus ? "Marked as PAID" : "Marked as UNPAID" 
-      });
-
-      showNotification(targetStatus ? "Marked as PAID" : "Marked as UNPAID", targetStatus ? "success" : "info");
-    } catch (err) {
-      showNotification("Database sync failed.", "error");
-    }
-  };
+  // ✨ FIXED: Removed handleTogglePaid entirely since it's no longer used
 
   // 3. LOGGING: Manual Print
   const handleManualPrint = async (e) => {
@@ -149,7 +131,7 @@ export default function OrderCard({ order, tick }) {
   };
 
   // 5. CORRECT HANDLING: Cancel Order & Loyalty Points
- const handleConfirmCancel = async (reason) => {
+  const handleConfirmCancel = async (reason) => {
     try {
       // Just pass the ID and the reason. The database will perfectly reverse the points!
       await cancelOrder(order.id, reason); 
@@ -174,10 +156,10 @@ export default function OrderCard({ order, tick }) {
     const unsubscribe = fetchPaymentMethods();
     return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
   }, [fetchPaymentMethods]);
-
-  const isStuck = useMemo(() => isOrderStuck(order), [order, isOrderStuck, tick]);
-  const isUnclaimed = useMemo(() => isOrderUnclaimed(order), [order, isOrderUnclaimed, tick]);
-  const isLocked = useMemo(() => isOrderLocked(order), [order, isOrderLocked, tick]);
+  
+  const isStuck = isOrderStuck(order);
+  const isUnclaimed = isOrderUnclaimed(order);
+  const isLocked = isOrderLocked(order);
   
   const createdDate = useMemo(() => parseTimestamp(order.created_at || order.created_date) || new Date(), [order, parseTimestamp]);
   const handoverDate = useMemo(() => 

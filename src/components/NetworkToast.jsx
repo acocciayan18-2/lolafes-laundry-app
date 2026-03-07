@@ -14,7 +14,8 @@ export const NetworkToast = () => {
       if (document.visibilityState === 'hidden') return;
 
       try {
-        const response = await fetch('https://www.google.com/favicon.ico', {
+        // ✨ FIX 1: Removed the unused "response =" assignment
+        await fetch('https://www.google.com/favicon.ico', {
           mode: 'no-cors',
           cache: 'no-store',
           // Set a short timeout to prevent hanging
@@ -75,7 +76,8 @@ export const NetworkToast = () => {
     };
   }, [isOnline]);
 
-  const handleDragEnd = (event, info) => {
+  // ✨ FIX 2: Used '_' to indicate the first argument (event) is intentionally unused
+  const handleDragEnd = (_, info) => {
     // If swiped more than 100 pixels to the right, dismiss
     if (info.offset.x > 100) {
       setIsDismissed(true);
@@ -95,7 +97,7 @@ export const NetworkToast = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 100 }}
             whileTap={{ scale: 0.98 }}
-            className="bg-red-500 text-white p-3 rounded-2xl shadow-xl flex items-center gap-3 border border-red-600 pointer-events-auto backdrop-blur-md  "
+            className="bg-red-500 text-white p-3 rounded-2xl shadow-xl flex items-center gap-3 border border-red-600 pointer-events-auto backdrop-blur-md"
           >
             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0">
               <IconWifiOff className="w-5 h-5 text-white" />

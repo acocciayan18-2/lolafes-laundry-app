@@ -4,7 +4,7 @@ import { usePaymentSettingsStore } from "../../store/settings/usePaymentSettings
 import {useNotificationStore} from "../../store/ui/useNotificationStore";
 import {
   IconCalculator,
-  IconCheckBlack, IconCheckWhite,
+  IconCheckBlack, 
   IconCreditCard, IconDelivery,
   IconHandover,
   IconWallet
@@ -74,7 +74,7 @@ export const OrderSummary = ({
     }
   }, [isPaid, paymentMethod, activeMethods, setPaymentMethod]);
 
-   const isCartValid = selectedServices.length > 0;
+  
 
   const subtotal = useMemo(() => {
     return selectedServices.reduce((sum, s) => sum + (Number(s.subtotal) || 0), 0);
