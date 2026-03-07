@@ -1,0 +1,15 @@
+version: 1.1
+project: "lolafes-laundry-app-qa"
+
+# Paste the link you got from the lt command here
+baseUrl: "https://khaki-trains-sit.loca.lt"
+
+testSettings:
+  parallel: 1
+  os: "win 11" 
+  browser: "chrome:latest"
+
+integrations:
+  github:
+    repository: "acocciayan18-2/lolafes-laundry-app"
+    postComments: true
