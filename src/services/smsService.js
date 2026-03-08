@@ -3,7 +3,7 @@
 export const sendStatusSMS = (phone, name, orderNumber, status) => {
   if (!phone) return;
 
-const message = `Hi ${name}! Great news! Your laundry order #${orderNumber} is now ${status.toUpperCase()}. It's ready for handover at your convenience. Thank you! - Lola Fe's Laundry`;
+const message = `Hi ${name}! Great news! Your laundry order #${orderNumber} is now ${status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}. It's ready for handover at your convenience. Thank you! - Lola Fe's Laundry`;
   // Encode message for URL (handles spaces, symbols, etc.)
   const encodedMessage = encodeURIComponent(message);
   
