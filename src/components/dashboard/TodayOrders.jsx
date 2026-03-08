@@ -104,10 +104,9 @@ export default function TodayOrders({ orders = [], isLoading }) {
           </div>
           <div>
             <h2 className="text-base-text font-bold text-text-dark">Today's Orders</h2>
-            <p className="text-micro font-normal text-slate-400 uppercase tracking-wider">Current Cycle</p>
           </div>
         </div>
-        <span className="bg-app-dark text-white text-nano font-bold px-2 py-0.5 rounded-full">
+        <span className="bg-app-dark/5 text-text-dark text-nano font-medium px-2 py-0.5 rounded-full">
           {orders.length}
         </span>
       </div>
@@ -147,7 +146,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
                   </div>
 
                   <div className="flex items-end justify-between pl-1.5">
-                    <div className="flex items-center gap-2 text-micro font-medium text-text-dark/50">
+                    <div className="flex items-center gap-2 text-micro font-bold text-text-dark/70">
                       <span>#{order.order_number}</span>
                       <span>•</span>
                       <span className="uppercase">{order.handover_method || "pickup"}</span>
