@@ -102,7 +102,6 @@ export default function StoreShiftSettings() {
         </button>
       </div>
 
-      {/* CONFIGURATION GRID - No longer contains the save button */}
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 transition-all duration-500 ${!isEnabled ? 'opacity-40 grayscale pointer-events-none' : 'opacity-100'}`}>
         <div className="space-y-3">
           <label className="text-sm-text font-medium text-text-dark/70 ml-1">Active Operating Dates</label>
@@ -116,7 +115,7 @@ export default function StoreShiftSettings() {
               <div onClick={() => openTimeRef.current?.showPicker()} className="group relative flex items-center justify-between w-full h-16 px-5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-emerald-300 transition-all cursor-pointer">
                 <div className="flex flex-col items-start">
                   <label className="text-micro font-medium text-text-dark/70 group-hover:text-emerald-600">Shift Starts At:</label>
-                  <span className="text-base-text font-bold text-text-dark">{formatTo12Hr(openTime)}</span>
+                  <span className="text-sm-text font-bold text-text-dark">{formatTo12Hr(openTime)}</span>
                 </div>
                 <input ref={openTimeRef} type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} className="absolute inset-0 opacity-0 pointer-events-none" />
                 <IconClock className="w-5 h-5 text-slate-300 group-hover:text-emerald-500" />
@@ -125,7 +124,7 @@ export default function StoreShiftSettings() {
               <div onClick={() => closeTimeRef.current?.showPicker()} className="group relative flex items-center justify-between w-full h-16 px-5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-emerald-300 transition-all cursor-pointer">
                 <div className="flex flex-col items-start">
                   <label className="text-micro font-medium text-text-dark/70 group-hover:text-emerald-600">Shift Ends At:</label>
-                  <span className="text-base-text font-bold text-text-dark">{formatTo12Hr(closeTime)}</span>
+                  <span className="text-sm-text font-bold text-text-dark">{formatTo12Hr(closeTime)}</span>
                 </div>
                 <input ref={closeTimeRef} type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} className="absolute inset-0 opacity-0 pointer-events-none" />
                 <IconClock className="w-5 h-5 text-slate-300 group-hover:text-emerald-500" />

@@ -116,8 +116,8 @@ export default function Customers() {
   return (
      <StoreGuard>
         <div className="min-h-screen bg-app-light p-2">
-    <div className="min-h-screen bg-app-light p-2">
-      <div className="max-w-6xl mx-auto px-1 md:px-2">
+    
+      <div className="max-w-6xl mx-auto px-1 md:px-2 relative">
         
         {/* Header */}
         <div className="flex justify-between items-center mb-3">
@@ -211,7 +211,7 @@ export default function Customers() {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    
      </div>
       </StoreGuard>
   );

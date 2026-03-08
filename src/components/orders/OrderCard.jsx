@@ -8,13 +8,15 @@ import { useSettingsStore } from "../../store/settings/useSettingsStore";
 import { usePaymentSettingsStore } from "../../store/settings/usePaymentSettingsStore"; 
 import PaymentUpdateModal from "./PaymentUpdateModal";
 import ChangeHandoverModal from "./ChangeHandoverModal"; 
+import CompleteOrderModal from "./CompleteOrderModal";
 
 import "../../style/OrderCard.css";
 import {
   IconArrowRight, IconDelivery, IconDoubleCheck,
   IconHandover, IconInfo, IconMapPin, IconPhone,
   IconShirt, IconStatusCompleted, IconStatusPending, IconStatusPickedUp,
-  IconStatusProcessing, IconStatusReady, IconLoading, IconReceipt
+  IconStatusProcessing, IconStatusReady, IconLoading, IconReceipt,
+  IconEditPen
 } from "../icons";
 import CancelOrderModal from "./CancelOrderModal";
 
@@ -57,8 +59,10 @@ export default function OrderCard({ order, tick }) {
   const paymentRef = useRef(null);
   const cardRef = useRef(null);
 
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+
   const { methods, fetchPaymentMethods } = usePaymentSettingsStore(); 
-  const { receiptConfig } = useSettingsStore();
+  const { receiptConfig, systemConfig } = useSettingsStore();
   const settings = useOrderStore((state) => state.settings);
   const { 
     cancelOrder, updateOrderStatus, togglePaymentStatus, isOrderUnclaimed,
@@ -225,7 +229,7 @@ export default function OrderCard({ order, tick }) {
   const depthStyles = isOpen ? "z-50 shadow-md" : isExpanded ? "z-40 shadow-lg" : "bg-app-light";
 
   const handleStatusChange = async (e, newStatus) => {
-    e.stopPropagation();
+   e.stopPropagation();
     const friendlyStatus = statusLabels[newStatus] || newStatus;
     const isHandover = newStatus === "picked_up" || newStatus === "delivered";
     
@@ -240,12 +244,38 @@ export default function OrderCard({ order, tick }) {
       return;
     }
 
+    // ✨ NEW LOGIC: Intercept "completed" status
+    if (newStatus === "completed") {
+      const needsConfirmation = systemConfig?.confirmCompletion ?? true;
+
+      if (needsConfirmation) {
+        setIsOpen(false);
+        setShowCompleteModal(true);
+        return;
+      } else {
+        // Instant update if setting is disabled
+        executeStatusUpdate("completed", "Completed", false); 
+        return;
+      }
+    }
+
+    // Proceed normally for all other statuses
+    executeStatusUpdate(newStatus, friendlyStatus);
+  };
+
+  const executeStatusUpdate = async (newStatus, friendlyStatus, sendSms = false) => {
     setIsOpen(false);
     try {
       await updateOrderStatus(order, newStatus);
-      // Already had logging, kept intact
       logActivity(order, newStatus, { action: 'status_update', label: `Moved to ${friendlyStatus}` });
       showNotification(`Status updated to ${friendlyStatus}`, "success");
+      
+      // Handle SMS if requested (Using the same logic we discussed for UnclaimedOrders)
+      if (sendSms && order.customer_phone) {
+        import('../../services/smsService').then(service => {
+          service.sendStatusSMS(order.customer_phone, order.customer_name, order.order_number, "ready for pickup/delivery");
+        });
+      }
     } catch (err) {
       showNotification("Could not update status.", "error");
     }
@@ -416,7 +446,7 @@ export default function OrderCard({ order, tick }) {
                               if (order.status === option.value) return;
                               handleStatusChange(e, option.value);
                             }} 
-                            className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors ${
+                            className={`w-full px-3 py-2 text-left text-sm-text flex items-center justify-between transition-colors ${
                               order.status === option.value 
                                 ? "font-bold bg-slate-50 pointer-events-none" 
                                 : "font-normal hover:bg-slate-50"
@@ -445,12 +475,8 @@ export default function OrderCard({ order, tick }) {
           </div>
 
           {/* EXPANDED CONTENT SECTION */}
-          <AnimatePresence>
             {isExpanded && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }} 
-                animate={{ height: "auto", opacity: 1 }} 
-                exit={{ height: 0, opacity: 0 }} 
+              <div 
                 className="px-4 mb-4 overflow-hidden"
               >
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-100 pt-4">
@@ -482,7 +508,8 @@ export default function OrderCard({ order, tick }) {
                   <div className="flex flex-col justify-between space-y-4">
                     <div className="space-y-2 relative">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-micro font-bold text-text-dark/50 uppercase">Notes</h4>
+                        
+                        <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5"> <IconEditPen className="w-3.5 h-3.5"/>Notes</h4>
                         
                       </div>
                       
@@ -539,9 +566,9 @@ export default function OrderCard({ order, tick }) {
                     </div>
                   </div>
                   </div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
+          
         </div>
       </div>
       
@@ -560,6 +587,17 @@ export default function OrderCard({ order, tick }) {
         onClose={() => setShowCancelModal(false)} 
         onConfirm={handleConfirmCancel} 
         orderNumber={order.order_number} 
+      />
+
+      <CompleteOrderModal
+        isOpen={showCompleteModal}
+        onClose={() => setShowCompleteModal(false)}
+        orderNumber={order.order_number}
+        customerName={order.customer_name}
+        onConfirm={async (sendSms) => {
+          await executeStatusUpdate("completed", "Completed", sendSms);
+          setShowCompleteModal(false);
+        }}
       />
     </>
   );

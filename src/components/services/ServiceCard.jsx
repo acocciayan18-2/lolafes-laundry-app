@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion"; // ✨ Added Framer Motion for the toggle
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion"; 
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react'; // ✨ Imported Headless UI
 import { Badge, Button, Input } from "../../pages/Services";
 import { useActivityStore } from "../../store/activities/useActivityStore";
 import { useNotificationStore } from "../../store/ui/useNotificationStore"; 
@@ -31,66 +32,62 @@ const serviceTypeLabels = {
   add_on: "Add-ons & Supplies"
 };
 
-const ServiceTypeSelect = ({ value, onChange, optionsMap }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    const handleOutsideClickOrEsc = (e) => {
-      if (e.key === 'Escape') {
-        setIsOpen(false);
-        return;
-      }
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleOutsideClickOrEsc);
-      document.addEventListener("keydown", handleOutsideClickOrEsc);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClickOrEsc);
-      document.removeEventListener("keydown", handleOutsideClickOrEsc);
-    };
-  }, [isOpen]);
-
+// ✨ REPLACED CUSTOM SELECT WITH HEADLESS UI
+const HeadlessServiceSelect = ({ value, onChange, optionsMap }) => {
   const currentLabel = optionsMap[value] || "Select Type";
+  
+  // Convert object map to array for mapping
+  const optionsList = Object.entries(optionsMap).map(([key, label]) => ({ key, label }));
 
   return (
-    <div className="relative w-full" ref={containerRef}>
-      <button 
-        type="button" 
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen(!isOpen)} 
-        className={`flex h-10 w-full items-center justify-between rounded-lg border bg-white px-3 text-base-text font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 ${isOpen ? "border-gray-900 ring-1 ring-gray-900" : "border-slate-200 hover:border-gray-300"}`}
-      >
-        <span className="truncate text-slate-700">{currentLabel}</span>
-        <IconArrowUp className={`w-3.5 h-3.5 text-text-dark/60 transition-transform duration-200 ${isOpen ? 'rotate-0' : 'rotate-180'}`} />
-      </button>
-      
-      {isOpen && (
-        <div 
-          className="absolute custom-scrollbar left-0 mt-1 w-full bg-white border border-gray-100 rounded-lg shadow-xl z-[999] overflow-hidden py-2 p-3 max-h-60 overflow-y-auto"
-          role="listbox"
-        >
-          {Object.entries(optionsMap).map(([key, label]) => (
-            <button 
-              key={key} 
-              type="button" 
-              role="option"
-              aria-selected={value === key}
-              onClick={() => { onChange(key); setIsOpen(false); }} 
-              className="w-full px-3 py-2 mb-1 text-left text-base-text flex items-center justify-between transition-colors hover:bg-gray-50 focus-visible:bg-gray-100 font-medium text-slate-700 rounded-md"
+    <div className="relative w-full z-50">
+      <Listbox value={value} onChange={onChange}>
+        {({ open }) => (
+          <>
+            <ListboxButton 
+              className={`flex h-10 w-full items-center justify-between rounded-lg border bg-white px-3 text-sm-text font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 transition-colors
+                ${open ? "border-gray-900 ring-1 ring-gray-900" : "border-slate-200 hover:border-gray-300"}
+              `}
             >
-              <span className="truncate">{label}</span>
-              {value === key && <IconCheckWhite className="w-3.5 h-3.5 text-blue-600 fill-current" />}
-            </button>
-          ))}
-        </div>
-      )}
+              <span className="truncate text-text-dark">{currentLabel}</span>
+              <IconArrowUp className={`w-3.5 h-3.5 text-text-dark/60 transition-transform duration-200 ${open ? 'rotate-0' : 'rotate-180'}`} />
+            </ListboxButton>
+            
+            <AnimatePresence>
+              {open && (
+                <ListboxOptions
+                  static
+                  as={motion.ul}
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute mt-1 w-full bg-white border border-gray-100 rounded-lg shadow-xl z-[999] overflow-hidden py-2 p-3 max-h-60 overflow-y-auto custom-scrollbar focus:outline-none"
+                >
+                  {optionsList.map((opt) => (
+                    <ListboxOption
+                      key={opt.key}
+                      value={opt.key}
+                      className={({ active }) => 
+                        `w-full px-3 py-2 mb-1 text-left text-sm-text flex items-center justify-between transition-colors cursor-pointer rounded-md font-medium text-text-dark ${
+                          active ? 'bg-gray-50' : ''
+                        }`
+                      }
+                    >
+                      {({ selected }) => (
+                        <>
+                          <span className="truncate">{opt.label}</span>
+                          {selected && <IconCheckWhite className="w-3.5 h-3.5 text-blue-600 fill-current shrink-0" />}
+                        </>
+                      )}
+                    </ListboxOption>
+                  ))}
+                </ListboxOptions>
+              )}
+            </AnimatePresence>
+          </>
+        )}
+      </Listbox>
     </div>
   );
 };
@@ -148,7 +145,6 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
           order_number: LOG_SUBJECT
         };
 
-        // ✨ Added Notification calls for every successful action
         if (actionFn === onSave) {
           showNotification(isNew ? "Service created successfully!" : "Service updated!", "success");
           
@@ -193,7 +189,7 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
               <IconTrash className="w-5 h-5 text-white stroke-white" />
             </div>
             <div>
-              <h3 className="text-base-text font-medium text-text-dark">Delete this service?</h3>
+              <h3 className="text-sm-text font-medium text-text-dark">Delete this service?</h3>
               <p className="text-sm-text text-rose-700 font-medium">This will permanently remove {service.name}.</p>
             </div>
           </div>
@@ -239,7 +235,8 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
               </div>
               <div className="space-y-1 relative z-20">
                 <label className="text-micro font-medium text-text-dark/60 ml-1">Service Type</label>
-                <ServiceTypeSelect 
+                {/* ✨ IMPLEMENTED HEADLESS DROPDOWN */}
+                <HeadlessServiceSelect 
                   value={tempData?.type || "wash_dry"} 
                   optionsMap={serviceTypeLabels} 
                   onChange={(newValue) => setTempData({...tempData, type: newValue})} 
@@ -301,7 +298,7 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
               <IconPackage className="w-5 h-5 text-text-dark stroke-text-dark" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-base-text font-bold text-slate-900 truncate">{service.name}</h3>
+              <h3 className="text-sm-text font-bold text-text-dark truncate">{service.name}</h3>
               <div className="flex flex-wrap gap-2 mt-1">
                 <Badge className="bg-blue-100/50 text-blue-700 border-blue-200 px-3 py-0.5">{serviceTypeLabels[service.type] || service.type}</Badge>
                 <Badge className="bg-white text-gray-600 border-gray-200 px-2 font-bold py-0.5">₱{Number(service.price_per_kg).toFixed(2)}</Badge>
@@ -311,7 +308,6 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
           </div>
         </div>
 
-        {/* ✨ Replaced Enable/Disable Button with Toggle Switch */}
         <div className="flex flex-row items-center justify-end gap-4 shrink-0 ml-auto">
           {service.is_active ? (
             <Button variant="outline" className="text-sm-text font-medium px-3 border-gray-100 hover:bg-app-dark/5 transition-colors active:scale-95" onClick={() => onEdit(service)}>
@@ -327,10 +323,8 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
             </Button>
           )}
 
-          {/* Divider */}
           <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
 
-          {/* iOS Style Toggle Switch */}
           <button
             type="button"
             onClick={() => handleAction(onToggle, service.id, service)}

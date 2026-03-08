@@ -159,7 +159,7 @@ export const ServiceSelector = ({
                       }`}
                     >
                       <div className="flex-1">
-                        <h5 className="font-bold text-gray-900 text-base-text">{service.name}</h5>
+                        <h5 className="font-bold text-gray-900 text-sm-text">{service.name}</h5>
                         <Badge className=" font-bold text-gray-600"> ₱{Number(service.price_per_kg).toFixed(2)}</Badge>
                       </div>
 
@@ -207,7 +207,7 @@ export const ServiceSelector = ({
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
             >
-              <h3 className="text-micro font-bold text-gray-700 mb-3 ml-1 uppercase tracking-wider">Current Selection</h3>
+              <h3 className="text-micro font-bold text-text-dark/70 mb-3 ml-1 uppercase tracking-wider">Current Selection</h3>
               <div className="space-y-3">
                 {selectedServices.map((service, index) => (
                   <motion.div 
@@ -216,24 +216,24 @@ export const ServiceSelector = ({
                     transition={SPRING_TRANSITION}
                     className="flex justify-between items-center bg-gray-50/30 p-3 rounded-xl border-2 border-gray-100 hover:border-gray-200 transition-all"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-row gap-1 items-center justify-center">
-                         <span className="text-nano font-medium text-gray-700 leading-none">x</span>
-                         <span className="text-sm-text font-bold text-gray-700 leading-none">{service.quantity}</span>
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-row items-center justify-center">
+                         <span className="text-micro font-medium text-text-dark/70 leading-none">x</span>
+                         <span className="text-sm-text font-bold text-text-dark/70 leading-none">{service.quantity}</span>
                       </div>
 
                       <div className="flex flex-col">
-                        <span className="text-base-text font-bold text-gray-900 leading-tight">
+                        <span className="text-sm-text font-bold text-gray-900 leading-tight">
                           {service.service_name}
                         </span>
-                        <span className="text-micro font-bold text-text-dark/90 uppercase tracking-tight">
+                        <span className="text-sm-text font-bold text-text-dark/90 uppercase mt-0.5 ">
                             ₱{Number(service.price_per_kg).toFixed(2)}
                         </span>
                       </div>
                     </div>
 
                     <div className=" py-1.5 ">
-                      <span className="font-bold text-text-dark text-base-text">
+                      <span className="font-bold text-text-dark text-sm-text">
                         ₱{Number(service.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                     </div>

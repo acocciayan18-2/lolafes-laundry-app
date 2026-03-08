@@ -119,7 +119,7 @@ export default function StoreGuard({ children }) {
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="flex flex-col items-center justify-center min-h-[100dvh] p-6 text-center bg-app-light"
+          className="flex flex-col items-center justify-center max-h-[100vh] p-6 text-center bg-app-light"
         >
           {/* ICON SECTION */}
           <div className="relative mb-8">
@@ -141,7 +141,7 @@ export default function StoreGuard({ children }) {
               </p>
               
               <div className="flex flex-col items-center gap-2">
-                <span className="text-micro font-bold text-text-dark/50 uppercase tracking-widest">Today's Window</span>
+                <span className="text-micro  text-text-dark/50">Today's Window</span>
                 <div className="px-6 py-2.5 bg-slate-50 rounded-2xl border border-slate-100 text-sm-text font-bold text-text-dark">
                   {formatTo12Hr(openTime)} — {formatTo12Hr(closeTime)}
                 </div>
@@ -149,15 +149,14 @@ export default function StoreGuard({ children }) {
             </div>
           </div>
 
-          {/* ACTION SECTION */}
           <div className="mt-6 flex flex-col items-center gap-4">
             <button 
               onClick={() => window.location.reload()}
-              className="px-8 py-4 bg-app-dark text-white rounded-2xl text-sm font-bold shadow-md hover:bg-app-dark/90 active:scale-95 transition-all"
+              className="px-5 py-3 bg-app-dark text-white rounded-2xl text-sm-text font-normal shadow-md hover:bg-app-dark/90 active:scale-95 transition-all"
             >
               Refresh Connection
             </button>
-            <p className="text-[10px] font-bold text-text-dark/40 uppercase tracking-widest">
+            <p className="text-nano font-normal text-text-dark/40 italic">
               Contact the owner if this is an error
             </p>
           </div>
@@ -197,7 +196,7 @@ export default function StoreGuard({ children }) {
                 <div className={`w-16 h-16 text-text-dark rounded-2xl flex items-center justify-center mx-auto mb-4 border shadow-sm animate-pulse ${isCritical ? 'bg-rose-50 border-rose-200 text-rose-500' : 'bg-amber-50 border-amber-100'}`}>
                   <IconClock className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 uppercase tracking-tight">
+                <h3 className="text-xl font-bold text-text-dark uppercase tracking-tight">
                   {isCritical ? 'Locking Imminently' : 'Store Closing Soon'}
                 </h3>
                 <p className={`text-sm font-medium mt-1 ${isCritical ? 'text-rose-600 font-bold' : 'text-amber-600'}`}>

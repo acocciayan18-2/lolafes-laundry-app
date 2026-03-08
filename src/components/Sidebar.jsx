@@ -68,7 +68,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         ${isMinimized ? "lg:w-20" : "lg:w-64"}
       `}>
         <aside className={`
-          sidebar bg-app-light flex flex-col h-full shadow-2xl lg:shadow-none 
+          sidebar bg-app-light flex flex-col h-full  
           transition-all ease-in-out lg:duration-300 duration-150
           w-64 ${isMinimized ? "lg:w-20" : "lg:w-64"}
         `}>
@@ -130,7 +130,7 @@ const MenuItem = ({ to, icon, text, closeSidebar, isMinimized }) => {
         onClick={handleNavigation}
         className={` 
           group flex items-center w-full text-left nav-page-btn transition-all duration-300 px-3 gap-2
-          ${isActive ? "active !bg-app-dark shadow-md" : "bg-transparent hover:bg-transparent"}
+          ${isActive ? "active !bg-app-dark " : "bg-transparent hover:bg-transparent"}
         `}
       >
         {/* ICON CONTAINER: Removed dynamic margins, keeping it locked to px-3 padding */}
@@ -165,7 +165,7 @@ const Logo = ({ isMinimized, setIsMinimized }) => (
       flex items-center transition-all duration-300 overflow-hidden whitespace-nowrap
       ${isMinimized ? "lg:opacity-0 lg:max-w-0 lg:scale-95 lg:gap-0" : "opacity-100 max-w-[200px] scale-100 gap-2.5"}
     `}>
-      <div className="w-10 h-10 bg-app-dark p-1.5 rounded-xl flex items-center justify-center shadow-lg overflow-hidden shrink-0">
+      <div className="w-10 h-10 bg-app-dark p-1.5 rounded-xl flex items-center justify-center  overflow-hidden shrink-0">
         <img src="/images/lolafeslaundry-logo-transparent.png" alt="Logo" className="w-full h-full object-contain" />
       </div>
       <div className="flex flex-col items-start">
@@ -206,7 +206,7 @@ const FooterCard = ({ isMinimized }) => (
       ${isMinimized ? "lg:border-transparent lg:bg-transparent" : "border border-gray-100"}
     `}>
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-app-dark rounded-full flex items-center justify-center shadow-sm shrink-0">
+        <div className="w-8 h-8 bg-app-dark rounded-full flex items-center justify-center  shrink-0">
           <span className="text-text-light font-bold text-[10px]">LS</span>
         </div>
         <div className={`transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${isMinimized ? "lg:opacity-0 lg:max-w-0" : "opacity-100 max-w-[200px]"}`}>
@@ -222,7 +222,7 @@ const FooterCard = ({ isMinimized }) => (
 
 const LogoutConfirmationModal = ({ onCancel, onConfirm }) => (
   <div className="fixed inset-0 flex items-center justify-center bg-app-dark/40 backdrop-blur-sm z-[100] p-4">
-    <div className="bg-app-light rounded-3xl shadow-2xl p-6 w-full max-w-[340px] md:max-w-sm animate-in fade-in zoom-in duration-300">
+    <div className="bg-app-light rounded-3xl p-6 w-full max-w-[340px] md:max-w-sm animate-in fade-in zoom-in duration-300">
       <div className="flex flex-col items-center text-center">
         <div className="w-16 h-16 bg-app-dark rounded-full flex items-center justify-center mb-4">
            <svg width="24" height="24" fill="none" stroke="#ffffff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

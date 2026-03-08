@@ -56,7 +56,7 @@ export default function ChangeHandoverModal({ isOpen, onClose, onConfirm, curren
               onClick={onClose}
               disabled={isSubmitting}
               className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${
-                isSubmitting ? 'opacity-30 cursor-not-allowed' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                isSubmitting ? 'opacity-30 cursor-not-allowed' : 'text-slate-400 hover:text-text-dark hover:bg-slate-100'
               }`}
             >
               <IconClose className="w-5 h-5" />

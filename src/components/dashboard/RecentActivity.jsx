@@ -1,14 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useActivityStore } from '../../store/activities/useActivityStore';
-import {
-  IconActivity,
-  IconLoyalty,
-  IconNewOrder,
-  IconOrdersList,
-  IconServices
-} from "../icons";
+import { IconActivity } from "../icons"; // ✨ Only kept the header icon
 
-// 1. PERFORMANCE: Moved outside component to prevent re-instantiation
 const formatTimeAgo = (dateInput) => {
   if (!dateInput) return '';
   const date = new Date(dateInput);
@@ -28,48 +21,28 @@ export default function RecentActivity() {
   const cleanupExpiredActivities = useActivityStore((state) => state.cleanupExpiredActivities);
   const fetchActivitiesFromFirebase = useActivityStore((state) => state.fetchActivitiesFromFirebase);
 
-  // 2. UX FIX: The "Tick" state
-  // Forces the component to re-render every 60 seconds so "Just now" becomes "1m ago"
-  // even if the user isn't interacting with the dashboard.
   const [, setTick] = useState(0);
 
   useEffect(() => {
     cleanupExpiredActivities();
-    
-    // Set up the heartbeat timer
     const interval = setInterval(() => {
       setTick((t) => t + 1);
-    }, 60000); // 1 minute
-    
+    }, 60000); 
     return () => clearInterval(interval);
   }, [cleanupExpiredActivities]);
 
-  // 3. PERFORMANCE: Memoized Configuration function
-  const getActivityConfig = useCallback((item) => {
-    const defaultConfig = { 
-      title: item?.customLabel || "Update Logged", 
-      icon: <IconOrdersList className="w-5 h-5 text-text-dark/50" /> 
-    };
-
-    if (!item) return defaultConfig;
-    if (item.actionType === 'created') {
-      return { title: "Order Created", icon: <IconNewOrder className="w-5 h-5 text-text-dark" /> };
-    }
-    if (item.customLabel?.toLowerCase().includes("loyalty") || item.order_number === "CONFIG") {
-      return { title: item.customLabel, icon: <IconLoyalty className="w-5 h-5 text-text-dark" /> };
-    }
-    if (["SERVICE", "NEW", "EDITED"].includes(item.order_number)) {
-      return { title: item.customLabel, icon: <IconServices className="w-5 h-5 text-text-dark" /> };
-    }
-
-    return { title: item.customLabel || "Status Updated", icon: <IconOrdersList className="w-5 h-5 text-text-dark/50" /> };
+  // ✨ Simplified: Now only returns the Title string
+  const getActivityTitle = useCallback((item) => {
+    if (!item) return "Update Logged";
+    if (item.actionType === 'created') return "Order Created";
+    
+    return item.customLabel || "Status Updated";
   }, []);
 
   return (
     <div className="bg-white rounded-2xl border border-app-dark/10 shadow-sm flex flex-col max-h-[450px] min-h-[300px] overflow-hidden">
       
       {/* HEADER */}
-      {/* 4. LAYOUT FIX: Re-arranged divs so the title and button align correctly across the whole header width */}
       <div className="px-5 py-3.5 border-b border-app-dark/5 flex justify-between items-center bg-white">
         <div className="flex items-center gap-3 pl-2">
            <div className="p-1.5 bg-white border border-app-dark/10 rounded-lg text-text-dark shadow-hollow">
@@ -78,11 +51,10 @@ export default function RecentActivity() {
           <h2 className="text-base-text font-bold text-text-dark">Recent Activity</h2>
         </div>
 
-        {/* DYNAMIC BUTTON LOGIC */}
         {activities.length > 0 ? (
           <button 
             onClick={clearHistory}
-            className="text-micro  text-text-dark/30 hover:text-text-dark/70 transition-colors px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded"
+            className="text-micro text-text-dark/30 hover:text-text-dark/70 transition-colors px-2 py-1"
           >
             Clear
           </button>
@@ -90,40 +62,35 @@ export default function RecentActivity() {
           <button 
             onClick={fetchActivitiesFromFirebase}
             disabled={isFetching}
-            className={`text-micro text-text-dark/30 hover:text-text-dark/70 transition-colors px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded ${isFetching ? 'opacity-50 cursor-wait' : ''}`}
+            className={`text-micro text-text-dark/30 hover:text-text-dark/70 transition-colors px-2 py-1 ${isFetching ? 'opacity-50' : ''}`}
           >
             {isFetching ? "Syncing..." : "Fetch from Database"}
           </button>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 !pl-5 mb-6 !pr-5 space-y-2.5 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 px-6 space-y-4 custom-scrollbar">
         {activities.length > 0 ? (
           activities.map((item) => {
-            const config = getActivityConfig(item);
+            const title = getActivityTitle(item);
             return (
-              <div key={item.activity_id || item.timestamp} className="flex items-start gap-3.5 group py-1.5">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-white border border-app-dark/10 shadow-hollow">
-                  {config.icon}
-                </div>
-                
+              <div key={item.activity_id || item.timestamp} className="group border-l-2 border-slate-100 pl-4 hover:border-app-dark/20 transition-colors">
                 <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap justify-between items-baseline gap-x-2">
-                    <p className="text-sm-text text-text-dark capitalize font-medium truncate max-w-[70%]">
-                      {config.title}
+                  <div className="flex justify-between items-baseline gap-x-2">
+                    <p className="text-sm-text text-text-dark capitalize font-medium truncate">
+                      {title}
                     </p>
                     <p className="text-nano text-text-dark/40 font-medium whitespace-nowrap">
-                      {/* Live updating timestamp */}
                       {formatTimeAgo(item.timestamp)}
                     </p>
                   </div>
                   
-                  <div className="flex flex-wrap items-center gap-1 mt-0.5">
-                    <p className="text-micro text-text-dark/60 uppercase truncate">
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-nano text-text-dark/70 uppercase">
                       {item.customer_name || "System"}
                     </p>
-                    <span className="hidden sm:block w-0.5 h-0.5 rounded-full bg-app-dark/10 shrink-0"></span>
-                    <p className="text-nano text-text-dark border border-app-dark/10 px-1 py-0.5 rounded whitespace-nowrap bg-white/50">
+                    <span className="w-1 h-1 rounded-full bg-slate-200 shrink-0" />
+                    <p className="text-nano font-bold text-text-dark/80">
                       #{item.order_number || "LOG"}
                     </p>
                   </div>
@@ -132,10 +99,9 @@ export default function RecentActivity() {
             );
           })
         ) : (
-          <div className="h-full flex flex-col items-center justify-center py-20 opacity-40 grayscale">
-            <IconOrdersList className="w-11 h-11 mb-2 text-text-dark" />
-            <p className="text-sm-text text-text-dark font-medium">
-              {isFetching ? "Retrieving history..." : "No local activity found"}
+          <div className="h-full flex flex-col items-center justify-center py-20 opacity-30">
+            <p className="text-sm-text text-text-dark font-medium uppercase tracking-widest">
+              {isFetching ? "Retrieving history..." : "No Activity"}
             </p>
           </div>
         )}

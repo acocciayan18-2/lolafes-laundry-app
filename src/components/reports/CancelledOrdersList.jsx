@@ -54,7 +54,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
             initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
-            className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+            className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[550px]"
           >
             {/* COMPACT HEADER */}
             <div className="bg-rose-600 px-5 py-4 text-white flex justify-between items-center">
@@ -118,10 +118,10 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
                   {order.services?.map((s, idx) => (
                     <div key={idx} className="flex justify-between items-center p-3 border-b border-slate-50 last:border-0 bg-white">
                       <div className="text-[12px]">
-                        <p className="font-medium text-sm-text text-slate-800 mb-0.5">{s.service_name}</p>
+                        <p className="font-medium text-sm-text text-text-dark mb-0.5">{s.service_name}</p>
                         <p className="text-micro text-text-dark/90 font-medium">x {s.quantity} | ₱{s.price_per_kg}</p>
                       </div>
-                      <span className="text-sm-text font-medium text-slate-700">₱{s.subtotal}</span>
+                      <span className="text-sm-text font-medium text-text-dark">₱{s.subtotal}</span>
                     </div>
                   ))}
                   
@@ -201,8 +201,8 @@ const CancelledOrderCard = ({ order, onOpenDetail }) => {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="min-w-0">
-              <h3 className="font-bold text-slate-900 text-[13px] uppercase truncate">{order.customer_name}</h3>
-              <p className="text-[10px] font-bold text-slate-400">#{order.order_number}</p>
+              <h3 className="font-bold text-text-dark text-sm-text truncate">{order.customer_name}</h3>
+              <p className="text-[10px] font-bold text-text-dark/70">#{order.order_number}</p>
             </div>
           </div>
           <div className="text-right">

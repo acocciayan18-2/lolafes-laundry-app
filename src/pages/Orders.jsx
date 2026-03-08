@@ -223,14 +223,13 @@ export default function Orders() {
                      </motion.div>
                    ))}
 
-                   {/* ✨ LOAD MORE BUTTON */}
                    {hasMoreTerminal && (
                      <motion.button
                        layout
                        initial={{ opacity: 0 }}
                        animate={{ opacity: 1 }}
                        onClick={() => setDisplayLimit(prev => prev + PAGE_SIZE)}
-                       className="w-full py-2 mt-2 rounded-xl border-2 border-dashed border-slate-300 text-text-dark/70 font-normal text-micro hover:bg-slate-50 hover:text-slate-700 hover:border-slate-400 active:scale-[0.98] transition-all"
+                       className="w-full py-2 mt-2 rounded-xl border-2 border-dashed border-slate-300 text-text-dark/70 font-normal text-micro hover:bg-slate-50 hover:text-text-dark hover:border-slate-400 active:scale-[0.98] transition-all"
                      >
                        Load More Order 
                      </motion.button>

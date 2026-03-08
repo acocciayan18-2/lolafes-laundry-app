@@ -81,7 +81,7 @@ export default function OrderFilters({
           placeholder="Search name, phone, address, or order #..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex h-10 w-full rounded-xl border font-normal border-slate-200 bg-white/80 pl-10 pr-10 py-2 text-base-text text-text-dark placeholder:text-text-dark/40 outline-none transition-all focus:border-app-dark/70 focus:bg-white focus:ring-0"
+          className="flex h-10 w-full rounded-xl border font-normal border-slate-200 bg-white/80 pl-10 pr-10 py-2 text-sm-text text-text-dark placeholder:text-text-dark/40 outline-none transition-all focus:border-app-dark/70 focus:bg-white focus:ring-0"
         />
         {/* Quick Clear for Search */}
         {searchTerm && (
@@ -109,7 +109,7 @@ export default function OrderFilters({
             aria-expanded={openDropdown === "status"}
             className={`w-full lg:w-40 h-10 px-3 flex items-center justify-between bg-white border transition-all rounded-xl text-text-dark ${openDropdown === "status" ? "border-black" : "border-slate-200"}`}
           >
-            <span className="truncate text-base-text font-normal tracking-tight">{currentStatusLabel}</span>
+            <span className="truncate text-sm-text font-normal tracking-tight">{currentStatusLabel}</span>
             <div className="flex items-center gap-1">
               <IconChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${openDropdown === "status" ? "rotate-180" : ""}`} />
             </div>
@@ -125,7 +125,7 @@ export default function OrderFilters({
                   role="option"
                   aria-selected={statusFilter === option.value}
                   onClick={() => { setStatusFilter(option.value); setOpenDropdown(null); }} 
-                  className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors tracking-tight hover:bg-gray-50 ${statusFilter === option.value ? "font-bold bg-slate-50 text-black-600" : "text-text-dark font-normal"}`}
+                  className={`w-full px-3 py-2 text-left text-sm-text flex items-center justify-between transition-colors tracking-tight hover:bg-gray-50 ${statusFilter === option.value ? "font-bold bg-slate-50 text-black-600" : "text-text-dark font-normal"}`}
                 >
                   {option.label}
                   {statusFilter === option.value && <IconCheckStroke className="h-3.5 w-3.5" />}
@@ -143,7 +143,7 @@ export default function OrderFilters({
             aria-expanded={openDropdown === "date"}
             className={`w-full lg:w-40 h-10 px-3 flex items-center justify-between bg-white border transition-all rounded-xl text-text-dark ${openDropdown === "date" ? "border-black" : "border-slate-200"}`}
           >
-            <span className="truncate text-base-text font-normal tracking-tight">{currentDateLabel}</span>
+            <span className="truncate text-sm-text font-normal tracking-tight">{currentDateLabel}</span>
             <div className="flex items-center gap-1">
               <IconChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${openDropdown === "date" ? "rotate-180" : ""}`} />
             </div>
@@ -159,7 +159,7 @@ export default function OrderFilters({
                   role="option"
                   aria-selected={(dateFilter || "all") === option.value}
                   onClick={() => { setDateFilter(option.value); setOpenDropdown(null); }} 
-                  className={`w-full px-3 py-2 text-left text-base-text flex items-center justify-between transition-colors tracking-tight hover:bg-gray-50 ${(dateFilter || "all") === option.value ? "font-bold bg-slate-50 text-black-600" : "text-text-dark font-normal"}`}
+                  className={`w-full px-3 py-2 text-left text-sm-text flex items-center justify-between transition-colors tracking-tight hover:bg-gray-50 ${(dateFilter || "all") === option.value ? "font-bold bg-slate-50 text-black-600" : "text-text-dark font-normal"}`}
                 >
                   {option.label}
                   {(dateFilter || "all") === option.value && <IconCheckStroke className="h-3.5 w-3.5" />}

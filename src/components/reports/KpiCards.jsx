@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useReportStore } from "../../store/reports/useReportStore";
 import { IconDollarSign, IconInfo, IconPackage, IconTrendingUp, IconZap } from "../icons";
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react'; // ✨ Updated v2.0 Imports
+import { AnimatePresence, motion } from 'framer-motion';
 
 const FILTER_OPTIONS = [
-  { label: "7d", value: "7" },
-  { label: "30d", value: "30" },
-  { label: "1y", value: "365" },
+  { label: "7 Days", value: "7" },
+  { label: "30 Days", value: "30" },
+  { label: "1 Year", value: "365" },
 ];
 
 export default function KpiCards() {
-  const [range, setRange] = useState("7");
+  const [selectedOption, setSelectedOption] = useState(FILTER_OPTIONS[0]);
   const [showInfo, setShowInfo] = useState(false);
   const infoRef = useRef(null);
   
-  // We keep the imports as they are used elsewhere or for store reactivity
   const getAnalytics = useReportStore(state => state.getAnalytics);
 
   useEffect(() => {
@@ -26,11 +27,7 @@ export default function KpiCards() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /* FIX: Removed 'orders' from the dependency array. 
-     The linter complained because 'orders' was listed but not actually 
-     referenced inside the getAnalytics(range) call.
-  */
-  const stats = useMemo(() => getAnalytics(range), [range, getAnalytics]);
+  const stats = useMemo(() => getAnalytics(selectedOption.value), [selectedOption.value, getAnalytics]);
   const { totalRevenue, totalOrders, aov, avgTat } = stats;
 
   const formatDuration = (hours) => {
@@ -53,38 +50,81 @@ export default function KpiCards() {
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-start items-end">
-        <div className="flex gap-1 bg-white p-1 rounded-xl mt-3 w-fit border border-app-dark/30 shadow-sm">
-          {FILTER_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setRange(opt.value)}
-              className={`relative px-5 py-1.5 rounded-lg text-micro font-bold transition-all duration-300 lowercase ${
-                range === opt.value ? 'bg-app-dark text-white shadow-md z-10' : 'text-text-dark/60 hover:text-text-dark'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+      <div className="flex justify-start items-center pt-2 gap-2">
+        
+        <div className="relative w-auto z-50">
+          <Listbox value={selectedOption} onChange={setSelectedOption}>
+            {({ open }) => (
+              <>
+                <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-10 text-[13px] font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none">
+                  <span className="block truncate font-medium">Last {selectedOption.label}</span>
+                  <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg className={`w-4 h-4 text-text-dark/50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </span>
+                </ListboxButton>
+
+                <AnimatePresence>
+                  {open && (
+                    <ListboxOptions
+                      static
+                      as={motion.ul}
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute mt-1.5 max-h-60 w-full overflow-auto rounded-xl bg-white  shadow-lg border border-slate-100 ring-1 ring-black ring-opacity-5 focus:outline-none"
+                    >
+                      {FILTER_OPTIONS.map((opt) => (
+                        <ListboxOption
+                          key={opt.value}
+                          className={({ active }) =>
+                            `relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm-text font-medium transition-colors ${
+                              active ? 'bg-app-dark/5 text-app-dark' : 'text-text-dark/80'
+                            }`
+                          }
+                          value={opt}
+                        >
+                          {({ selected }) => (
+                            <span className={`block truncate ${selected ? 'font-bold text-app-dark' : 'font-medium'}`}>
+                              {opt.label}
+                            </span>
+                          )}
+                        </ListboxOption>
+                      ))}
+                    </ListboxOptions>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
+          </Listbox>
         </div>
 
-        <div className="relative mb-1" ref={infoRef}>
+        <div className="relative flex items-center" ref={infoRef}>
           <button onClick={() => setShowInfo(!showInfo)} className="p-2 text-text-dark/30 hover:text-text-dark transition-colors">
             <IconInfo className="w-4 h-4 text-gray-400 stroke-gray-400" />
           </button>
-          {showInfo && (
-            <div className="absolute left-0 top-7 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200">
-              <p className="text-[13px] text-text-dark/90 leading-relaxed">
-                Summarized shop health metrics including revenue, load volume, and speed.
-              </p>
-            </div>
-          )}
+          <AnimatePresence>
+            {showInfo && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="absolute left-0 top-9 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100]"
+              >
+                <p className="text-[13px] text-text-dark/90 leading-relaxed">
+                  Summarized shop health metrics including revenue, load volume, and speed.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {items.map((kpi, i) => (
-          <div key={i} className="bg-white rounded-xl shadow-md border border-app-dark/10  overflow-hidden">
+          <div key={i} className="bg-white rounded-xl shadow-md border border-app-dark/10 overflow-hidden">
             <div className="p-3 md:p-5">
               <div className="flex items-start justify-between gap-1">
                 <div className="min-w-0 flex-1">

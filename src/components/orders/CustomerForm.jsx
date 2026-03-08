@@ -131,9 +131,9 @@ export const CustomerForm = ({
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="px-3 py-1 rounded-full text-micro font-bold bg-green-100 text-green-800"
+                className="px-3 py-1 rounded-full text-micro font-bold bg-emerald-100 text-emerald-800"
               >
-                Existing Customer
+                Existing Customers
               </motion.span>
             )}
           </AnimatePresence>
@@ -147,7 +147,7 @@ export const CustomerForm = ({
             size="md"
             onClick={() => setShowExistingCustomers(true)}
             disabled={isSubmitting}
-            className="transition-all !px-4"
+            className="transition-all !px-4 text-sm-text"
           >
             <IconSearch className={getIconClasses(isExistingActive)} />
             Select Existing
@@ -162,7 +162,7 @@ export const CustomerForm = ({
               setCustomer({ name: "", phone: "", address: "" });
             }}
             disabled={isSubmitting}
-            className="transition-all !px-4"
+            className="transition-all !px-4 text-sm-text"
           >
             <IconUserPlus className={getIconClasses(isAddNewActive)} />
             Add New
@@ -197,8 +197,8 @@ export const CustomerForm = ({
                         disabled={isSubmitting}
                         className="w-full text-left p-3 rounded-lg transition-colors hover:bg-blue-50 group disabled:opacity-50"
                       >
-                        <p className="text-base-text font-bold text-gray-900 group-hover:text-btn-primary transition-colors">{c.name}</p>
-                        <p className="text-sm-text text-gray-500">{c.phone}</p>
+                        <p className="text-sm-text font-bold text-text-dark group-hover:text-btn-primary transition-colors">{c.name}</p>
+                        <p className="text-sm-text text-text-dark/70">{c.phone}</p>
                       </button>
                     ))
                   ) : (

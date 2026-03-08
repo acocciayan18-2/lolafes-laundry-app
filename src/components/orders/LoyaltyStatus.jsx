@@ -90,7 +90,7 @@ export const LoyaltyStatus = ({
       <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden relative z-10">
         <div
           className={`absolute left-0 top-0 bottom-0 w-1 ${
-            availableRewards > 0 ? "bg-yellow-500" : "bg-blue-600"
+            availableRewards > 0 ? "bg-amber-500" : "bg-blue-600"
           }`}
         />
 
@@ -99,24 +99,24 @@ export const LoyaltyStatus = ({
             <div className="flex items-center gap-2">
               <div
                 className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                  availableRewards > 0 ? "bg-yellow-50" : "bg-blue-50"
+                  availableRewards > 0 ? "bg-amber-50" : "bg-blue-50"
                 }`}
               >
                 {availableRewards > 0 ? (
-                  <IconGift className="w-5 !stroke-yellow-600" />
+                  <IconGift className="w-5 !stroke-amber-600" />
                 ) : (
                   <IconStar className="w-5 !stroke-blue-600" />
                 )}
               </div>
               <div>
-                <h3 className="text-nano font-bold uppercase tracking-widest text-text-dark/40 leading-none">
+                <h3 className="text-nano font-medium uppercase  text-text-dark/40 leading-none">
                   {availableRewards > 0 ? `${availableRewards} Reward${availableRewards > 1 ? 's' : ''} Ready` : "Loyalty Progress"}
                 </h3>
-                <p className="text-sm-text font-bold text-text-dark mt-1">
+                <p className="text-sm-text font-medium text-text-dark mt-1">
                   {availableRewards > 0
                     ? isRewardInCart 
                         ? "Voucher applied to cart" 
-                        : "You can claim a free wash!"
+                        : "You can claim a free service!"
                     : `${neededForNext} more orders to next reward`}
                 </p>
               </div>
@@ -125,7 +125,7 @@ export const LoyaltyStatus = ({
             <Badge
               className={`text-micro px-2 py-0.5 tracking-tighter ${
                 availableRewards > 0
-                  ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                  ? "bg-amber-100 text-amber-800 border-amber-200"
                   : "bg-blue-100 text-blue-800 border-blue-200"
               }`}
             >
@@ -147,15 +147,15 @@ export const LoyaltyStatus = ({
               size="sm"
               className={`w-full mt-2 !h-9 text-micro font-bold shadow-sm border-none transition-all duration-200 tracking-widest flex justify-center items-center ${
                 isRewardInCart || isApplying
-                  ? "!bg-gray-100 !text-gray-400 cursor-not-allowed" 
-                  : "!bg-yellow-500 hover:!bg-yellow-600 !text-white active:scale-95"
+                  ? "!bg-gray-100 !text-text-dark/70 cursor-not-allowed" 
+                  : "!bg-amber-500 hover:!bg-amber-600 !text-white active:scale-95"
               }`}
             >
               {isApplying ? (
                 "Applying..."
               ) : (
                 <>
-                  <IconAward className={`w-4 h-4 mr-1.5 ${isRewardInCart ? "!stroke-gray-400" : "!stroke-white"}`} />
+                  <IconAward className={`w-4 h-4 mr-1.5 ${isRewardInCart ? "!stroke-text-dark/70" : "!stroke-white"}`} />
                   {isRewardInCart ? "Reward Applied" : "Apply Reward"}
                 </>
               )}

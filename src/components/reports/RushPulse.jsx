@@ -1,14 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useReportStore } from "../../store/reports/useReportStore";
 import { IconInfo, IconZap } from "../icons";
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 // Static config moved outside to avoid dependency issues
-const DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const HOUR_LABELS = [6, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+const DAY_OPTIONS = [
+  { label: "All Days", value: "all" },
+  { label: "Sunday", value: 0 },
+  { label: "Monday", value: 1 },
+  { label: "Tuesday", value: 2 },
+  { label: "Wednesday", value: 3 },
+  { label: "Thursday", value: 4 },
+  { label: "Friday", value: 5 },
+  { label: "Saturday", value: 6 },
+];
 
 export default function RushPulse() {
   const [showInfo, setShowInfo] = useState(false);
-  const [selectedDay, setSelectedDay] = useState("all");
+  const [selectedDay, setSelectedDay] = useState(DAY_OPTIONS[0]); // ✨ Updated to use object state
   const [hoverData, setHoverData] = useState(null); 
   const infoRef = useRef(null);
   const svgRef = useRef(null);
@@ -27,23 +39,23 @@ export default function RushPulse() {
 
   const { waveData, busiestWindow } = useMemo(() => {
     const fullHeatmap = getPeakHours();
-  const processed = Array(18).fill(0);
+    const processed = Array(18).fill(0);
+    const targetDay = selectedDay.value; // ✨ Extracted value
 
-  for (let hour = 6; hour < 24; hour++) {
-    if (selectedDay === "all") {
-      let totalForHour = 0;
-      for (let day = 0; day < 7; day++) {
-        totalForHour += fullHeatmap[day][hour];
+    for (let hour = 6; hour < 24; hour++) {
+      if (targetDay === "all") {
+        let totalForHour = 0;
+        for (let day = 0; day < 7; day++) {
+          totalForHour += fullHeatmap[day][hour];
+        }
+        processed[hour - 6] = totalForHour; 
+      } else {
+        processed[hour - 6] = fullHeatmap[targetDay][hour];
       }
-      // FIXED: Remove the "/ 7". We want the sum, not the average.
-      processed[hour - 6] = totalForHour; 
-    } else {
-      processed[hour - 6] = fullHeatmap[selectedDay][hour];
     }
-  }
 
     const maxVal = Math.max(...processed);
-  const peakIdx = processed.indexOf(maxVal);
+    const peakIdx = processed.indexOf(maxVal);
     
     const formatTime = (hIdx) => {
       const h = HOUR_LABELS[hIdx];
@@ -56,7 +68,7 @@ export default function RushPulse() {
       : "no data yet";
 
     return { waveData: processed, busiestWindow: windowText };
-}, [getPeakHours, selectedDay]);
+  }, [getPeakHours, selectedDay.value]); // ✨ Dependency updated
 
   const maxValue = Math.max(...waveData, 1);
   const chartHeight = 100;
@@ -94,18 +106,24 @@ export default function RushPulse() {
         <div className="flex items-start justify-between gap-1 mb-2">
           <div className="min-w-0 flex-1 relative" ref={infoRef}>
             <div className="flex items-center gap-1.5 mb-1">
-              {/* LABEL: text-micro (11px) */}
-              <p className="text-[13px] font-bold text-text-dark/70 truncate  uppercase ">Traffic pulse</p>
+              <p className="text-[13px] font-bold text-text-dark/70 truncate uppercase ">Traffic pulse</p>
               <button onClick={() => setShowInfo(!showInfo)} className="text-text-dark/30 hover:text-text-dark transition-colors">
                 <IconInfo className="w-4 h-4 text-gray-400 stroke-gray-400" />
               </button>
-              {showInfo && (
-                <div className="absolute left-0 top-6 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-50">
-                  <p className="text-sm-text text-text-dark/90 leading-relaxed">
-                    This chart shows the total accumulation of orders per hour. When 'All' is selected, you are seeing the total combined volume from every day of the week.
-                  </p>
-                </div>
-              )}
+              <AnimatePresence>
+                {showInfo && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="absolute left-0 top-6 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100]"
+                  >
+                    <p className="text-sm-text text-text-dark/90 leading-relaxed">
+                      This chart shows the total accumulation of orders per hour. When 'All Days' is selected, you are seeing the total combined volume from every day of the week.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
           <div className="p-2.5 rounded-lg border border-app-dark/10 shadow-hollow shrink-0">
@@ -113,11 +131,57 @@ export default function RushPulse() {
           </div>
         </div>
 
-        <div className="flex gap-1 mb-8 overflow-x-auto pb-2 scrollbar-hide custom-scrollbar">
-          <button onClick={() => setSelectedDay("all")} className={`px-3 py-1 rounded-full text-micro font-medium transition-all uppercase ${selectedDay === 'all' ? 'bg-app-dark text-white' : 'bg-app-dark/5 text-text-dark/90'}`}>All</button>
-          {DAYS.map((day, i) => (
-            <button key={day} onClick={() => setSelectedDay(i)} className={`px-3 py-1 rounded-full  text-micro font-medium transition-all uppercase ${selectedDay === i ? 'bg-app-dark text-white' : 'bg-app-dark/5 text-text-dark/90'}`}>{day}</button>
-          ))}
+        {/* ✨ FILTER DROPDOWN (Replaced button list) */}
+        <div className="relative w-32 mb-6 z-50">
+          <Listbox value={selectedDay} onChange={(val) => {
+            setSelectedDay(val);
+            setHoverData(null); // Reset hover tooltip on change
+          }}>
+            {({ open }) => (
+              <>
+                <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-[13px] font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none">
+                  <span className="block truncate font-medium">{selectedDay.label}</span>
+                  <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                    <svg className={`w-4 h-4 text-text-dark/50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </span>
+                </ListboxButton>
+
+                <AnimatePresence>
+                  {open && (
+                    <ListboxOptions
+                      static
+                      as={motion.ul}
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute mt-1.5 max-h-60 w-full custom-scrollbar overflow-auto rounded-xl bg-white py-1 shadow-xl border border-slate-100 ring-1 ring-black ring-opacity-5 focus:outline-none"
+                    >
+                      {DAY_OPTIONS.map((f) => (
+                        <ListboxOption
+                          key={f.value}
+                          className={({ active }) =>
+                            `relative cursor-pointer select-none py-2.5 pl-3 pr-3 text-[13px] font-medium transition-colors ${
+                              active ? 'bg-app-dark/5 text-app-dark' : 'text-text-dark/80'
+                            }`
+                          }
+                          value={f}
+                        >
+                          {({ selected }) => (
+                            <span className={`block truncate ${selected ? 'font-bold text-app-dark' : 'font-medium'}`}>
+                              {f.label}
+                            </span>
+                          )}
+                        </ListboxOption>
+                      ))}
+                    </ListboxOptions>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
+          </Listbox>
         </div>
 
         {/* Chart Area */}
@@ -162,7 +226,7 @@ export default function RushPulse() {
         <div className="mt-4 pt-4 border-t border-app-dark/5 flex justify-between items-center">
           <div className="flex flex-col">
             <p className="text-nano font-bold text-text-dark/70 mb-0.5 uppercase">
-              {selectedDay === 'all' ? 'Typical peak window' : `${DAYS[selectedDay]} peak window`}
+              {selectedDay.value === 'all' ? 'Typical peak window' : `${selectedDay.label} peak window`}
             </p>
             {/* VALUE: text-sm-text (13px) */}
             <p className="text-sm-text text-text-dark font-bold">

@@ -158,7 +158,7 @@ function ToggleField({ label, icon, checked, onChange }) {
         <div className={`p-2 rounded-xl transition-all duration-300 ${checked ? 'text-emerald-600' : 'text-slate-400'}`}>
           {icon}
         </div>
-        <span className={`text-[11px] font-bold tracking-tight transition-colors duration-300 ${checked ? 'text-slate-800' : 'text-slate-400'}`}>
+        <span className={`text-[11px] font-bold tracking-tight transition-colors duration-300 ${checked ? 'text-text-dark' : 'text-slate-400'}`}>
           {label}
         </span>
       </div>

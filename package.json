@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "@headlessui/react": "^2.2.9",
     "clsx": "^2.1.1",
     "cross-env": "^10.0.0",
     "date-fns": "^4.1.0",

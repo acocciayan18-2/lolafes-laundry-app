@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useActivityStore } from "../../store/activities/useActivityStore";
 import { useLoyaltyStore } from "../../store/services/useLoyaltyStore";
 import { useServiceStore } from "../../store/services/useServiceStore";
 import { IconArrowUp, IconGift } from "../icons";
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react'; // ✨ Added Headless UI
 
 // --- UI Helpers ---
 const Label = ({ children }) => (
@@ -21,7 +22,7 @@ const Input = ({ type, value, onChange, disabled, className, placeholder, inputM
     disabled={disabled}
     placeholder={placeholder}
     inputMode={inputMode}
-    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text font-medium  focus:outline-none focus:ring-1 focus:ring-gray-900 shadow-sm disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
+    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text font-medium  focus:outline-none focus:ring-1 shadow-sm disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
   />
 );
 
@@ -39,66 +40,74 @@ const Switch = ({ checked, onCheckedChange }) => (
   </button>
 );
 
-const CustomSelect = ({ value, onChange, options, disabled }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+// ✨ REPLACED CUSTOM SELECT WITH HEADLESS UI
+const HeadlessSelect = ({ value, onChange, options, disabled }) => {
+  // Find the full option object based on the string value, or create a fallback
+  const selectedOption = options.find(o => o.name === value) || { id: 'none', name: value || "Select Service" };
 
   return (
-    <div className={`  relative w-full ${isOpen ? 'z-[100]' : 'z-auto'}`} ref={containerRef}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex h-10 w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-base-text font-medium focus:outline-none
-          ${isOpen ? "border-gray-900  ring-gray-900" : "border-slate-200 hover:border-gray-300"}
-          ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50" : "cursor-pointer"}
-        `}
-      >
-        <span className={value ? "text-slate-800" : "text-slate-400"}>
-          {value || "Select Service"}
-        </span>
-        <IconArrowUp className={`w-4 h-4 text-slate-800 transition-transform duration-200 ${isOpen ? 'rotate-0' : 'rotate-180'}`} />
-      </button>
+    <div className="relative w-full z-[100]">
+      <Listbox value={selectedOption} onChange={(opt) => onChange(opt.name)} disabled={disabled}>
+        {({ open }) => (
+          <>
+            <ListboxButton 
+              className={`flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm-text font-medium focus:outline-none focus:ring-1 transition-colors
+                ${open ? " bg-white" : "border-slate-200 hover:border-gray-300 bg-white"}
+                ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50" : "cursor-pointer"}
+              `}
+            >
+              <span className={`block truncate ${value ? "text-text-dark" : "text-slate-400"}`}>
+                {selectedOption.name}
+              </span>
+              <IconArrowUp className={`w-4 h-4 text-text-dark transition-transform duration-200 ${open ? 'rotate-0' : 'rotate-180'}`} />
+            </ListboxButton>
 
-      {isOpen && (
-        <div className="absolute left-0 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl z-[999] overflow-hidden py-2 p-3 animate-in fade-in zoom-in-95 duration-100">
-          <div className="max-h-60 custom-scrollbar overflow-y-auto">
-            {options.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => {
-                  onChange(option.name);
-                  setIsOpen(false);
-                }}
-                className="w-full px-3 py-2.5 text-left text-base-text flex items-center justify-between transition-colors hover:bg-gray-50 font-medium text-text-dark"
-              >
-                {option.name}
-                {value === option.name && (
-                  <svg className="h-3.5 w-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </button>
-            ))}
-            {options.length === 0 && (
-              <div className="px-3 py-3 text-center text-nano font-bold text-slate-400 uppercase ">
-                No Active Services Found!
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+            <AnimatePresence>
+              {open && (
+                <ListboxOptions
+                  static
+                  as={motion.ul}
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute mt-2 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 shadow-xl border border-gray-100 focus:outline-none custom-scrollbar"
+                >
+                  {options.map((option) => (
+                    <ListboxOption
+                      key={option.id}
+                      className={({ active }) =>
+                        `relative cursor-pointer select-none py-2.5 px-3 text-sm-text font-medium transition-colors flex items-center justify-between ${
+                          active ? 'bg-gray-50 text-text-dark' : 'text-text-dark'
+                        }`
+                      }
+                      value={option}
+                    >
+                      {({ selected }) => (
+                        <>
+                          <span className={`block truncate ${selected ? 'font-bold' : 'font-medium'}`}>
+                            {option.name}
+                          </span>
+                          {selected && (
+                            <svg className="h-3.5 w-3.5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </>
+                      )}
+                    </ListboxOption>
+                  ))}
+                  {options.length === 0 && (
+                    <div className="px-3 py-3 text-center text-nano font-bold text-slate-400 uppercase">
+                      No Active Services Found!
+                    </div>
+                  )}
+                </ListboxOptions>
+              )}
+            </AnimatePresence>
+          </>
+        )}
+      </Listbox>
     </div>
   );
 };
@@ -228,7 +237,7 @@ export default function LoyaltySettings() {
                     <IconGift className={`w-5 h-5 ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-400'}`} />
                   </div>
                   <div>
-                    <h3 className="text-h3 font-bold text-slate-900 ">Customer Loyalty</h3>
+                    <h3 className="text-h3 font-bold text-text-dark ">Customer Loyalty</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${localSettings.is_enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
                       <span className={`text-nano font-bold uppercase  ${localSettings.is_enabled ? 'text-emerald-600' : 'text-slate-400'}`}>
@@ -243,7 +252,10 @@ export default function LoyaltySettings() {
               <div className={`space-y-4 ${!localSettings.is_enabled ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="space-y-0.5 relative z-20"> 
                   <Label>Free Service Reward</Label>
-                  <CustomSelect options={services.filter(s => s.is_active)} value={localSettings.free_service_type}
+                  {/* ✨ UPDATED TO USE HEADLESS SELECT */}
+                  <HeadlessSelect 
+                    options={services.filter(s => s.is_active)} 
+                    value={localSettings.free_service_type}
                     onChange={(val) => setLocalSettings({...localSettings, free_service_type: val})}
                   />
                 </div>
@@ -262,18 +274,20 @@ export default function LoyaltySettings() {
             </div>
 
             {/* RIGHT SECTION (Visual Ticket) */}
-            <div className={`w-full md:w-60 p-4 flex flex-col justify-between rounded-b-xl md:rounded-r-xl ${localSettings.is_enabled ? 'bg-app-light' : 'bg-slate-50'}`}>
+            <div className={`w-full md:w-60 p-4 flex flex-col justify-between rounded-b-xl md:rounded-r-xl transition-colors ${localSettings.is_enabled ? 'bg-app-light' : 'bg-slate-50'}`}>
               <div className="space-y-3 text-center">
                 <h4 className={`text-nano font-bold uppercase ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-400'}`}>Reward Summary</h4>
-                <div className="p-3 bg-white rounded-lg border border-dashed border-sky-300 shadow-sm">
-                  <div className="text-h3 font-black text-slate-900">FREE</div>
-                  <div className="text-micro font-bold uppercase text-teal-600 truncate">{localSettings.free_service_type || "No Service"}</div>
+                <div className={`p-3 rounded-lg border border-dashed shadow-sm transition-colors ${localSettings.is_enabled ? 'bg-white border-sky-300' : 'bg-slate-100 border-slate-300'}`}>
+                  <div className="text-h3 font-black text-text-dark">FREE</div>
+                  <div className={`text-micro font-bold uppercase truncate ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-500'}`}>
+                    {localSettings.free_service_type || "No Service"}
+                  </div>
                   <div className="h-px bg-slate-100 my-2" />
                   <p className="text-micro text-slate-500 font-medium">After {localSettings.orders_required} visits</p>
                 </div>
               </div>
 
-              {/* SAVE TICKET BUTTON: Logic updated to include disabled when !is_enabled */}
+              {/* SAVE TICKET BUTTON */}
               <button
                 onClick={handleSave}
                 disabled={!localSettings.is_enabled || !hasChanges || isSaving || !isValid}

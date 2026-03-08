@@ -175,8 +175,9 @@ export const OrderSummary = ({
 
         <div className="p-4 space-y-3">
           {/* CUSTOMER CARD */}
+          <p className="text-sm-text font-medium text-text-dark/50 !mb-1">Customer Details</p>
           <div className={`p-3 rounded-xl overflow-hidden border transition-colors ${!isCustomerValid && customer.name ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
-            <p className="text-sm-text font-medium text-text-dark/50 mb-2">Customer Details</p>
+            
             {customer.name ? (
               <div className="space-y-1">
                 <p className="text-base-text font-bold text-gray-900 leading-tight">{customer.name}</p>
@@ -188,7 +189,7 @@ export const OrderSummary = ({
                 </p>
               </div>
             ) : (
-              <p className="text-sm-text font-medium text-text-dark italic">No customer selected</p>
+              <p className="text-sm-text font-medium text-text-dark/70 italic">No customer selected</p>
             )}
           </div>
 

@@ -31,8 +31,8 @@ module.exports = {
         
         'status-pending': '#ffb414ff',   // Electric Yellow
         'status-process': '#2563eb',    // Power Blue
-        'status-ready': '#059669',      // Rich Emerald
-        'status-complete': '#7c3aed',   // Royal Violet
+        'status-ready': '#7c3aed',      // Rich Emerald
+        'status-complete': '#059669',   // Royal Violet
         'status-picked': '#4b5563',     // Steel Gray
 
         //  'status-pending': '#1F2937',   // Electric Yellow

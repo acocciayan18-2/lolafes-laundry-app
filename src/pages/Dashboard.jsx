@@ -148,7 +148,7 @@ export default function Dashboard() {
   return (
      <StoreGuard> 
             <div className="min-h-screen bg-app-light p-2">
-    <div className="min-h-screen bg-app-light text-slate-900 p-2 transition-colors duration-500">
+    
       <div className="max-w-6xl mx-auto px-1 md:px-2">
         <AnimatePresence mode="wait">
           <motion.div 
@@ -220,7 +220,7 @@ export default function Dashboard() {
           </motion.div>
         </AnimatePresence>
       </div>
-    </div>
+   
     </div>
           </StoreGuard>
   );

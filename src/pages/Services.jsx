@@ -12,7 +12,7 @@ import StoreGuard from '../components/settings/StoreGuard';
 export const Button = ({ children, onClick, className = "", variant = "primary", ...props }) => {
   const variants = {
     primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-sm",
-    outline: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50",
+    outline: "bg-white text-text-dark border border-slate-200 hover:bg-slate-50",
     success: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm",
     danger: "bg-red-500 hover:bg-red-600 text-white shadow-sm"
   };
@@ -30,7 +30,7 @@ export const Button = ({ children, onClick, className = "", variant = "primary",
 
 export const Input = ({ className = "", ...props }) => (
   <input
-    className={`flex h-10 w-full rounded-lg border font-medium border-slate-200 bg-white px-3 py-2 text-base-text placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-app-dark/70 transition-shadow ${className}`}
+    className={`flex h-10 w-full rounded-lg border font-medium border-slate-200 bg-white px-3 py-2 text-sm-text placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-app-dark/70 transition-shadow ${className}`}
     {...props}
   />
 );
@@ -157,7 +157,7 @@ export default function Services() {
   return (
     <StoreGuard> 
         <div className="min-h-screen bg-app-light p-2">
-    <div className="min-h-screen bg-app-light p-2">
+   
       <LoginPopup 
         message={popup.message} 
         type={popup.type} 
@@ -205,7 +205,7 @@ export default function Services() {
           )}
 
           {/* Loyalty Settings Panel */}
-          <div className="relative z-[10] mb-3">
+          <div className="relative z-[20] mb-3">
             <LoyaltySettings />
           </div>
 
@@ -244,7 +244,7 @@ export default function Services() {
           </div>
         </LayoutGroup>
       </div>
-    </div>
+   
      </div>
       </StoreGuard>
   );

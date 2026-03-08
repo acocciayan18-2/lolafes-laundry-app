@@ -20,7 +20,8 @@ export const useSettingsStore = create((set, get) => ({
   systemConfig: {
     autoPrint: false, 
     autoLogout: false,
-    ownerPIN: null, // ✨ null indicates setup is required
+    confirmCompletion: true, // ✨ Added: Defaults to true for safety
+    ownerPIN: null, 
     operatingHours: {
       allowedDays: [],
       openTime: "08:00",
@@ -31,23 +32,15 @@ export const useSettingsStore = create((set, get) => ({
 
   isLoading: true,
 
-  // --- 🛡️ SECURITY LOGIC (INTERNAL HELPERS) ---
+  // --- 🛡️ SECURITY LOGIC ---
   
-  /**
-   * Scenario: Verify PIN instantly without database lag
-   */
   verifyPIN: (input) => {
     const stored = get().systemConfig.ownerPIN;
-    // What-If: No PIN set? Allow access for setup.
     if (!stored) return true; 
     return input === stored;
   },
 
-  /**
-   * Scenario: Setting or Updating the PIN
-   */
   setOwnerPIN: async (newPin) => {
-    // ✨ FIXED: Changed regex to \d{6} to enforce exactly 6 digits!
     if (!/^\d{6}$/.test(newPin)) {
       return { success: false, error: "PIN must be 6 digits" };
     }
@@ -77,6 +70,7 @@ export const useSettingsStore = create((set, get) => ({
           systemConfig: { 
             ...state.systemConfig, 
             ...data,
+            // Ensure nested objects don't get wiped if only top-level keys are updated
             operatingHours: { ...state.systemConfig.operatingHours, ...data.operatingHours }
           }, 
           isLoading: false 
@@ -114,6 +108,7 @@ export const useSettingsStore = create((set, get) => ({
     }
   },
 
+  
   toggleAutoPrint: () => {
     const current = get().systemConfig.autoPrint;
     return get().updateSystemConfig({ autoPrint: !current });
@@ -122,6 +117,12 @@ export const useSettingsStore = create((set, get) => ({
   toggleAutoLogout: () => {
     const current = get().systemConfig.autoLogout;
     return get().updateSystemConfig({ autoLogout: !current });
+  },
+
+  // ✨ Added: Direct toggle for the completion safeguard
+  toggleConfirmCompletion: () => {
+    const current = get().systemConfig.confirmCompletion ?? true;
+    return get().updateSystemConfig({ confirmCompletion: !current });
   },
 
   setOperatingHours: async (config) => {

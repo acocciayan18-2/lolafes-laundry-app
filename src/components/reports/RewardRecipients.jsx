@@ -30,9 +30,17 @@ export default function RewardRecipients() {
     }
   }, [showInfo]);
 
-  const formatTime = (date) => {
+  // ✨ UPDATED: Formats both Date and Time
+  const formatDateTime = (date) => {
     if (!date) return "--:--";
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric',
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   // Skip rendering if empty (as you requested)
@@ -77,12 +85,13 @@ export default function RewardRecipients() {
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-400" />
                 <div className="p-3 pl-4 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="font-bold text-slate-900 text-[13px] uppercase truncate">{log.customer_name}</h3>
-                    <p className="text-[10px] font-bold text-slate-400">#{log.order_number}</p>
+                    <h3 className="font-bold text-text-dark text-sm-text truncate">{log.customer_name}</h3>
+                    <p className="text-[10px] font-bold text-text-dark/70">#{log.order_number}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[11px] font-bold text-amber-600 uppercase tracking-tight">{log.reward_name}</p>
-                    <p className="text-[10px] font-medium text-text-dark/50 uppercase mt-0.5">{formatTime(log.date)}</p>
+                    <p className="text-micro font-bold text-amber-600 uppercase tracking-tight">{log.reward_name}</p>
+                   
+                    <p className="text-[10px] font-medium text-text-dark/70 uppercase mt-0.5">{formatDateTime(log.date)}</p>
                   </div>
                 </div>
               </motion.div>

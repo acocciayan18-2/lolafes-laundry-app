@@ -2,52 +2,41 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useOrderStore } from "../../store/orders/useOrderStore";
 import { useTodayOrdersStore } from "../../store/orders/useTodayOrdersStore";
+import { useSettingsStore } from "../../store/settings/useSettingsStore";
 import {
   IconClose, IconShirt, IconStatusCompleted, IconStatusPending,
   IconStatusPickedUp, IconStatusProcessing, IconStatusReady,
-  IconDelivery, IconHandover
+  IconDelivery, IconHandover, IconPhone, IconHash
 } from '../icons';
+import CompleteOrderModal from "../orders/CompleteOrderModal";
 
 const statusConfig = {
-  pending: { 
-    icon: IconStatusPending, label: "Pending", 
-    theme: { text: "text-status-pending", bgSolid: "bg-status-pending", bgLight: "bg-status-pending/10", border: "border-status-pending", borderLight: "border-status-pending/10", shadow: "shadow-status-pending/20" }
-  },
-  in_progress: { 
-    icon: IconStatusProcessing, label: "Processing", 
-    theme: { text: "text-status-process", bgSolid: "bg-status-process", bgLight: "bg-status-process/10", border: "border-status-process", borderLight: "border-status-process/10", shadow: "shadow-status-process/20" }
-  },
-  ready: { 
-    icon: IconStatusReady, label: "Ready", 
-    theme: { text: "text-status-ready", bgSolid: "bg-status-ready", bgLight: "bg-status-ready/10", border: "border-status-ready", borderLight: "border-status-ready/10", shadow: "shadow-status-ready/20" }
-  },
-  completed: { 
-    icon: IconStatusCompleted, label: "Completed", 
-    theme: { text: "text-status-complete", bgSolid: "bg-status-complete", bgLight: "bg-status-complete/10", border: "border-status-complete", borderLight: "border-status-complete/10", shadow: "shadow-status-complete/20" }
-  },
-  picked_up: { 
-    icon: IconStatusPickedUp, label: "Picked Up", 
-    theme: { text: "text-status-picked", bgSolid: "bg-status-picked", bgLight: "bg-status-picked/10", border: "border-status-picked", borderLight: "border-status-picked/10", shadow: "shadow-status-picked/20" }
-  },
-  delivered: { 
-    icon: IconStatusPickedUp, label: "Delivered", 
-    theme: { text: "text-emerald-600", bgSolid: "bg-emerald-500", bgLight: "bg-emerald-500/10", border: "border-emerald-500", borderLight: "border-emerald-500/10", shadow: "shadow-emerald-500/20" }
-  }
+  pending: { label: "Pending", banner: "bg-status-pending", theme: "text-status-pending bg-status-pending/10 border-status-pending/20", icon: IconStatusPending },
+  in_progress: { label: "Processing", banner: "bg-status-process", theme: "text-status-process bg-status-process/10 border-status-process/20", icon: IconStatusProcessing },
+  ready: { label: "Ready", banner: "bg-status-ready", theme: "text-status-ready bg-status-ready/10 border-status-ready/20", icon: IconStatusReady },
+  completed: { label: "Completed", banner: "bg-status-complete", theme: "text-status-complete bg-status-complete/10 border-status-complete/20", icon: IconStatusCompleted },
+  picked_up: { label: "Picked Up", banner: "bg-status-picked", theme: "text-status-picked bg-status-picked/10 border-status-picked/20", icon: IconStatusPickedUp },
+  delivered: { label: "Delivered", banner: "bg-emerald-500", theme: "text-emerald-600 bg-emerald-50 border-emerald-100", icon: IconStatusPickedUp }
 };
 
-const handoverConfig = {
-  pickup: { icon: IconHandover, label: "Pickup", theme: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-100" } },
-  delivery: { icon: IconDelivery, label: "Delivery", theme: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-100" } }
+
+
+const getSafeDate = (ts) => {
+  if (!ts) return new Date();
+  if (ts.toDate) return ts.toDate();
+  const d = new Date(ts);
+  return isNaN(d.getTime()) ? new Date() : d;
 };
 
 export default function TodayOrders({ orders = [], isLoading }) {
   const { selectedOrder, setSelectedOrder, isUpdating, executeStatusUpdate, validate } = useTodayOrdersStore();
-  const { isOrderStuck, isOrderUnclaimed, isOrderLocked, parseTimestamp } = useOrderStore(); 
+  const { isOrderStuck, isOrderUnclaimed, isOrderLocked } = useOrderStore(); 
+  const { systemConfig } = useSettingsStore();
 
-  // Track WHICH button was clicked for the loading state
   const [pendingStatus, setPendingStatus] = useState(null);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
 
- const [, setTick] = useState(0);
+  const [, setTick] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => setTick(t => t + 1), 5000);
     return () => clearInterval(timer);
@@ -64,8 +53,10 @@ export default function TodayOrders({ orders = [], isLoading }) {
 
   useEffect(() => {
     const handleEsc = (e) => { 
-      // Prevent closing if we are currently updating
-      if (e.key === 'Escape' && !isUpdating) setSelectedOrder(null); 
+      if (e.key === 'Escape' && !isUpdating) {
+        setSelectedOrder(null);
+        setShowCompleteModal(false); 
+      }
     };
     if (selectedOrder) {
       document.body.style.overflow = 'hidden';
@@ -77,181 +68,259 @@ export default function TodayOrders({ orders = [], isLoading }) {
     };
   }, [selectedOrder, setSelectedOrder, isUpdating]);
 
-  // Handle Update Execution safely
   const handleUpdate = async (newStatus) => {
-    setPendingStatus(newStatus);
-    const success = await executeStatusUpdate(newStatus);
-    setPendingStatus(null);
-    if (success) {
-      setSelectedOrder(null);
+    if (newStatus === "completed") {
+      if (systemConfig?.confirmCompletion ?? true) {
+        setShowCompleteModal(true);
+        return;
+      }
     }
+    await executeStatusUpdateCall(newStatus, false);
+  };
+
+  const executeStatusUpdateCall = async (newStatus, sendSms = false) => {
+    if (!selectedOrder) return;
+    const { customer_phone, customer_name, order_number } = selectedOrder;
+    setPendingStatus(newStatus);
+    try {
+      const success = await executeStatusUpdate(newStatus);
+      if (success) {
+        if (sendSms && customer_phone) {
+          import('../../services/smsService').then(s => s.sendStatusSMS(customer_phone, customer_name, order_number, "ready"));
+        }
+        setShowCompleteModal(false);
+        setSelectedOrder(null);
+      }
+    } finally { setPendingStatus(null); }
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-app-dark/10 flex flex-col max-h-[450px] min-h-[300px] overflow-hidden relative">
+      
       <div className="px-5 py-3.5 border-b border-app-dark/5 flex justify-between items-center bg-white">
         <div className="flex items-center gap-3 pl-2">
           <div className="p-1.5 bg-white border border-app-dark/10 rounded-lg text-text-dark shadow-hollow">
             <IconShirt className="w-5 h-5" />
           </div>
-          <h2 className="text-base-text font-bold text-text-dark">Today's Orders</h2>
+          <div>
+            <h2 className="text-base-text font-bold text-text-dark">Today's Orders</h2>
+            <p className="text-micro font-normal text-slate-400 uppercase tracking-wider">Current Cycle</p>
+          </div>
         </div>
+        <span className="bg-app-dark text-white text-nano font-bold px-2 py-0.5 rounded-full">
+          {orders.length}
+        </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 px-3 custom-scrollbar mb-4">
+      <div className="flex-1 overflow-y-auto p-3 custom-scrollbar mb-4">
         {isLoading ? (
-           <div className="py-10 text-center text-sm-text text-gray-400 italic">Loading orders...</div>
+           <div className="py-10 text-center text-sm-text text-gray-400 italic">Loading...</div>
         ) : sortedOrders.length > 0 ? (
-          sortedOrders.map((order) => {
-            const cfg = statusConfig[order.status] || statusConfig.pending;
-            const stuck = isOrderStuck(order);
-            const unclaimed = isOrderUnclaimed(order);
-            const isLocked = isOrderLocked(order);
-            
-            // ✨ Handover config resolution
-            const handoverType = order.handover_method || 'pickup';
-            const handoverObj = handoverConfig[handoverType] || handoverConfig.pickup;
-            const HandoverIcon = handoverObj.icon;
-            
-            const timeCreated = (() => {
-              try {
-                const date = parseTimestamp(order.created_date || order.created_at);
-                if (!date || isNaN(date.getTime())) return "--:--";
-                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              } catch (e) { return "--:--"; }
-            })();
+          <div className="space-y-1">
+            {sortedOrders.map((order) => {
+              const cfg = statusConfig[order.status] || statusConfig.pending;
+              const stuck = isOrderStuck(order);
+              const unclaimed = isOrderUnclaimed(order);
+              const isLocked = isOrderLocked(order);
+              
+              return (
+                <motion.button 
+                  layout
+                  key={order.id} 
+                  onClick={() => !isLocked && setSelectedOrder(order)}
+                  className={`w-full text-left relative overflow-hidden rounded-xl bg-white border transition-all p-3.5 mb-1 group
+                    ${isLocked ? 'opacity-60 grayscale-[0.5] cursor-not-allowed' : 'hover:border-app-dark/20 hover:shadow-md active:scale-[0.98]'}
+                    ${unclaimed ? 'border-rose-200' : 'border-slate-100'}
+                  `}
+                >
+                  <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${cfg.banner} transition-all group-hover:w-2`} />
 
-            return (
-              <button 
-                key={order.id} 
-                onClick={() => !isLocked && setSelectedOrder(order)}
-                className={`w-full text-left group flex items-center gap-4 p-2 rounded-xl transition-all relative mb-1 border
-                  ${isLocked ? 'opacity-70 grayscale-[0.8] cursor-not-allowed scale-[0.98]' : 'hover:bg-app-dark/5 active:scale-[0.98]'}
-                  ${unclaimed ? ' border-red-300' : stuck ? 'border-transparent' : 'border-transparent'}`}
-              >
-                <div className={`relative w-9 h-9 rounded-lg flex items-center justify-center border ${cfg.theme.borderLight} bg-white shadow-sm transition-all`}>
-                  {(stuck || unclaimed) && (
-                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 z-10">
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${unclaimed ? 'bg-red-400' : 'bg-orange-400'}`}></span>
-                      <span className={`relative inline-flex rounded-full h-2.5 w-2.5 border border-white ${unclaimed ? 'bg-red-500' : 'bg-orange-500'}`}></span>
+                  <div className="flex justify-between items-start mb-1 pl-1.5">
+                    <div className="min-w-0 pr-3">
+                       <h3 className="text-sm-text font-bold text-text-dark truncate uppercase">
+                        {order.customer_name}
+                      </h3>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${cfg.theme}`}>
+                      {order.status === 'picked_up' && order.handover_method === 'delivery' ? "Delivered" : cfg.label}
                     </span>
-                  )}
-                  <cfg.icon className="w-5 h-5 text-text-dark"/>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className={`text-sm-text font-bold truncate uppercase ${isLocked ? 'text-text-dark/40' : 'text-text-dark'}`}>
-                      {order.customer_name || "Unknown Customer"}
-                    </h3>
                   </div>
-                  <div className="flex items-center flex-wrap gap-1.5 mt-1">
-                    <span className="text-nano font-bold px-1 py-0.5 rounded border border-app-dark/10 bg-white/50 text-text-dark">
-                      #{order.order_number}
-                    </span>
-                    <span className={`text-nano font-bold px-1.5 py-0.5 rounded border uppercase ${cfg.theme.bgLight} ${cfg.theme.text} ${cfg.theme.border}`}>
-                      {order.status === 'picked_up' && handoverType === 'delivery' ? "Delivered" : cfg.label}
-                    </span>
+
+                  <div className="flex items-end justify-between pl-1.5">
+                    <div className="flex items-center gap-2 text-micro font-medium text-text-dark/50">
+                      <span>#{order.order_number}</span>
+                      <span>•</span>
+                      <span className="uppercase">{order.handover_method || "pickup"}</span>
+                    </div>
                     
-                    <span className={`text-nano font-bold px-1.5 py-0.5 rounded border flex items-center gap-1 uppercase
-                      ${handoverObj.theme.bg} ${handoverObj.theme.text} ${handoverObj.theme.border}
-                    `}>
-                      <HandoverIcon className="w-3 h-3" />
-                      {handoverObj.label}
-                    </span>
+                    <div className="flex items-center gap-2">
+                       {(stuck || unclaimed) && (
+                        <span className={`flex h-2 w-2 rounded-full animate-pulse ${unclaimed ? 'bg-rose-500' : 'bg-orange-500'}`} />
+                      )}
+                      <span className="text-sm-text font-bold text-text-dark">
+                        ₱{Number(order.total_amount || 0).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                </div>
-
-                <div className="text-right flex flex-col items-end">
-                  <p className="text-nano font-medium lowercase opacity-40">{timeCreated}</p>
-                  {unclaimed && <p className="text-[8px] font-medium text-red-600 uppercase tracking-tighter mt-0.5">Unclaimed</p>}
-                  {stuck && !unclaimed && <p className="text-[8px] font-medium text-orange-600 uppercase tracking-tighter mt-0.5">Stuck</p>}
-                </div>
-              </button>
-            )
-          })
+                </motion.button>
+              );
+            })}
+          </div>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center py-10 opacity-40">
-            <IconShirt className="w-8 h-8 text-text-dark mb-4" />
-            <h3 className="text-sm-text font-medium text-text-dark ">No Orders Today</h3>
+          <div className="h-full flex flex-col items-center justify-center py-10 opacity-30">
+            <IconShirt className="w-8 h-8 mb-2" />
+            <p className="text-sm-text font-bold uppercase tracking-widest">No Activity</p>
           </div>
         )}
       </div>
 
-    <AnimatePresence>
-        {selectedOrder && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-app-dark/40 backdrop-blur-sm" role="dialog" aria-modal="true">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-sm bg-white border border-app-dark/10 shadow-2xl rounded-3xl p-6 overflow-hidden relative"
+      <AnimatePresence>
+        {selectedOrder && !showCompleteModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-app-dark/40 backdrop-blur-sm" 
+               onClick={() => !isUpdating && setSelectedOrder(null)}>
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[550px]" 
             >
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <p className="text-base-text font-bold text-text-dark uppercase tracking-tight">#{selectedOrder.order_number} • {selectedOrder.customer_name}</p>
-                  <h3 className="text-micro font-medium text-text-dark/70 mt-1 ">Update order status</h3>
-                </div>
-                {/* Disable close button while updating */}
-                <button 
-                  disabled={isUpdating}
-                  onClick={() => setSelectedOrder(null)} 
-                  className={`p-2 rounded-full transition-colors ${isUpdating ? 'opacity-20 cursor-not-allowed' : 'hover:bg-app-dark/5'}`} 
-                  aria-label="Close modal"
-                >
-                  <IconClose className="w-5 h-5 opacity-40" />
+              {/* HEADER BANNER: Now includes Date and Handover Method */}
+              <div className="bg-slate-50 pt-5 pb-3 px-4 text-center relative border-b border-slate-100 shrink-0">
+                <button onClick={() => setSelectedOrder(null)} disabled={isUpdating} className="absolute top-4 right-4 p-2 opacity-40 hover:opacity-100">
+                  <IconClose className="w-5 h-5" />
                 </button>
+                <div className="w-10 h-10 flex items-center justify-center mx-auto mb-1 ">
+                   <IconShirt className="w-6 h-6 text-text-dark" />
+                </div>
+                <h3 className="text-h3 font-bold text-text-dark ">{selectedOrder.customer_name}</h3>
+                
+                <div className="flex flex-wrap items-center justify-center gap-1.5 mt-1 text-micro font-medium uppercase tracking-wider text-text-dark/70">
+                  <span>#{selectedOrder.order_number}</span>
+                  <span>•</span>
+                  <span className={selectedOrder.handover_method === 'delivery' ? 'text-blue-500' : 'text-amber-500'}>
+                    {selectedOrder.handover_method || "pickup"}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {getSafeDate(selectedOrder.created_at || selectedOrder.created_date).toLocaleString('en-US', {
+                      month: 'short', day: 'numeric',
+                      hour: 'numeric', minute: '2-digit', hour12: true
+                    })}
+                  </span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-2.5">
-                {Object.entries(statusConfig).filter(([k]) => k !== 'pending' && k !== 'delivered').map(([key, cfg]) => {
-                  const isCurrent = selectedOrder.status === key;
-                  const { allowed } = validate(selectedOrder, key);
-                  const isThisButtonLoading = pendingStatus === key;
+              <div className="overflow-y-auto custom-scrollbar flex-1 p-5 space-y-2">
+                
+                <div className="bg-slate-50 rounded-2xl p-4 space-y-2 border border-slate-100/80">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2.5">
+                      <IconPhone className="w-4 h-4 text-text-dark/70" />
+                      <span className="text-sm-text font-medium text-text-dark/70 ">Phone</span>
+                    </div>
+                    <span className="text-sm-text font-medium text-text-dark">{selectedOrder.customer_phone || "N/A"}</span>
+                  </div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2.5 mt-0.5">
+                      <div className="w-4 flex justify-center"><IconHash className="w-3.5 h-3.5 text-text-dark/70" /></div>
+                      <span className="text-sm-text font-medium text-text-dark/70 ">Address</span>
+                    </div>
+                    <span className="text-sm-text font-medium text-text-dark text-right max-w-[150px] leading-snug">
+                      {selectedOrder.customer_address || "N/A"}
+                    </span>
+                  </div>
+                </div>
 
-                  let displayLabel = cfg.label;
-                  let DisplayIcon = cfg.icon;
-
-                  if (key === 'picked_up' && selectedOrder.handover_method === 'delivery') {
-                    displayLabel = "Delivered";
-                    DisplayIcon = IconStatusPickedUp; 
-                  }
-
-                  return (
-                    <button
-                      key={key}
-                      // Disable if any update is happening globally, if it's current, or not allowed
-                      disabled={isUpdating || isCurrent || !allowed}
-                      onClick={() => handleUpdate(key)}
-                      className={`relative flex items-center gap-4 p-2.5 rounded-2xl border transition-all duration-300 overflow-hidden
-                        ${isCurrent ? `${cfg.theme.bgSolid} text-white ${cfg.theme.border} shadow-lg ${cfg.theme.shadow} translate-x-1` 
-                                    : `bg-white ${cfg.theme.borderLight} ${cfg.theme.text} hover:bg-app-dark/5`}
-                        ${(!allowed && !isCurrent) ? 'opacity-30 grayscale cursor-not-allowed' : ''}
-                        ${isUpdating && !isThisButtonLoading ? 'opacity-50 grayscale pointer-events-none' : ''}
-                      `}
-                    >
-                      {/* Optional Overlay when loading */}
-                      {isThisButtonLoading && (
-                        <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex items-center justify-end pr-4 z-10 rounded-2xl">
-                          <svg className="animate-spin h-5 w-5 text-text-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        </div>
+                {/* Block 2: Services Only (Date was moved to header) */}
+                <div className="px-2">
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm-text font-medium text-text-dark/70 mt-0.5">Services</span>
+                    <div className="flex flex-col items-end gap-1">
+                      {selectedOrder.services?.length > 0 ? (
+                        selectedOrder.services.map((svc, idx) => (
+                          <span key={idx} className="text-sm-text font-medium text-text-dark bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                            {svc.quantity}x {svc.service_name}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm-text font-medium text-text-dark/70">No services</span>
                       )}
+                    </div>
+                  </div>
+                </div>
 
-                      <div className={`p-2 rounded-xl ${isCurrent ? 'bg-white/20' : cfg.theme.bgLight}`}>
-                        <DisplayIcon className={`w-5 h-5 ${isCurrent ? 'text-white' : cfg.theme.text}`} />
-                      </div>
-                      <span className="text-sm-text font-bold uppercase flex-1 text-left">{isThisButtonLoading ? "Updating..." : displayLabel}</span>
-                      {isCurrent && <div className="w-2 h-2 rounded-full bg-white animate-pulse" />}
-                    </button>
-                  );
-                })}
+                {/* Block 3: Payment Summary Box */}
+                <div className={`p-4 rounded-2xl border ${selectedOrder.is_paid ? 'bg-emerald-50/50 border-emerald-100' : 'bg-rose-50/50 border-rose-100'}`}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm-text font-medium text-text-dark/70 ">Total Amount</span>
+                    <span className="text-h3 font-bold text-text-dark">
+                      ₱{Number(selectedOrder.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm-text font-medium text-text-dark/70 ">Payment Status</span>
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${selectedOrder.is_paid ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
+                      <span className={`text-[11px] font-medium tracking-wider ${selectedOrder.is_paid ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {selectedOrder.is_paid ? "Paid in Full" : "Unpaid Balance"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-px bg-slate-100 my-4" />
+
+                <div className="space-y-2">
+                  <h4 className="text-sm-text font-medium text-text-dark/70 mb-2 px-1">Update Status</h4>
+                  {Object.entries(statusConfig).filter(([k]) => k !== 'pending' && k !== 'delivered').map(([key, cfg]) => {
+                    const isCurrent = selectedOrder.status === key;
+                    const { allowed } = validate(selectedOrder, key);
+                    const isThisButtonLoading = pendingStatus === key;
+                    
+                    return (
+                      <button
+                        key={key}
+                        disabled={isUpdating || isCurrent || !allowed}
+                        onClick={() => handleUpdate(key)}
+                        className={`relative w-full flex items-center gap-4 p-2 rounded-2xl border transition-all
+                          ${isCurrent ? `${cfg.banner} text-white border-transparent shadow-md translate-x-1` 
+                                      : `bg-white border-slate-200 text-text-dark hover:bg-slate-50`}
+                          ${(!allowed && !isCurrent) ? 'opacity-30 grayscale cursor-not-allowed' : ''}
+                        `}
+                      >
+                        <div className={`p-1.5 rounded-xl ${isCurrent ? 'bg-white/20' : 'bg-slate-100'}`}>
+                          <cfg.icon className={`w-4 h-4 ${isCurrent ? 'text-white' : 'text-text-dark/70'}`} />
+                        </div>
+                        <span className="text-sm-text font-medium uppercase flex-1 text-left">
+                          {isThisButtonLoading ? "Updating..." : (key === 'picked_up' && selectedOrder.handover_method === 'delivery' ? "Delivered" : cfg.label)}
+                        </span>
+                        {isCurrent && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse pr-2" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                {/* Warning if attempting handover without payment */}
+                {!selectedOrder.is_paid && (
+                  <p className="text-micro text-rose-500 font-medium text-center mt-2 tracking-wider">
+                    ⚠️ Order must be PAID before handover
+                  </p>
+                )}
+
               </div>
             </motion.div>
-            {/* Disable background click while updating */}
-            <div className="absolute inset-0 -z-10" onClick={() => !isUpdating && setSelectedOrder(null)} aria-hidden="true" />
           </div>
         )}
       </AnimatePresence>
+
+      <CompleteOrderModal
+        isOpen={showCompleteModal}
+        onClose={() => setShowCompleteModal(false)}
+        orderNumber={selectedOrder?.order_number}
+        customerName={selectedOrder?.customer_name}
+        onConfirm={async (sendSms) => await executeStatusUpdateCall("completed", sendSms)}
+      />
     </div>
   );
 }
