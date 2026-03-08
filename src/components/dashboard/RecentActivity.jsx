@@ -71,8 +71,8 @@ export default function RecentActivity() {
       {/* HEADER */}
       {/* 4. LAYOUT FIX: Re-arranged divs so the title and button align correctly across the whole header width */}
       <div className="px-5 py-3.5 border-b border-app-dark/5 flex justify-between items-center bg-white">
-        <div className="flex items-center gap-3">
-          <div className="p-1.5 bg-white border border-app-dark/10 rounded-lg text-text-dark shadow-hollow">
+        <div className="flex items-center gap-3 pl-2">
+           <div className="p-1.5 bg-white border border-app-dark/10 rounded-lg text-text-dark shadow-hollow">
             <IconActivity className="w-5 h-5" />
           </div>
           <h2 className="text-base-text font-bold text-text-dark">Recent Activity</h2>
@@ -82,15 +82,15 @@ export default function RecentActivity() {
         {activities.length > 0 ? (
           <button 
             onClick={clearHistory}
-            className="text-micro  text-gray-400 hover:text-red-500 transition-colors px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded"
+            className="text-micro  text-text-dark/30 hover:text-text-dark/70 transition-colors px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded"
           >
-            Clear Local
+            Clear
           </button>
         ) : (
           <button 
             onClick={fetchActivitiesFromFirebase}
             disabled={isFetching}
-            className={`text-micro text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded ${isFetching ? 'opacity-50 cursor-wait' : ''}`}
+            className={`text-micro text-text-dark/30 hover:text-text-dark/70 transition-colors px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded ${isFetching ? 'opacity-50 cursor-wait' : ''}`}
           >
             {isFetching ? "Syncing..." : "Fetch from Database"}
           </button>

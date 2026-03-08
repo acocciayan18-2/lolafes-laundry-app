@@ -17,6 +17,8 @@ const SPRING_TRANSITION = {
   restDelta: 0.01
 };
 
+const PAGE_SIZE = 25; 
+
 export default function Orders() {
  const { orders, isLoading, subscribeToOrders } = useOrderStore();
   
@@ -27,21 +29,22 @@ export default function Orders() {
   } = useOrderFilterStore();
 
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(false);
-  
-  // ⏱️ THE HEARTBEAT: Forces time-based UI (Stuck/Unclaimed) to update in real-time
   const [tick, setTick] = useState(0);
 
-  // 1. Firebase Subscription (Handles Backend Data Real-Time)
+  // ✨ PAGINATION STATE
+  const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE);
+
+  // 1. Firebase Subscription
   useEffect(() => {
     const unsubscribe = subscribeToOrders();
     return () => unsubscribe(); 
   }, [subscribeToOrders]);
 
-  // 2. The Heartbeat Timer (Handles Time Passing Real-Time)
+  // 2. The Heartbeat Timer
   useEffect(() => {
     const interval = setInterval(() => {
       setTick(t => t + 1);
-    }, 5000); // UI recalculates time every 5 seconds
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -49,9 +52,7 @@ export default function Orders() {
   useEffect(() => {
     let timer;
     if (isLoading) {
-      timer = setTimeout(() => {
-        setShouldShowSkeleton(true);
-      }, 400);
+      timer = setTimeout(() => setShouldShowSkeleton(true), 400);
     } else {
       setShouldShowSkeleton(false);
     }
@@ -83,13 +84,17 @@ export default function Orders() {
     return () => window.removeEventListener("keydown", handleGlobalSearchFocus);
   }, [setSearchTerm]);
 
+  // ✨ RESET PAGINATION WHEN FILTERS CHANGE
+  useEffect(() => {
+    setDisplayLimit(PAGE_SIZE);
+  }, [searchTerm, statusFilter, dateFilter]);
 
 
   // ==========================================
   // PERFORMANCE: useMemo for Derived State
   // ==========================================
-  const filteredOrders = useMemo(() => {
-    if (!orders || orders.length === 0) return [];
+ const { filteredOrders, hasMoreTerminal } = useMemo(() => {
+    if (!orders || orders.length === 0) return { filteredOrders: [], hasMoreTerminal: false };
 
     let filtered = orders;
 
@@ -108,7 +113,6 @@ export default function Orders() {
 
       filtered = filtered.filter(order => {
         if (!order.created_date) return false;
-        
         const orderTime = new Date(order.created_date).getTime();
         switch (dateFilter) {
           case "today": return orderTime >= todayStart;
@@ -127,34 +131,41 @@ export default function Orders() {
         (order.customer_name?.toLowerCase().includes(lowerTerm)) ||
         (order.customer_phone?.includes(lowerTerm)) ||
         (order.customer_address?.toLowerCase().includes(lowerTerm)) ||
-        (order.order_number?.toLowerCase().includes(lowerTerm))
+        (order.order_number?.toLowerCase().includes(lowerTerm)) ||
+        (order.total_amount?.toString().includes(lowerTerm)) ||
+        (order.status?.toLowerCase().replace('_', ' ').includes(lowerTerm))
       );
     }
 
-    // D. Split and Limit Logic
+    // D. Split Logic
     const active = [];
-    const pickedUp = [];
+    const terminal = []; 
     
     for (let i = 0; i < filtered.length; i++) {
-      if (filtered[i].status === 'picked_up') {
-        pickedUp.push(filtered[i]);
+      if (['picked_up', 'delivered'].includes(filtered[i].status)) {
+        terminal.push(filtered[i]);
       } else {
         active.push(filtered[i]);
       }
     }
 
-    const remainingSlots = Math.max(0, 30 - active.length);
-    return [...active, ...pickedUp.slice(0, remainingSlots)];
+    // ✨ PAGINATION SLICE: Show all active, but limit the terminal ones
+    const slicedTerminal = terminal.slice(0, displayLimit);
+    const hasMore = terminal.length > displayLimit;
+
+    return { 
+      filteredOrders: [...active, ...slicedTerminal], 
+      hasMoreTerminal: hasMore 
+    };
     
-  }, [orders, searchTerm, statusFilter, dateFilter]);
+  }, [orders, searchTerm, statusFilter, dateFilter, displayLimit]);
 
   if (isLoading && shouldShowSkeleton) return <OrderListSkeleton />;
   if (isLoading && !shouldShowSkeleton) return null;
 
   return (
     <StoreGuard> 
-    <div className="min-h-screen bg-app-light p-2">
-    <div className="min-h-screen bg-app-light p-2">
+    <div className="min-h-screen bg-app-light p-2 pb-20">
       <motion.div layoutRoot className="max-w-6xl mx-auto px-1 md:px-2">
         <LayoutGroup>
           
@@ -165,7 +176,7 @@ export default function Orders() {
                 <h1 className="text-h2 text-text-dark">All Orders</h1>
                 {!isLoading && (
                   <span className="flex items-center justify-center bg-app-dark/5 px-2 py-0.5 rounded-lg text-micro font-bold text-text-dark/70 uppercase tracking-tighter min-w-[24px]">
-                    {filteredOrders.length}
+                    {orders.length} {/* ✨ Switched to total raw orders for accuracy */}
                   </span>
                 )}
               </div>
@@ -195,22 +206,36 @@ export default function Orders() {
           <motion.div layout className="flex flex-col overflow-visible">
             <AnimatePresence mode="popLayout">
                {filteredOrders.length > 0 ? (
-                 filteredOrders.map((order, index) => (
-                   <motion.div
-                     key={order.id}
-                     layout
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     exit={{ opacity: 0, scale: 0.98 }}
-                     transition={{ ...SPRING_TRANSITION, delay: index * 0.02 }}
-                   >
-                     {/* ⏱️ PASSING THE TICK HERE TO FORCE REAL-TIME TIME UPDATES */}
-                     <OrderCard 
-                       order={order} 
-                       tick={tick} 
-                     />
-                   </motion.div>
-                 ))
+                 <>
+                   {filteredOrders.map((order, index) => (
+                     <motion.div
+                       key={order.id}
+                       layout
+                       initial={{ opacity: 0, y: 10 }}
+                       animate={{ opacity: 1, y: 0 }}
+                       exit={{ opacity: 0, scale: 0.98 }}
+                       transition={{ ...SPRING_TRANSITION, delay: (index % PAGE_SIZE) * 0.02 }}
+                     >
+                       <OrderCard 
+                         order={order} 
+                         tick={tick} 
+                       />
+                     </motion.div>
+                   ))}
+
+                   {/* ✨ LOAD MORE BUTTON */}
+                   {hasMoreTerminal && (
+                     <motion.button
+                       layout
+                       initial={{ opacity: 0 }}
+                       animate={{ opacity: 1 }}
+                       onClick={() => setDisplayLimit(prev => prev + PAGE_SIZE)}
+                       className="w-full py-2 mt-2 rounded-xl border-2 border-dashed border-slate-300 text-text-dark/70 font-normal text-micro hover:bg-slate-50 hover:text-slate-700 hover:border-slate-400 active:scale-[0.98] transition-all"
+                     >
+                       Load More Order 
+                     </motion.button>
+                   )}
+                 </>
                ) : (
                  <motion.div 
                    key="empty-state"
@@ -232,7 +257,6 @@ export default function Orders() {
         </LayoutGroup>
       </motion.div>
     </div>
-    </div>
-  </StoreGuard>
+    </StoreGuard>
   );
 }

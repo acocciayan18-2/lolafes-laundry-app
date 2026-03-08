@@ -97,7 +97,7 @@ export default function Dashboard() {
 
   // ==========================================
   // PERFORMANCE: MEMOIZED CALCULATIONS
-  // Stops the dashboard from recounting hundreds of orders on every minor state change
+  // Stops the dashboard from recounting hundroses of orders on every minor state change
   // ==========================================
   const { todayOrders, todayRevenue, pendingCount, inProgressCount, readyCount } = useMemo(() => {
     if (!orders) return { todayOrders: [], todayRevenue: 0, pendingCount: 0, inProgressCount: 0, readyCount: 0 };
@@ -179,14 +179,14 @@ export default function Dashboard() {
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   onClick={scrollToUnclaimed}
-                  className="shrink-0 flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl transition-all group focus:outline-none focus:ring-2 focus:ring-red-400"
+                  className="shrink-0 flex items-center gap-2 px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-100 rounded-xl transition-all group focus:outline-none focus:ring-2 focus:ring-rose-400"
                   aria-label={`Scroll to ${unclaimedOrders.length} overdue orders`}
                 >
                   <div className="relative">
-                    <IconAlertTriangle className="w-4 h-4 text-red-500" />
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                    <IconAlertTriangle className="w-4 h-4 text-rose-500" />
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping" />
                   </div>
-                  <span className="text-micro font-bold text-red-600 ">
+                  <span className="text-micro font-medium text-rose-500 ">
                     {unclaimedOrders.length} Overdue Order{unclaimedOrders.length !== 1 ? 's' : ''}
                   </span>
                 </motion.button>
@@ -202,8 +202,8 @@ export default function Dashboard() {
             </motion.div>
 
             {/* --- 4. DATA GRIDS --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-20">
-              <div className="lg:col-span-6 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 pb-20">
+              <div className="lg:col-span-6 space-y-3">
                 <motion.div variants={itemVariants} id="step-today-orders">
                   <TodayOrders orders={todayOrders} isLoading={isLoading} />
                 </motion.div>

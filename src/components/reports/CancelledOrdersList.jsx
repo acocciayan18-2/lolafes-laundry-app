@@ -59,7 +59,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
             {/* COMPACT HEADER */}
             <div className="bg-rose-600 px-5 py-4 text-white flex justify-between items-center">
               <div>
-                <p className="text-micro font-medium opacity-80 uppercase tracking-widest">Order Details</p>
+                <p className="text-micro font-medium opacity-80 uppercase tracking-widest">Order no#</p>
                 <h2 className="text-lg font-bold tracking-tight">{order.order_number}</h2>
               </div>
               <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -71,7 +71,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
               
               {/* ORDER IDENTITY SECTION */}
               <div className="space-y-2">
-                <h4 className="text-micro font-bold text-text-dark/70 uppercase tracking-wider">Order Identity</h4>
+                <h4 className="text-micro font-bold text-text-dark/70 uppercase tracking-wider">Order Information</h4>
                 <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-2">
                   <div className="flex justify-between items-start">
                     <span className="text-sm font-bold text-text-dark">{order.customer_name}</span>

@@ -18,9 +18,6 @@ export default function Login() {
     loginUser, 
     resetPassword 
   } = useLoginStore();
-
-  // --- LOCAL UI STATE ---
-  // We keep typed input local to prevent the whole app from re-rendering on every keystroke
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
