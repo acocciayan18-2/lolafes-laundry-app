@@ -26,7 +26,6 @@ const CustomerCard = ({ customer, onEdit }) => {
 
   const menuRef = useRef(null);
 
-  // Derive the first letter for the avatar
   const firstLetter = useMemo(() => {
     return customer.name ? customer.name.charAt(0).toUpperCase() : "?";
   }, [customer.name]);
