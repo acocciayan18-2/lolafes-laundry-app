@@ -30,7 +30,6 @@ const CustomerCard = ({ customer, onEdit }) => {
     return customer.name ? customer.name.charAt(0).toUpperCase() : "?";
   }, [customer.name]);
 
-  // Handle clicking outside the action menu
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
