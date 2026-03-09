@@ -65,8 +65,8 @@ useEffect(() => {
    <div
   className={`pointer-events-auto relative bg-white  border rounded-xl overflow-hidden transition-all duration-300 ${
     type === "success" 
-      ? "border-status-ready/80" 
-      : "border-red-600/80"
+      ? "border-status-complete" 
+      : "border-red-600"
   }`}
   role="alert"
 >

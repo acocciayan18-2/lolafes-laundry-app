@@ -1,53 +1,51 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react';
 import { useReportStore } from "../../store/reports/useReportStore";
-import { IconInfo, IconPackage } from "../icons";
+import { IconInfo, IconPackage,  } from "../icons";
+
+const RANGE_OPTIONS = [
+  { id: '7', name: '7 Days' },
+  { id: '30', name: '30 Days' },
+  { id: 'year', name: '1 Year' },
+];
 
 export default function PopularServices({ range: initialRange }) {
   const [showInfo, setShowInfo] = useState(false);
   const [activeRange, setActiveRange] = useState(initialRange || "7"); 
   const infoRef = useRef(null);
   
-  // 1. SELECTOR OPTIMIZATION: 
-  // We grab 'orders' to ensure this component re-renders when new data arrives.
   const getServiceAnalytics = useReportStore((state) => state.getServiceAnalytics);
   const orders = useReportStore((state) => state.orders);
 
-  // 2. DATA SANITIZATION:
-  // Memoize the calculation. If 'orders' or 'activeRange' change, recalculate.
+  const selectedRangeOption = RANGE_OPTIONS.find(o => o.id === activeRange) || RANGE_OPTIONS[0];
+
   const safeServices = useMemo(() => {
-  // 1. LINTER FIX: Reference orders explicitly. 
-  // This ensures the memo re-runs when data changes without triggering the warning.
-  if (!orders || !Array.isArray(orders)) return [];
+    if (!orders || !Array.isArray(orders)) return [];
 
-  try {
-    // 2. VALIDATION: Execute the analytics from the store
-    const data = getServiceAnalytics(activeRange);
-    
-    if (!Array.isArray(data)) return [];
-    
-    // 3. SECURITY & DATA SANITIZATION:
-    // We map through to ensure no 'NaN' or 'undefined' values break the frontend.
-    return data
-      .map(s => ({
-        ...s,
-        name: s.name || "Unknown Service",
-        count: Number(s.count) || 0,
-        share: Number(s.share) || 0,
-        rank: s.rank || 99
-      }))
-      .filter(s => s.rank <= 3);
+    try {
+      const data = getServiceAnalytics(activeRange);
+      
+      if (!Array.isArray(data)) return [];
+      
+      return data
+        .map(s => ({
+          ...s,
+          name: s.name || "Unknown Service",
+          count: Number(s.count) || 0,
+          share: Number(s.share) || 0,
+          rank: s.rank || 99
+        }))
+        .filter(s => s.rank <= 3);
 
-  } catch (err) {
-    console.error("PopularServices calculation failed:", err);
-    return [];
-  }
-  // The linter is now happy because 'orders' is used in the first line of the function.
-}, [activeRange, getServiceAnalytics, orders]);
+    } catch (err) {
+      console.error("PopularServices calculation failed:", err);
+      return [];
+    }
+  }, [activeRange, getServiceAnalytics, orders]);
 
-  // 3. PERFORMANCE: Event Listener cleanup
   useEffect(() => {
-    if (!showInfo) return; // Don't even attach if hidden
+    if (!showInfo) return; 
 
     const handleClickOutside = (event) => {
       if (infoRef.current && !infoRef.current.contains(event.target)) {
@@ -69,10 +67,9 @@ export default function PopularServices({ range: initialRange }) {
   }, [showInfo]);
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-app-dark/10 transition-all duration-300 overflow-hidden relative ">
+    <div className="bg-white rounded-xl shadow-md border border-app-dark/10 transition-all duration-300 overflow-hidden relative">
       <div className="p-5">
         
-        {/* Header Section */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -88,9 +85,7 @@ export default function PopularServices({ range: initialRange }) {
                 </button>
                 <AnimatePresence>
                   {showInfo && (
-                    <div 
-                      className="absolute left-[-50px] top-7 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200"
-                    > 
+                    <div className="absolute left-[-50px] top-7 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200"> 
                       <p className="text-[13px] text-text-dark/90 leading-relaxed">
                         Tracks the Operational Load. The bar represents the percentage of total orders this service accounts for in the selected period.
                       </p>
@@ -100,20 +95,54 @@ export default function PopularServices({ range: initialRange }) {
               </div>
             </div>
             
-            <div className="flex bg-slate-100 p-0.5 rounded-lg w-fit mt-1">
-              {['7', '30', 'year'].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setActiveRange(p)}
-                  className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all uppercase ${
-                    activeRange === p 
-                      ? 'bg-white text-app-dark shadow-sm' 
-                      : 'text-text-dark/40 hover:text-text-dark/60'
-                  }`}
-                >
-                  {p === 'year' ? '1Y' : `${p}D`}
-                </button>
-              ))}
+            {/* ✨ HEADLESS UI DROPDOWN */}
+            <div className="relative mt-1 w-[100px] z-[90]">
+              <Listbox value={selectedRangeOption} onChange={(opt) => setActiveRange(opt.id)}>
+                {({ open }) => (
+                  <>
+                    <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-[13px] font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none">
+                      <span className="block truncate font-medium text-sm-text capitalize">{selectedRangeOption.name}</span>
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                    <svg className={`w-4 h-4 text-text-dark/50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </span>
+                    </ListboxButton>
+
+                    <AnimatePresence>
+                      {open && (
+                        <ListboxOptions
+                          static
+                          as={motion.ul}
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -5 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute mt-1.5 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 shadow-xl border border-slate-100 ring-1 ring-black ring-opacity-5 focus:outline-none"
+                        >
+                          {RANGE_OPTIONS.map((option) => (
+                            <ListboxOption
+                              key={option.id}
+                              className={({ active }) =>
+                                `relative cursor-pointer select-none py-2.5 pl-3 pr-3 text-[13px] font-medium transition-colors ${
+                                  active ? 'bg-app-dark/5 text-app-dark' : 'text-text-dark/80'
+                                }`
+                              }
+                              value={option}
+                            >
+                              {({ selected }) => (
+                            <span className={`block truncate ${selected ? 'font-bold text-app-dark' : 'font-medium'}`}>
+                              {option.name}
+                            </span>
+                          )}
+                            </ListboxOption>
+                          ))}
+                        </ListboxOptions>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
+              </Listbox>
             </div>
           </div>
 
@@ -122,7 +151,6 @@ export default function PopularServices({ range: initialRange }) {
           </div>
         </div>
 
-        {/* --- PERFORMANCE ROWS --- */}
         <div className="space-y-7 mt-4">
           {safeServices.length > 0 ? safeServices.map((service) => (
             <div key={service.name} className="relative">
@@ -152,7 +180,7 @@ export default function PopularServices({ range: initialRange }) {
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${service.share}%` }}
-                  transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }} // Bouncy spring effect
+                  transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }} 
                   className="h-full rounded-full bg-app-dark"
                 />
               </div>

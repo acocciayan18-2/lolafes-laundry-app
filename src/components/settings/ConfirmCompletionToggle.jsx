@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
 import { useSettingsStore } from "../../store/settings/useSettingsStore";
 import { useNotificationStore } from "../../store/ui/useNotificationStore";
+import { useActivityStore } from "../../store/activities/useActivityStore";
 
 const ConfirmCompletionToggle = () => {
   const { systemConfig, toggleConfirmCompletion } = useSettingsStore();
   const showNotification = useNotificationStore((state) => state.showNotification);
+  const { logActivity } = useActivityStore();
   
   const isEnabled = systemConfig?.confirmCompletion ?? true;
 
@@ -21,6 +23,7 @@ const ConfirmCompletionToggle = () => {
           : "Completion Safety Disabled";
           
         showNotification(message, "success");
+        logActivity(`Settings: ${message}`);
       } else {
         showNotification("Failed to update preferences", "error");
       }
@@ -34,11 +37,9 @@ const ConfirmCompletionToggle = () => {
     <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2 mb-4 text-app-dark">
-          {/* Header Title with font size consistency */}
           <h2 className="font-bold text-h3">Completion Safeguard</h2>
         </div>
 
-        {/* THE TOGGLE SWITCH */}
         <button 
           type="button" 
           onClick={handleToggle}
@@ -62,7 +63,6 @@ const ConfirmCompletionToggle = () => {
         </div>
         
         <div className="mt-2 flex items-center gap-2">
-          {/* Status Indicator */}
           <span className={`w-2 h-2 rounded-full ${isEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
           <span className={`text-micro font-medium ${isEnabled ? 'text-emerald-600' : 'text-slate-400'}`}>
             {isEnabled ? 'Protection Active' : 'Fast-Track Mode'}

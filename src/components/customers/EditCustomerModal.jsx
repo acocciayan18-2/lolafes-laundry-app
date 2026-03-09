@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useCustomerStore } from '../../store/customer/useCustomerStore';
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
 import { useActivityStore } from '../../store/activities/useActivityStore'; 
 import { IconUsers, IconPhone, IconMapPin, IconClose } from '../icons';
+import Button from '../ui/Button';
 
 /**
  * SUB-COMPONENT: FormField
@@ -198,32 +199,28 @@ const EditCustomerModal = ({ customer, onClose }) => {
             />
           </FormField>
 
-          <div className="flex gap-3">
-            <button 
-              type="button" 
-              onClick={onClose} 
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2.5 text-sm-text font-medium text-text-dark/70 border border-app-dark/30 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit" 
-              disabled={isSubmitting || !hasChanges} 
-              className={`flex-1 flex justify-center items-center gap-2 px-4 py-2.5 text-sm-text font-medium rounded-lg transition-all text-white
-                ${isSubmitting || !hasChanges 
-                  ? 'bg-app-dark/30 cursor-not-allowed' 
-                  : 'bg-app-dark hover:opacity-95 active:scale-95'
-                }`}
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                  Saving...
-                </>
-              ) : "Save Changes"}
-            </button>
-          </div>
+          <div className="flex gap-3 w-full">
+  {/* ✨ SECONDARY BUTTON: Standardized border and hover states */}
+  <Button 
+    variant="secondary" 
+    className="flex-1" 
+    onClick={onClose} 
+    disabled={isSubmitting}
+  >
+    Cancel
+  </Button>
+
+  {/* ✨ PRIMARY BUTTON: Automatically handles the spinner and disabled opacity */}
+  <Button 
+    variant="primary" 
+    type="submit" 
+    className="flex-1"
+    disabled={!hasChanges} 
+    isLoading={isSubmitting}
+  >
+    {isSubmitting ? "Saving..." : "Save Changes"}
+  </Button>
+</div>
         </form>
       </motion.div>
     </div>

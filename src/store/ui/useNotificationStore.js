@@ -1,9 +1,9 @@
-// store/ui/useNotificationStore.js
+
 import { create } from 'zustand';
 
 export const useNotificationStore = create((set) => ({
   message: null,
-  type: 'info', // 'success' or 'error'
+  type: 'info', 
   
   showNotification: (message, type = 'success') => {
     set({ message, type });

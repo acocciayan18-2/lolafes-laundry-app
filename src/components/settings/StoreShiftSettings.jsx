@@ -1,20 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { useSettingsStore } from '../../store/settings/useSettingsStore';
-import { useNotificationStore } from '../../store/ui/useNotificationStore'; // ✨ Imported
+import { useNotificationStore } from '../../store/ui/useNotificationStore';
+import { useActivityStore } from '../../store/activities/useActivityStore';
 import { IconClock } from '../icons';
+import Button from '../ui/Button';
 import 'react-day-picker/dist/style.css';
 
-/**
- * 🎨 CUSTOM STYLING: Full background blue highlights (No Circles)
- */
 const calendarStyles = `
   .rdp { margin: 0; --rdp-cell-size: 40px; }
   .rdp-day_selected { 
-    background-color: #e0f2fe !important; /* Light blue bg */
+    background-color: #e0f2fe !important; 
     color: #0369a1 !important; 
     font-weight: 800 !important; 
-    border-radius: 8px !important; /* Rounded corners instead of circle */
+    border-radius: 8px !important; 
   }
   .rdp-day:hover:not(.rdp-day_selected) { 
     background-color: #f8fafc; 
@@ -26,6 +25,7 @@ const calendarStyles = `
 export default function StoreShiftSettings() {
   const { systemConfig, setOperatingHours } = useSettingsStore();
   const showNotification = useNotificationStore((state) => state.showNotification);
+  const { logActivity } = useActivityStore();
   
   const operatingHours = systemConfig?.operatingHours;
 
@@ -47,7 +47,7 @@ export default function StoreShiftSettings() {
         setSelectedDays(operatingHours.allowedDays.map(d => new Date(d)));
       }
     }
- }, [operatingHours]);
+  }, [operatingHours]);
 
   const handleSave = async () => {
     if (selectedDays.length === 0 && isEnabled) {
@@ -65,6 +65,9 @@ export default function StoreShiftSettings() {
       };
       await setOperatingHours(configPayload);
       showNotification("System access hours updated!", "success");
+      
+      const statusText = isEnabled ? `Enabled (${formatTo12Hr(openTime)} - ${formatTo12Hr(closeTime)})` : "Disabled";
+      logActivity(`Settings: Shift Restrictions ${statusText}`);
     } catch (err) {
       showNotification("Failed to sync settings.", "error");
     } finally {
@@ -85,11 +88,10 @@ export default function StoreShiftSettings() {
     <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-6">
       <style>{calendarStyles}</style>
       
-      {/* HEADER & MASTER TOGGLE */}
       <div className="flex flex-col sm:flex-row !mt-0 items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div>
-            <h2 className="font-bold text-h3  mb-1">System Access Restriction</h2>
+            <h2 className="font-bold text-h3 mb-1">System Access Restriction</h2>
             <p className="text-micro text-text-dark/70">Enable to lock the system outside shift hours</p>
           </div>
         </div>
@@ -143,13 +145,15 @@ export default function StoreShiftSettings() {
       </div>
 
       <div className="flex justify-end pt-2">
-        <button 
+        <Button 
+          variant="primary"
           onClick={handleSave}
           disabled={isSaving}
-          className="w-[180px] py-3 bg-app-dark hover:bg-app-dark/90 text-white rounded-2xl  text-sm active:scale-[0.97] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-slate-100"
+          isLoading={isSaving}
+          className="w-[180px] !py-3 !rounded-2xl !text-sm shadow-lg shadow-slate-100"
         >
           {isSaving ? "Syncing..." : "Save Configuration"}
-        </button>
+        </Button>
       </div>
     </div>
   );

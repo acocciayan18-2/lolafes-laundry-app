@@ -193,7 +193,7 @@ export default function SignUp() {
           </div>
         </div>
 
-        <h3 className="text-center text-3xl font-extrabold text-gray-800 mb-1">Create Admin Account</h3>
+        <h3 className="text-center text-3xl font-bold text-text-dark mb-1">Create Admin Account</h3>
         <p className="text-center !text-text-dark/70 mb-6">Sign up with a secure password and OTP verification.</p>
 
         <form onSubmit={handleSignup}>

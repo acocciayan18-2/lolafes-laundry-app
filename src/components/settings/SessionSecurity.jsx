@@ -1,28 +1,27 @@
 import { motion } from "framer-motion";
 import { useSettingsStore } from "../../store/settings/useSettingsStore";
-import { useNotificationStore } from "../../store/ui/useNotificationStore"; // ✨ Added
+import { useNotificationStore } from "../../store/ui/useNotificationStore";
+import { useActivityStore } from "../../store/activities/useActivityStore";
 
 const SessionSecurity = () => {
-  // 1. Pull from systemConfig and the toggle action
   const { systemConfig, toggleAutoLogout } = useSettingsStore();
-  const showNotification = useNotificationStore((state) => state.showNotification); // ✨ Hook usage
+  const showNotification = useNotificationStore((state) => state.showNotification);
+  const { logActivity } = useActivityStore();
   
-  // 2. Derive state
   const isEnabled = systemConfig?.autoLogout || false;
 
   const handleToggle = async (e) => {
     e.preventDefault();
     
-    // 3. Update Firebase
     const result = await toggleAutoLogout(); 
     
-    // 4. ✨ Trigger success notification based on the new state
     if (result !== false) {
       const message = !isEnabled 
         ? "Auto-Logout protection enabled" 
         : "Auto-Logout protection disabled";
       
       showNotification(message, "success");
+      logActivity(`Settings: ${message}`);
     }
   };
 
@@ -33,7 +32,6 @@ const SessionSecurity = () => {
           <h2 className="font-bold text-h3">Session Security</h2>
         </div>
 
-        {/* THE MASTER TOGGLE SWITCH - Using your Receipt Toggle design */}
         <button 
           type="button" 
           onClick={handleToggle}
@@ -57,7 +55,6 @@ const SessionSecurity = () => {
         </div>
         
         <div className="mt-2 flex items-center gap-2">
-          {/* Status Indicator */}
           <span className={`w-2 h-2 rounded-full ${isEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
           <span className={`text-micro font-medium ${isEnabled ? 'text-emerald-600' : 'text-slate-400'}`}>
             {isEnabled ? 'Protection Active' : 'Protection Disabled'}

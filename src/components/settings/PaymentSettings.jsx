@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { usePaymentSettingsStore } from '../../store/settings/usePaymentSettingsStore';
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
-import { IconTrash,  IconStar } from '../icons';
+import { useActivityStore } from '../../store/activities/useActivityStore';
+import { IconTrash, IconStar } from '../icons';
 import { motion, AnimatePresence } from 'framer-motion';
+import Button from '../ui/Button';
 
 export default function PaymentSettings() {
   const methods = usePaymentSettingsStore((state) => state.methods) || [];
@@ -16,6 +18,7 @@ export default function PaymentSettings() {
   } = usePaymentSettingsStore();
   
   const showNotification = useNotificationStore((state) => state.showNotification);
+  const { logActivity } = useActivityStore();
 
   const [newMethodName, setNewMethodName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -25,8 +28,6 @@ export default function PaymentSettings() {
     return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
   }, [fetchPaymentMethods]);
 
-  // --- HANDLERS WITH NOTIFICATIONS ---
-
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!newMethodName.trim() || isAdding) return;
@@ -35,6 +36,7 @@ export default function PaymentSettings() {
     const success = await addMethod(newMethodName);
     if (success) {
       showNotification(`"${newMethodName}" added to payment options`, "success");
+      logActivity(`Settings: Added payment method "${newMethodName}"`);
       setNewMethodName('');
     } else {
       showNotification("Failed to add payment method", "error");
@@ -47,18 +49,17 @@ export default function PaymentSettings() {
     const success = await toggleMethodStatus(id, nextStatus);
     
     if (success) {
-      showNotification(
-        `${name} is now ${nextStatus ? 'enabled' : 'disabled'}`, 
-        nextStatus ? "success" : "info"
-      );
+      const statusText = nextStatus ? 'enabled' : 'disabled';
+      showNotification(`${name} is now ${statusText}`, nextStatus ? "success" : "info");
+      logActivity(`Settings: ${name} payment method ${statusText}`);
     }
-    // Store already handles error notification via its own catch block
   };
 
   const handleSetDefault = async (id, name) => {
     const success = await setDefaultMethod(id);
     if (success) {
       showNotification(`${name} set as default payment method`, "success");
+      logActivity(`Settings: Set ${name} as default payment method`);
     }
   };
 
@@ -67,6 +68,7 @@ export default function PaymentSettings() {
       const success = await deleteMethod(id);
       if (success) {
         showNotification(`${name} has been removed`, "info");
+        logActivity(`Settings: Removed payment method "${name}"`);
       }
     }
   };
@@ -77,10 +79,9 @@ export default function PaymentSettings() {
         <h2 className="font-bold text-h3 text-app-dark">Payment Methods</h2>
       </div>
 
-      {/* ADD FORM */}
       <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <label className="absolute -top-2 left-5 bg-white px-2 text-[10px] font-bold text-slate-400 z-10 uppercase tracking-tighter">
+          <label className="absolute -top-2 left-5 bg-white px-2 text-micro font-medium text-text-dark/70 ">
             Method Name
           </label>
           <input
@@ -92,18 +93,17 @@ export default function PaymentSettings() {
             className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:border-app-dark outline-none transition-all"
           />
         </div>
-        <button 
+        <Button 
           type="submit" 
-          disabled={isAdding || !newMethodName.trim()}
-          className="px-8 bg-app-dark text-white rounded-2xl hover:bg-app-dark/90 text-sm  transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          variant="primary"
+          disabled={!newMethodName.trim()}
+          isLoading={isAdding}
+          className="px-8 rounded-2xl"
         >
-          {isAdding ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : "Add"}
-        </button>
+          {isAdding ? "Adding..." : "Add"}
+        </Button>
       </form>
 
-      {/* LIST */}
       <div className="space-y-2">
         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-widest">
           Active Methods

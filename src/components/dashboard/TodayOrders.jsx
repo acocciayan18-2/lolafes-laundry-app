@@ -6,7 +6,7 @@ import { useSettingsStore } from "../../store/settings/useSettingsStore";
 import {
   IconClose, IconShirt, IconStatusCompleted, IconStatusPending,
   IconStatusPickedUp, IconStatusProcessing, IconStatusReady,
-  IconDelivery, IconHandover, IconPhone, IconHash
+  IconPhone, IconHash
 } from '../icons';
 import CompleteOrderModal from "../orders/CompleteOrderModal";
 
@@ -106,7 +106,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
             <h2 className="text-base-text font-bold text-text-dark">Today's Orders</h2>
           </div>
         </div>
-        <span className="bg-app-dark/5 text-text-dark text-nano font-medium px-2 py-0.5 rounded-full">
+        <span className="bg-app-dark/5 text-text-dark text-micro font-medium px-2 py-0.5 rounded-full">
           {orders.length}
         </span>
       </div>
@@ -123,52 +123,60 @@ export default function TodayOrders({ orders = [], isLoading }) {
               const isLocked = isOrderLocked(order);
               
               return (
-                <motion.button 
-                  layout
-                  key={order.id} 
-                  onClick={() => !isLocked && setSelectedOrder(order)}
-                  className={`w-full text-left relative overflow-hidden rounded-xl bg-white border transition-all p-3.5 mb-1 group
-                    ${isLocked ? 'opacity-60 grayscale-[0.5] cursor-not-allowed' : 'hover:border-app-dark/20 hover:shadow-md active:scale-[0.98]'}
-                    ${unclaimed ? 'border-rose-200' : 'border-slate-100'}
-                  `}
-                >
-                  <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${cfg.banner} transition-all group-hover:w-2`} />
+  <motion.button 
+    layout
+    key={order.id} 
+    onClick={() => !isLocked && setSelectedOrder(order)}
+    className={`w-full text-left relative overflow-hidden rounded-xl bg-white border transition-all p-3.5 mb-1 group
+      ${isLocked ? 'opacity-60 grayscale-[0.5] cursor-not-allowed' : 'hover:border-app-dark/20 hover:shadow-md active:scale-[0.98]'}
+      ${unclaimed ? 'border-rose-200' : 'border-slate-100'}
+    `}
+  >
+    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${cfg.banner} transition-all group-hover:w-2`} />
 
-                  <div className="flex justify-between items-start mb-1 pl-1.5">
-                    <div className="min-w-0 pr-3">
-                       <h3 className="text-sm-text font-bold text-text-dark truncate uppercase">
-                        {order.customer_name}
-                      </h3>
-                    </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${cfg.theme}`}>
-                      {order.status === 'picked_up' && order.handover_method === 'delivery' ? "Delivered" : cfg.label}
-                    </span>
-                  </div>
+    <div className="flex justify-between items-start mb-1 pl-1.5">
+      <div className="min-w-0 pr-3">
+         <h3 className="text-sm-text font-bold text-text-dark truncate ">
+          {order.customer_name}
+        </h3>
+      </div>
+      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${cfg.theme}`}>
+        {order.status === 'picked_up' && order.handover_method === 'delivery' ? "Delivered" : cfg.label}
+      </span>
+    </div>
 
-                  <div className="flex items-end justify-between pl-1.5">
-                    <div className="flex items-center gap-2 text-micro font-bold text-text-dark/70">
-                      <span>#{order.order_number}</span>
-                      <span>•</span>
-                      <span className="uppercase">{order.handover_method || "pickup"}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                       {(stuck || unclaimed) && (
-                        <span className={`flex h-2 w-2 rounded-full animate-pulse ${unclaimed ? 'bg-rose-500' : 'bg-orange-500'}`} />
-                      )}
-                      <span className="text-sm-text font-bold text-text-dark">
-                        ₱{Number(order.total_amount || 0).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </motion.button>
-              );
+    <div className="flex items-end justify-between pl-1.5">
+      <div className="flex items-center gap-2 text-micro font-bold text-text-dark/70">
+        <span>#{order.order_number}</span>
+        <span>•</span>
+        <span className="uppercase">{order.handover_method || "pickup"}</span>
+      </div>
+      
+      <div className="flex items-center gap-2">
+        {/* ✨ UNPAID LABEL: Shows only if payment is missing */}
+        {!order.is_paid && (
+          <span className="text-nano font-bold text-rose-500 uppercase tracking-tighter rounded ">
+            Unpaid
+          </span>
+        )}
+
+        {(stuck || unclaimed) && (
+          <span className={`flex h-2 w-2 rounded-full animate-pulse ${unclaimed ? 'bg-rose-500' : 'bg-orange-500'}`} />
+        )}
+
+        <span className="text-sm-text font-bold text-text-dark">
+          ₱{Number(order.total_amount || 0).toLocaleString()}
+        </span>
+      </div>
+    </div>
+  </motion.button>
+);
             })}
           </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center py-10 opacity-30">
             <IconShirt className="w-8 h-8 mb-2" />
-            <p className="text-sm-text font-bold uppercase tracking-widest">No Activity</p>
+            <p className="text-sm-text font-medium">No Orders Today</p>
           </div>
         )}
       </div>

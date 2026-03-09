@@ -8,10 +8,9 @@ export const useActivityStore = create(
     (set, get) => ({
       activities: [],
       isFetching: false,
-      lastDoc: null, // ✨ Cursor for pagination
-      hasMore: true, // ✨ Flag for the UI
+      lastDoc: null,
+      hasMore: true,
 
-      // ✨ UPDATED: Logic to support "Load More"
       fetchActivities: async (isLoadMore = false) => {
         const { lastDoc, activities, isFetching } = get();
         if (isFetching) return;
@@ -20,14 +19,12 @@ export const useActivityStore = create(
 
         try {
           const activityRef = collection(db, "activities");
-          const BATCH_LIMIT = 10; // Fetch only 10 at a time
+          const BATCH_LIMIT = 10;
           
           let q;
           if (isLoadMore && lastDoc) {
-            // Start after the last document we received
             q = query(activityRef, orderBy("timestamp", "desc"), startAfter(lastDoc), limit(BATCH_LIMIT));
           } else {
-            // Fresh fetch
             q = query(activityRef, orderBy("timestamp", "desc"), limit(BATCH_LIMIT));
           }
 
@@ -48,7 +45,7 @@ export const useActivityStore = create(
           set({
             activities: isLoadMore ? [...activities, ...newActivities] : newActivities,
             lastDoc: lastVisible,
-            hasMore: snapshot.docs.length === BATCH_LIMIT, // If less than limit, we reached the end
+            hasMore: snapshot.docs.length === BATCH_LIMIT,
           });
 
         } catch (error) {
@@ -83,30 +80,34 @@ export const useActivityStore = create(
         }
       },
 
-      logActivity: async (order, status, metadata = {}) => {
-        const customLabel = metadata?.label || 'Order Created';
-        const actionType = metadata?.action || 'status_update';
+      logActivity: async (orderOrMessage, status, metadata = {}) => {
+        const isSystemLog = typeof orderOrMessage === 'string';
+        
+        const customLabel = isSystemLog ? orderOrMessage : (metadata?.label || 'Order Created');
+        const actionType = isSystemLog ? 'system_update' : (metadata?.action || 'status_update');
 
-        // Duplicate Guard
         const lastActivity = get().activities[0];
         if (lastActivity) {
-          const isSameOrder = lastActivity.order_number === order?.order_number;
           const timeDiff = Date.now() - new Date(lastActivity.timestamp).getTime();
-
-          if (isSameOrder && lastActivity.customLabel === customLabel && timeDiff < 5000) return;
-          if (customLabel === 'Order Created' && isSameOrder && timeDiff < 5000) return;
+          
+          if (isSystemLog) {
+            if (lastActivity.customLabel === customLabel && timeDiff < 5000) return;
+          } else {
+            const isSameOrder = lastActivity.order_number === orderOrMessage?.order_number;
+            if (isSameOrder && lastActivity.customLabel === customLabel && timeDiff < 5000) return;
+            if (customLabel === 'Order Created' && isSameOrder && timeDiff < 5000) return;
+          }
         }
 
-        // Noise Filter
-        if (actionType === 'status_update' && status?.toLowerCase() === 'pending' && !metadata?.label) return; 
+        if (!isSystemLog && actionType === 'status_update' && status?.toLowerCase() === 'pending' && !metadata?.label) return; 
 
         const activity_id = crypto.randomUUID();
         const timestamp = new Date().toISOString();
 
         const newActivity = {
-          customer_name: order?.customer_name || "System",
-          order_number: order?.order_number || "LOG",
-          status: status || "N/A",
+          customer_name: isSystemLog ? "System" : (orderOrMessage?.customer_name || "System"),
+          order_number: isSystemLog ? "SETTINGS" : (orderOrMessage?.order_number || "LOG"),
+          status: isSystemLog ? "Updated" : (status || "N/A"),
           actionType,
           customLabel,
           activity_id,
@@ -115,7 +116,6 @@ export const useActivityStore = create(
 
         try {
           await addDoc(collection(db, "activities"), newActivity);
-          // Only update local state if DB write succeeds to keep UI in sync with server
           set((state) => ({
             activities: [newActivity, ...state.activities].slice(0, 50),
           }));
@@ -129,7 +129,6 @@ export const useActivityStore = create(
     {
       name: 'laundry-activity-log',
       storage: createJSONStorage(() => localStorage),
-      // We don't persist lastDoc because Firestore cursors aren't easily serializable
       partialize: (state) => ({ activities: state.activities }),
       onRehydrateStorage: () => (state) => {
         if (state) state.cleanupExpiredActivities();

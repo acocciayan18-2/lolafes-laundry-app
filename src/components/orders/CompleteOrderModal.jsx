@@ -2,6 +2,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { IconStatusCompleted, IconClose } from "../icons";
+import Button from "../ui/Button";
 
 export default function CompleteOrderModal({ isOpen, onClose, onConfirm, orderNumber, customerName }) {
   const [sendSms, setSendSms] = useState(true);
@@ -72,22 +73,25 @@ export default function CompleteOrderModal({ isOpen, onClose, onConfirm, orderNu
               </label>
             </div>
 
-            <div className="flex gap-3">
-              <button 
-                onClick={onClose}
-                disabled={isProcessing}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-sm-text border text-text-dark font-medium rounded-xl transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleConfirm}
-                disabled={isProcessing}
-                className="flex-[2] py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm-text font-medium rounded-xl transition-all active:scale-[0.98] flex justify-center items-center gap-2"
-              >
-                {isProcessing ? "Processing..." : "Confirm Completion"}
-              </button>
-            </div>
+           <div className="flex gap-3 w-full">
+    <Button 
+      variant="secondary" 
+      className="flex-1" 
+      onClick={onClose}
+      disabled={isProcessing}
+    >
+      Cancel
+    </Button>
+    
+    <Button 
+      variant="success"
+      className="flex-[2]" 
+      onClick={handleConfirm}
+      isLoading={isProcessing}
+    >
+      {isProcessing ? "Processing..." : "Confirm Completion"}
+    </Button>
+  </div>
           </motion.div>
         </div>
       )}

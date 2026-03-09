@@ -4,6 +4,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { auth } from "../services/firebase";
 import "../style/main-app.css";
 import "../style/sidebar.css";
+import Button from "./ui/Button";
+import { IconClose } from "./icons";
 
 import {
   IconChart,
@@ -220,20 +222,54 @@ const FooterCard = ({ isMinimized }) => (
   </div>
 );
 
+
+
 const LogoutConfirmationModal = ({ onCancel, onConfirm }) => (
-  <div className="fixed inset-0 flex items-center justify-center bg-app-dark/40 backdrop-blur-sm z-[100] p-4">
-    <div className="bg-app-light rounded-3xl p-6 w-full max-w-[340px] md:max-w-sm animate-in fade-in zoom-in duration-300">
+  <div className="fixed inset-0 flex items-center justify-center bg-app-dark/40 backdrop-blur-sm z-[100] p-4" onClick={onCancel}>
+    {/* ✨ Added 'relative' here so the close button anchors to this box */}
+    <div 
+      className="relative bg-app-light rounded-[2.5rem] p-8 w-full max-w-[340px] md:max-w-sm animate-in fade-in zoom-in duration-300 shadow-2xl"
+      onClick={(e) => e.stopPropagation()} 
+    >
+      
+      
+      <button 
+        onClick={onCancel}
+        className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all active:scale-90"
+      >
+        <IconClose className="w-5 h-5" />
+      </button>
+
       <div className="flex flex-col items-center text-center">
-        <div className="w-16 h-16 bg-app-dark rounded-full flex items-center justify-center mb-4">
-           <svg width="24" height="24" fill="none" stroke="#ffffff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        {/* LOGOUT ICON */}
+        <div className="w-16 h-16 bg-app-dark rounded-[1.5rem] flex items-center justify-center mb-6 shadow-lg">
+           <svg width="28" height="28" fill="none" stroke="#ffffff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M13 12v.01"></path><path d="M3 21h18"></path><path d="M17 13.5V21"></path><path d="M5 21V5a2 2 0 0 1 2-2h7.5"></path><path d="M21 7h-7"></path><path d="m18 4 3 3-3 3"></path>
           </svg>
         </div>
-        <h3 className="text-xl font-bold mb-2 text-text-dark">Confirm Logout</h3>
-        <p className="text-sm text-text-dark/80 mb-8">Are you sure you want to log out?</p>
+
+        <h3 className="text-xl font-bold mb-2 text-text-dark ">Confirm Logout</h3>
+        <p className="text-sm font-medium text-text-dark/60 mb-8 px-4">
+          Are you sure you want to log out? Any unsaved changes might be lost.
+        </p>
+
+        {/* ACTION BUTTONS */}
         <div className="flex flex-row gap-3 w-full">
-          <button className="flex-1 order-2 px-4 py-2 md:text-sm text-sm-text font-medium !border !border-1 !border-app-dark rounded-lg transition-all" onClick={onCancel}>Cancel</button>
-          <button className="flex-1 order-1 px-4 py-2 md:text-sm text-sm-text font-medium !bg-app-dark text-white rounded-lg transition-all" onClick={onConfirm}>Log Out</button>
+          <Button 
+            variant="secondary" 
+            className="flex-1 order-2" 
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+          
+          <Button 
+            variant="primary" 
+            className="flex-1 order-1" 
+            onClick={onConfirm}
+          >
+            Log Out
+          </Button>
         </div>
       </div>
     </div>

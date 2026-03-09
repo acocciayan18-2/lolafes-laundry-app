@@ -43,7 +43,7 @@ const statusOptions = [
 ];
 
 export default function OrderCard({ order, tick }) {
-  const [showPaymentPopover, setShowPaymentPopover] = useState(false);
+ const [showPaymentPopover, setShowPaymentPopover] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -60,6 +60,7 @@ export default function OrderCard({ order, tick }) {
   const cardRef = useRef(null);
 
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const { methods, fetchPaymentMethods } = usePaymentSettingsStore(); 
   const { receiptConfig, systemConfig } = useSettingsStore();
@@ -68,10 +69,10 @@ export default function OrderCard({ order, tick }) {
     cancelOrder, updateOrderStatus, togglePaymentStatus, isOrderUnclaimed,
     isOrderStuck, isOrderLocked, parseTimestamp, updateHandoverMethod, updateOrderNotes
   } = useOrderStore();
+  
   const { showNotification } = useNotificationStore();
   const { logActivity } = useActivityStore();
 
-  // 1. LOGGING: Notes Auto-save
   const handleSaveNotes = async (e) => {
     if (e) e.stopPropagation();
     const originalNotes = order.special_instructions || order.notes || "";
@@ -85,7 +86,6 @@ export default function OrderCard({ order, tick }) {
     setIsSavingNotes(true);
     try {
       await updateOrderNotes(order.id, cleanTempNotes);
-      // ✨ LOG ACTIVITY
       logActivity(order, order.status, { action: 'notes_update', label: `Updated notes: "${cleanTempNotes.substring(0, 20)}..."` });
       showNotification("Notes auto-saved.", "success");
       setIsEditingNotes(false);
@@ -96,18 +96,12 @@ export default function OrderCard({ order, tick }) {
     }
   };
 
-  // ✨ FIXED: Removed handleTogglePaid entirely since it's no longer used
-
-  // 3. LOGGING: Manual Print
   const handleManualPrint = async (e) => {
     e.stopPropagation();
     setIsPrinting(true);
     try {
       await silentPrint(order, settings.defaultPrinter || 'browser', receiptConfig); 
-      
-      // ✨ LOG ACTIVITY
       logActivity(order, order.status, { action: 'print', label: "Reprinted Receipt" });
-      
       showNotification("Sending to printer...", "success");
     } catch (err) {
       showNotification("Print failed.", "error");
@@ -116,17 +110,13 @@ export default function OrderCard({ order, tick }) {
     }
   };
 
-  // 4. LOGGING: Handover Method Change
   const handleConfirmHandoverChange = async (newMethod, appliedFee, newTotal) => {
     try {
       await updateHandoverMethod(order.id, newMethod, appliedFee, newTotal);
-      
-      // ✨ LOG ACTIVITY
       logActivity(order, order.status, { 
         action: 'handover_update', 
         label: `Switched to ${newMethod.toUpperCase()} (Fee: ₱${appliedFee})` 
       });
-
       setShowHandoverModal(false);
       showNotification(`Handover updated to ${newMethod}.`, "success");
     } catch (err) {
@@ -134,27 +124,19 @@ export default function OrderCard({ order, tick }) {
     }
   };
 
-  // 5. CORRECT HANDLING: Cancel Order & Loyalty Points
   const handleConfirmCancel = async (reason) => {
     try {
-      // Just pass the ID and the reason. The database will perfectly reverse the points!
       await cancelOrder(order.id, reason); 
-
       logActivity(order, "cancelled", { 
         action: 'cancel', 
         label: `Cancelled: ${reason}` 
       });
-
       showNotification(`Order cancelled. Balance adjusted.`, "success");
       setShowCancelModal(false);
     } catch (err) {
       showNotification(err.message, "error");
     }
   };
-  
-  // ACTIVITY LOGGER
-
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = fetchPaymentMethods();
@@ -186,8 +168,6 @@ export default function OrderCard({ order, tick }) {
     return true;
   }), [order.handover_method]);
 
-  
-
   const handleCancelNotesEdit = (e) => {
     if (e) e.stopPropagation();
     setTempNotes(order.special_instructions || order.notes || "");
@@ -201,12 +181,9 @@ export default function OrderCard({ order, tick }) {
     }
   }, [order.is_paid, isLocked]);
 
-  
-
   const selectPaymentMethod = async (methodName) => {
     try {
       await togglePaymentStatus(order.id, true, methodName);
-      // Already had logging, kept intact
       logActivity(order, order.status, { action: 'payment_update', label: `Paid via ${methodName}` });
       showNotification(`Order #${order.order_number} settled via ${methodName}`, "success");
       setShowPaymentModal(false); 
@@ -244,7 +221,6 @@ export default function OrderCard({ order, tick }) {
       return;
     }
 
-    // ✨ NEW LOGIC: Intercept "completed" status
     if (newStatus === "completed") {
       const needsConfirmation = systemConfig?.confirmCompletion ?? true;
 
@@ -253,13 +229,11 @@ export default function OrderCard({ order, tick }) {
         setShowCompleteModal(true);
         return;
       } else {
-        // Instant update if setting is disabled
         executeStatusUpdate("completed", "Completed", false); 
         return;
       }
     }
 
-    // Proceed normally for all other statuses
     executeStatusUpdate(newStatus, friendlyStatus);
   };
 
@@ -270,7 +244,6 @@ export default function OrderCard({ order, tick }) {
       logActivity(order, newStatus, { action: 'status_update', label: `Moved to ${friendlyStatus}` });
       showNotification(`Status updated to ${friendlyStatus}`, "success");
       
-      // Handle SMS if requested (Using the same logic we discussed for UnclaimedOrders)
       if (sendSms && order.customer_phone) {
         import('../../services/smsService').then(service => {
           service.sendStatusSMS(order.customer_phone, order.customer_name, order.order_number, "ready for pickup/delivery");
@@ -280,8 +253,6 @@ export default function OrderCard({ order, tick }) {
       showNotification("Could not update status.", "error");
     }
   };
-
-  
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -304,8 +275,8 @@ export default function OrderCard({ order, tick }) {
         <div className="flex flex-col ml-2">
           {/* HEADER ROW */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 p-3 md:p-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative">
+            <div className="flex items-center gap-3 min-w-0 w-full lg:w-auto">
+              <div className="relative shrink-0">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-hollow bg-white">
                   <status.icon className="w-5 h-5" />
                 </div>
@@ -316,110 +287,118 @@ export default function OrderCard({ order, tick }) {
                   </div>
                 )}
               </div>
-              <div className="min-w-0 flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <h3 
-                    title={order.customer_name} 
-                    className="font-bold text-text-dark text-sm-text truncate max-w-[200px]"
-                  >
-                    {order.customer_name}
-                  </h3>
-                  <span className="text-nano font-bold text-text-dark/40 uppercase px-1.5 py-0.5 rounded">
-                   {createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} {createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isLocked) setShowHandoverModal(true);
-                    }} 
-                    className={`text-nano font-medium uppercase  px-1 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-sm ${
-                      isLocked ? 'cursor-default opacity-80' : 'hover:scale-105 active:scale-95'
-                    } ${
-                      order.handover_method === 'delivery' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
-                    }`}
-                  >
-                    {handoverConfig[order.handover_method]?.icon}
-                    {handoverConfig[order.handover_method]?.label}
-                  </button>
+              
+              <div className="min-w-0 flex flex-col gap-1 w-full">
+  {/* ✨ Parent wrapper handles the final break (dropping the handover button) */}
+  <div className="flex flex-wrap items-center gap-2 w-full">
+    
+    <h3 
+      title={order.customer_name} 
+      className={`font-bold text-text-dark text-sm-text transition-all ${
+        isExpanded ? 'whitespace-normal break-words w-full sm:w-auto' : 'truncate max-w-[170px] sm:max-w-[200px]'
+      }`}
+    >
+      {order.customer_name}
+    </h3>
+    
+    <div className="flex flex-wrap justify-center gap-x-1 shrink min-w-[70px] text-[9px] leading-[1.2] font-bold text-text-dark/40 uppercase ">
+      <span className="whitespace-nowrap">
+        {createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+      </span>
+      <span className="whitespace-nowrap">
+        {createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+      </span>
+    </div>
+    
+    <button 
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!isLocked) setShowHandoverModal(true);
+      }} 
+      className={`shrink-0 text-nano font-medium uppercase px-1.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-sm ${
+        isLocked ? 'cursor-default opacity-80' : 'hover:scale-105 active:scale-95'
+      } ${
+        order.handover_method === 'delivery' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
+      }`}
+    >
+      {handoverConfig[order.handover_method]?.icon}
+      {handoverConfig[order.handover_method]?.label}
+    </button>
 
-                </div>
-                
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-nano font-bold px-2 py-0.5 rounded border bg-white/50">#{order.order_number}</span>
-                  <span className={`text-nano font-bold uppercase px-2 py-0.5 rounded border ${status.theme}`}>{status.label}</span>
-                  {handoverDate && (
-                    <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">
-                      <IconDoubleCheck className="w-3 h-3 text-green-700" />
-                      <span className="text-nano font-bold uppercase">
-                        {handoverDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} | {handoverDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+  </div>
+  
+  {/* Bottom Row Tags */}
+  <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+    <span className="text-nano font-bold px-2 py-0.5 rounded border bg-white/50">#{order.order_number}</span>
+    <span className={`text-nano font-bold uppercase px-2 py-0.5 rounded border ${status.theme}`}>{status.label}</span>
+    {handoverDate && (
+      <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">
+        <IconDoubleCheck className="w-3 h-3 text-green-700" />
+        <span className="text-nano font-bold uppercase">
+          {handoverDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} | {handoverDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      </div>
+    )}
+  </div>
+</div>
             </div>
 
             {/* ACTION & PRICING ROW */}
             <div className="flex items-center justify-between lg:justify-end gap-4 w-full lg:w-auto mt-2 lg:mt-0">
               <div className="relative flex flex-col items-start lg:items-end gap-1" ref={paymentRef}>
     
-   <div className="flex items-center gap-1.5">
-  <button 
-    onClick={(e) => {
-      e.stopPropagation();
-      // Only allow click if it is UNPAID and NOT LOCKED
-      if (!order.is_paid && !isLocked) {
-        handlePaymentClick(e);
-      }
-    }}
-    // ✨ Disable button if locked OR already paid
-    disabled={isLocked || order.is_paid} 
-    className={`text-nano font-bold px-2 py-0.5 rounded border transition-all ${
-      order.is_paid
-        // Paid state: Static badge, no hover/active effects
-        ? 'text-emerald-600 bg-emerald-50 border-emerald-200 cursor-default' 
-        // Unpaid state: Clickable button
-        : 'text-red-500 bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-95' 
-    } ${isLocked && !order.is_paid ? 'opacity-80 cursor-default hover:bg-red-50 active:scale-100' : ''}`}
-  >
-    {order.is_paid ? "PAID" : "UNPAID"}
-  </button>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!order.is_paid && !isLocked) {
+                        handlePaymentClick(e);
+                      }
+                    }}
+                    disabled={isLocked || order.is_paid} 
+                    className={`text-nano font-bold px-2 py-0.5 rounded border transition-all ${
+                      order.is_paid
+                        ? 'text-emerald-600 bg-emerald-50 border-emerald-200 cursor-default' 
+                        : 'text-red-500 bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-95' 
+                    } ${isLocked && !order.is_paid ? 'opacity-80 cursor-default hover:bg-red-50 active:scale-100' : ''}`}
+                  >
+                    {order.is_paid ? "PAID" : "UNPAID"}
+                  </button>
 
-  {order.is_paid && (
-    <span className="text-nano font-bold px-1.5 py-0.5 rounded border border-emerald-200 bg-emerald-100 text-emerald-700 uppercase animate-in fade-in zoom-in duration-300">
-      {order.payment_method || 'Cash'}
-    </span>
-  )}
-</div>
+                  {order.is_paid && (
+                    <span className="text-nano font-bold px-1.5 py-0.5 rounded border border-emerald-200 bg-emerald-100 text-emerald-700 uppercase animate-in fade-in zoom-in duration-300">
+                      {order.payment_method || 'Cash'}
+                    </span>
+                  )}
+                </div>
 
-    <div className="flex flex-col lg:flex-row lg:items-center lg:gap-2">
-      {/* DELIVERY FEE */}
-      {order.handover_method === 'delivery' && order.delivery_fee > 0 && (
-        <span className="text-nano font-bold text-blue-600 tracking-tighter whitespace-nowrap lg:pt-0.5">
-          + ₱{order.delivery_fee} DELIVERY
-        </span>
-      )}
+                <div className="flex flex-col lg:flex-row lg:items-center lg:gap-2">
+                  {/* DELIVERY FEE */}
+                  {order.handover_method === 'delivery' && order.delivery_fee > 0 && (
+                    <span className="text-nano font-bold text-blue-600 tracking-tighter whitespace-nowrap lg:pt-0.5">
+                      + ₱{order.delivery_fee} DELIVERY
+                    </span>
+                  )}
 
-      {/* TOTAL AMOUNT */}
-      <p className={`text-h3 font-bold transition-colors leading-none ${isLocked ? 'text-slate-400' : 'text-text-dark'}`}>
-        ₱{Number(order.total_amount || 0).toLocaleString()}
-      </p>
-    </div>
+                  {/* TOTAL AMOUNT */}
+                  <p className={`text-h3 font-bold transition-colors leading-none ${isLocked ? 'text-slate-400' : 'text-text-dark'}`}>
+                    ₱{Number(order.total_amount || 0).toLocaleString()}
+                  </p>
+                </div>
 
-    {/* PAYMENT MODAL */}
-    <AnimatePresence>
-      {!order.is_paid && showPaymentModal && (
-        <PaymentUpdateModal
-          isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
-          onConfirm={selectPaymentMethod}
-          orderNumber={order.order_number}
-          methods={methods}
-        />
-      )}
-    </AnimatePresence>
-  </div>
+                {/* PAYMENT MODAL */}
+                <AnimatePresence>
+                  {!order.is_paid && showPaymentModal && (
+                    <PaymentUpdateModal
+                      isOpen={showPaymentModal}
+                      onClose={() => setShowPaymentModal(false)}
+                      onConfirm={selectPaymentMethod}
+                      orderNumber={order.order_number}
+                      methods={methods}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* STATUS ACTIONS */}
               <div className="flex items-center gap-1.5" ref={dropdownRef}>
@@ -464,7 +443,7 @@ export default function OrderCard({ order, tick }) {
                 {status.nextStatus && (
                   <button 
                     onClick={(e) => handleStatusChange(e, status.nextStatus)}
-                    className="bg-btn-primary hover:bg-btn-primary/90 text-white pl-4 pr-3 py-1.5 rounded-lg shadow-md active:scale-95 flex items-center gap-1.5 transition-all group"
+                    className="bg-btn-primary hover:bg-btn-primary/90 text-white pl-4 pr-3 py-1.5 rounded-lg shadow-md active:scale-95 flex items-center gap-1.5 transition-all group shrink-0"
                   >
                     <span className="text-sm-text font-medium">Next</span>
                     <IconArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -561,7 +540,7 @@ export default function OrderCard({ order, tick }) {
                         </button>
                       )}
                       {order.status === 'pending' && (
-                        <button onClick={(e) => { e.stopPropagation(); setShowCancelModal(true); }} className="flex items-center gap-1.5 px-4 py-2 text-micro font-bold text-red-500 hover:bg-red-50 rounded-xl border border-red-100">Cancel Order</button>
+                        <button onClick={(e) => { e.stopPropagation(); setShowCancelModal(true); }} className="flex items-center gap-1.5 px-4 py-2 text-micro font-bold text-red-500 hover:bg-red-50 rounded-xl border border-red-100 shrink-0">Cancel Order</button>
                       )}
                     </div>
                   </div>

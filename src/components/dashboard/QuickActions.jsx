@@ -14,11 +14,7 @@ export default function QuickActions() {
       role="group" 
       aria-label="Quick Navigation Actions"
     >
-      {/* 2. VALIDATION & ACCESSIBILITY: 
-          - Applied classes directly to the Link instead of wrapping a <button>.
-          - Added aria-label for screen readers.
-          - Added title for a native hover tooltip since these are icon-only buttons.
-      */}
+    
       <Link 
         to="/main/neworder"
         className={actionButtonClasses}

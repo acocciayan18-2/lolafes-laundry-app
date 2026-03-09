@@ -5,9 +5,9 @@ import { useLoyaltyStore } from "../../store/services/useLoyaltyStore";
 import { useServiceStore } from "../../store/services/useServiceStore";
 import { IconArrowUp, IconGift } from "../icons";
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
-import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react'; // ✨ Added Headless UI
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react'; 
+import Button from '../ui/Button';
 
-// --- UI Helpers ---
 const Label = ({ children }) => (
   <label className="text-micro font-medium text-text-dark/60 block mb-1.5 ml-1 ">
     {children}
@@ -22,7 +22,7 @@ const Input = ({ type, value, onChange, disabled, className, placeholder, inputM
     disabled={disabled}
     placeholder={placeholder}
     inputMode={inputMode}
-    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text font-medium  focus:outline-none focus:ring-1 shadow-sm disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
+    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text font-medium focus:outline-none focus:ring-1 shadow-sm disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
   />
 );
 
@@ -30,19 +30,15 @@ const Switch = ({ checked, onCheckedChange }) => (
   <button 
     type="button" 
     onClick={() => onCheckedChange(!checked)}
-    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none 
-      ${checked ? 'bg-emerald-500' : 'bg-slate-200'}`}
+    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${checked ? 'bg-emerald-500' : 'bg-slate-200'}`}
   >
     <span 
-      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 
-        ${checked ? 'translate-x-6' : 'translate-x-1'}`} 
+      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${checked ? 'translate-x-6' : 'translate-x-1'}`} 
     />
   </button>
 );
 
-// ✨ REPLACED CUSTOM SELECT WITH HEADLESS UI
 const HeadlessSelect = ({ value, onChange, options, disabled }) => {
-  // Find the full option object based on the string value, or create a fallback
   const selectedOption = options.find(o => o.name === value) || { id: 'none', name: value || "Select Service" };
 
   return (
@@ -214,22 +210,33 @@ export default function LoyaltySettings() {
               Choose how to handle existing customer points. You can resume them later or clear them entirely.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
-              <button onClick={() => executeStatusChange(false, false)} disabled={isSaving} className="flex flex-col items-center p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-all">
-                <span className="font-bold text-text-dark text-sm-text">Pause Progress</span>
-                <span className="text-[11px] text-text-dark/70">Keep customer points saved</span>
-              </button>
-              <button onClick={() => executeStatusChange(false, true)} disabled={isSaving} className="flex flex-col items-center p-3 rounded-xl border border-slate-200 hover:border-red-500 hover:bg-red-50 transition-all">
-                <span className="font-bold text-red-600 text-sm-text">Reset Everything</span>
-                <span className="text-[11px] text-red-400">Clear all points to zero</span>
-              </button>
+              <Button 
+                variant="secondary" 
+                onClick={() => executeStatusChange(false, false)} 
+                disabled={isSaving} 
+                className="!h-auto flex-col !items-center !p-3"
+              >
+                <span className="font-bold text-sm-text">Pause Progress</span>
+                <span className="text-[11px] font-normal text-text-dark/70">Keep customer points saved</span>
+              </Button>
+              <Button 
+                variant="danger" 
+                onClick={() => executeStatusChange(false, true)} 
+                disabled={isSaving} 
+                className="!h-auto flex-col !items-center !p-3"
+              >
+                <span className="font-bold text-sm-text text-white">Reset Everything</span>
+                <span className="text-[11px] font-normal text-white/80">Clear all points to zero</span>
+              </Button>
             </div>
-            <button onClick={() => setShowConfirmDialog(false)} className="h-11 text-sm-text font-normal text-text-dark/80 hover:text-text-dark hover:underline">Nevermind, keep it active</button>
+            <button onClick={() => setShowConfirmDialog(false)} className="mt-2 h-11 text-sm-text font-normal text-text-dark/80 hover:text-text-dark hover:underline">
+              Nevermind, keep it active
+            </button>
           </motion.div>
         ) : (
           <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="flex flex-col md:flex-row bg-white border border-slate-200 shadow-sm rounded-xl"
           >
-            {/* LEFT SECTION */}
             <div className="flex-1 p-4 rounded-t-xl md:rounded-l-xl bg-white">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -240,7 +247,7 @@ export default function LoyaltySettings() {
                     <h3 className="text-h3 font-bold text-text-dark ">Customer Loyalty</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${localSettings.is_enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
-                      <span className={`text-nano font-bold uppercase  ${localSettings.is_enabled ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <span className={`text-nano font-bold uppercase ${localSettings.is_enabled ? 'text-emerald-600' : 'text-slate-400'}`}>
                         {localSettings.is_enabled ? 'Promo Active' : 'Promo Inactive'}
                       </span>
                     </div>
@@ -252,7 +259,6 @@ export default function LoyaltySettings() {
               <div className={`space-y-4 ${!localSettings.is_enabled ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="space-y-0.5 relative z-20"> 
                   <Label>Free Service Reward</Label>
-                  {/* ✨ UPDATED TO USE HEADLESS SELECT */}
                   <HeadlessSelect 
                     options={services.filter(s => s.is_active)} 
                     value={localSettings.free_service_type}
@@ -268,12 +274,10 @@ export default function LoyaltySettings() {
               </div>
             </div>
 
-            {/* PERFORATION */}
             <div className="relative flex items-center justify-center bg-white md:bg-transparent">
                 <div className="w-[calc(100%-2rem)] mx-auto h-px md:w-px md:h-[calc(100%-2rem)] border-t-2 md:border-l-2 border-dashed border-slate-300" />
             </div>
 
-            {/* RIGHT SECTION (Visual Ticket) */}
             <div className={`w-full md:w-60 p-4 flex flex-col justify-between rounded-b-xl md:rounded-r-xl transition-colors ${localSettings.is_enabled ? 'bg-app-light' : 'bg-slate-50'}`}>
               <div className="space-y-3 text-center">
                 <h4 className={`text-nano font-bold uppercase ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-400'}`}>Reward Summary</h4>
@@ -287,14 +291,15 @@ export default function LoyaltySettings() {
                 </div>
               </div>
 
-              {/* SAVE TICKET BUTTON */}
-              <button
+              <Button
+                variant="success"
                 onClick={handleSave}
-                disabled={!localSettings.is_enabled || !hasChanges || isSaving || !isValid}
-                className="mt-3 w-full h-10 flex items-center justify-center rounded-xl text-sm-text font-medium bg-green-700 text-white disabled:opacity-50 transition-all active:scale-95 shadow-md "
+                disabled={!localSettings.is_enabled || !hasChanges || !isValid}
+                isLoading={isSaving}
+                className="mt-3 w-full !h-10 shadow-md"
               >
-                {isSaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Save Ticket"}
-              </button>
+                Save Ticket
+              </Button>
             </div>
           </motion.div>
         )}

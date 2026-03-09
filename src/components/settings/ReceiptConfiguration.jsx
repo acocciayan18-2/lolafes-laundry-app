@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useSettingsStore } from '../../store/settings/useSettingsStore';
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
+import { useActivityStore } from '../../store/activities/useActivityStore';
 import { IconLoading, IconStatusReady, IconClock } from '../icons';
+import Button from '../ui/Button';
 
 export default function ReceiptConfiguration() {
   const { receiptConfig, updateReceiptConfig, isLoading } = useSettingsStore();
   const { showNotification } = useNotificationStore();
+  const { logActivity } = useActivityStore();
   
   const [formData, setFormData] = useState(receiptConfig);
   const [isSaving, setIsSaving] = useState(false);
@@ -19,6 +22,7 @@ export default function ReceiptConfiguration() {
     const result = await updateReceiptConfig(formData);
     if (result.success) {
       showNotification("Receipt Updated", "success");
+      logActivity("Settings: Updated Receipt Configuration");
     } else {
       showNotification("Sync Failed", "error");
     }
@@ -35,14 +39,12 @@ export default function ReceiptConfiguration() {
     <div className="w-full animate-in fade-in zoom-in-95 duration-500 !rounded-3xl">
       <div className="bg-white rounded-3xl border border-slate-100 shadow-md shadow-slate-200/50 overflow-hidden">
         
-        {/* HEADER */}
         <div className="p-8 pb-4 pl-5 pt-5 flex items-center justify-between">
           <div className="flex items-center gap-2 text-app-dark">
             <h2 className="font-bold text-h3">Receipt Configurations</h2>
           </div>
         </div>
 
-        {/* CONTENT AREA */}
         <div className="p-5 pt-2">
           
           <div className="grid grid-cols-1 gap-5">
@@ -59,7 +61,6 @@ export default function ReceiptConfiguration() {
               placeholder="Street, City"
             />
             
-            {/* 2-Column Row for Contact and Email */}
             <div className="grid grid-cols-2 gap-3">
               <InputField 
                 label="Contact" 
@@ -75,7 +76,6 @@ export default function ReceiptConfiguration() {
               />
             </div>
 
-            {/* ✨ ADDED: Website / Social Media field */}
             <InputField 
               label="Website / Social Media" 
               value={formData.website} 
@@ -84,23 +84,21 @@ export default function ReceiptConfiguration() {
             />
           </div>
 
-          {/* TOGGLES */}
           <div className="px-5 py-2 flex flex-col">
              <ToggleField 
-                label="Display Transaction Date" 
-                icon={<IconStatusReady className="w-4 h-4" />}
-                checked={formData.showOrderDate} 
-                onChange={(val) => setFormData({...formData, showOrderDate: val})} 
-              />
-              <ToggleField 
-                label="Display Print Timestamp" 
-                icon={<IconClock className="w-4 h-4" />}
-                checked={formData.showPrintDate} 
-                onChange={(val) => setFormData({...formData, showPrintDate: val})} 
-              />
+               label="Display Transaction Date" 
+               icon={<IconStatusReady className="w-4 h-4" />}
+               checked={formData.showOrderDate} 
+               onChange={(val) => setFormData({...formData, showOrderDate: val})} 
+             />
+             <ToggleField 
+               label="Display Print Timestamp" 
+               icon={<IconClock className="w-4 h-4" />}
+               checked={formData.showPrintDate} 
+               onChange={(val) => setFormData({...formData, showPrintDate: val})} 
+             />
           </div>
 
-          {/* FOOTER MESSAGE */}
           <div className="relative group mb-3">
             <label className="text-micro font-medium text-text-dark/70 ml-4 mb-2 block">Footer Message</label>
             <textarea 
@@ -111,25 +109,21 @@ export default function ReceiptConfiguration() {
             />
           </div>
 
-            <div className="flex justify-end ">
-              <button 
-                onClick={handleSave}
-                disabled={isSaving}
-                className="w-[160px] py-3 bg-app-dark hover:bg-app-dark/90 text-white rounded-2xl font-normal text-sm-text active:scale-[0.97] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isSaving ? (
-                  <IconLoading className="w-4 h-4 animate-spin" />
-                ) : (
-                  "Save Configuration"
-                )}
-              </button>
-            </div>
+          <div className="flex justify-end">
+            <Button 
+              variant="primary"
+              onClick={handleSave}
+              isLoading={isSaving}
+              className="w-[160px] !py-3 !rounded-2xl !font-normal !text-sm-text"
+            >
+              {isSaving ? "Saving..." : "Save Configuration"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
 
 function InputField({ label, value, onChange, placeholder }) {
   return (

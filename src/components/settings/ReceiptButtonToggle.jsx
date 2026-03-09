@@ -1,26 +1,27 @@
 import { motion } from "framer-motion";
 import { useSettingsStore } from "../../store/settings/useSettingsStore";
-import { useNotificationStore } from "../../store/ui/useNotificationStore"; // ✨ Added
+import { useNotificationStore } from "../../store/ui/useNotificationStore";
+import { useActivityStore } from "../../store/activities/useActivityStore";
 
 export default function ReceiptButtonToggle() {
   const { receiptConfig, updateReceiptConfig } = useSettingsStore();
-  const showNotification = useNotificationStore((state) => state.showNotification); // ✨ Hook
+  const showNotification = useNotificationStore((state) => state.showNotification);
+  const { logActivity } = useActivityStore();
   
   const isEnabled = receiptConfig?.showPrintReceipt ?? true;
 
   const handleToggle = async () => {
-    // 1. Perform the sync to Firebase
     const result = await updateReceiptConfig({ 
       showPrintReceipt: !isEnabled 
     });
 
-    // 2. ✨ Trigger success notification based on the new state
     if (result?.success) {
       const message = !isEnabled 
         ? "Print button is now visible" 
         : "Print button hidden from cards";
       
       showNotification(message, "success");
+      logActivity(`Settings: ${message}`);
     }
   };
 
@@ -31,7 +32,6 @@ export default function ReceiptButtonToggle() {
           <h2 className="font-bold text-h3">Order Card Print Button</h2>
         </div>
 
-        {/* THE MASTER TOGGLE SWITCH */}
         <button 
           type="button" 
           onClick={(e) => {
@@ -58,7 +58,6 @@ export default function ReceiptButtonToggle() {
         </div>
         
         <div className="mt-2 flex items-center gap-2">
-          {/* Status Indicator */}
           <span className={`w-2 h-2 rounded-full ${isEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
           <span className={`text-micro font-medium ${isEnabled ? 'text-emerald-600' : 'text-slate-400'}`}>
             {isEnabled ? 'Print Option Active' : 'Print Option Hidden'}

@@ -1,24 +1,26 @@
 import { motion } from "framer-motion";
 import { useSettingsStore } from "../../store/settings/useSettingsStore";
-import { useNotificationStore } from "../../store/ui/useNotificationStore"; // ✨ Added
+import { useNotificationStore } from "../../store/ui/useNotificationStore";
+import { useActivityStore } from "../../store/activities/useActivityStore";
 
 const AutoPrintToggle = () => {
   const { systemConfig, toggleAutoPrint } = useSettingsStore();
-  const showNotification = useNotificationStore((state) => state.showNotification); // ✨ Hook
+  const showNotification = useNotificationStore((state) => state.showNotification);
+  const { logActivity } = useActivityStore();
   
   const isAutoPrintEnabled = systemConfig?.autoPrint || false;
 
   const handleToggle = async (e) => {
     e.preventDefault();
     
-    // Perform the update
     const result = await toggleAutoPrint(); 
     
-    // Trigger notification based on the NEW state
-    // We check !isAutoPrintEnabled because we are toggling to the opposite
     if (result !== false) {
       const message = !isAutoPrintEnabled ? "Auto-Print Enabled" : "Auto-Print Paused";
       showNotification(message, "success");
+      if (logActivity) {
+        logActivity(`Settings: ${message}`);
+      }
     }
   };
 
@@ -29,7 +31,6 @@ const AutoPrintToggle = () => {
           <h2 className="font-bold text-h3">Auto-Print Receipts</h2>
         </div>
 
-        {/* THE MASTER TOGGLE SWITCH */}
         <button 
           type="button" 
           onClick={handleToggle}
@@ -53,7 +54,6 @@ const AutoPrintToggle = () => {
         </div>
         
         <div className="mt-2 flex items-center gap-2">
-          {/* Status Indicator */}
           <span className={`w-2 h-2 rounded-full ${isAutoPrintEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
           <span className={`text-micro font-medium ${isAutoPrintEnabled ? 'text-emerald-600' : 'text-slate-400'}`}>
             {isAutoPrintEnabled ? 'Auto-print Active' : 'Auto-print Paused'}

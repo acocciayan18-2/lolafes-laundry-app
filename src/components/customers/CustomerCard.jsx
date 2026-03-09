@@ -96,7 +96,6 @@ const CustomerCard = ({ customer, onEdit }) => {
 
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
               
-              {/* ✨ SYNCED ORDER COUNT: Now loads instantly from the customer object */}
               <div className="flex items-center gap-1 text-emerald-600 shrink-0">
                 <IconShirt className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-[12px] font-bold">

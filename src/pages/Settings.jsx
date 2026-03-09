@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSettingsStore } from '../store/settings/useSettingsStore';
 import SettingsPINLock from "../components/settings/SettingsPINLock";
-import { IconLock } from '../components/icons';
+import { IconLock, IconDatabase} from '../components/icons'; 
 
 // Existing Imports
 import PrintTest from "../components/settings/PrintTest";
@@ -11,7 +11,12 @@ import ReceiptConfiguration from "../components/settings/ReceiptConfiguration";
 import ReceiptButtonToggle from '../components/settings/ReceiptButtonToggle';
 import PaymentSettings from "../components/settings/PaymentSettings";
 import StoreShiftSettings from "../components/settings/StoreShiftSettings"; 
-import ConfirmCompletionToggle from '../components/settings/ConfirmCompletionToggle'; // ✨ Added
+import ConfirmCompletionToggle from '../components/settings/ConfirmCompletionToggle';
+
+// ✨ New Cleanup Imports
+import CleanupCancelledOrders from '../components/settings/CleanupCancelledOrders';
+import CleanupRewardClaims from '../components/settings/CleanupRewardClaims';
+import CleanupActivityLogs from '../components/settings/CleanupActivityLogs';
 
 const Settings = () => {
   const { systemConfig, subscribeToSettings, isLoading } = useSettingsStore();
@@ -41,9 +46,10 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-app-light p-2">
-      <div className="max-w-6xl mx-auto px-1 md:px-2">
+      <div className="max-w-6xl mx-auto px-1 md:px-2 pb-10">
         
-        <div className="flex items-center justify-between w-full mb-3">
+        {/* HEADER SECTION */}
+        <div className="flex items-center justify-between w-full mb-6">
           <div>
             <h1 className="text-h2 font-bold text-text-dark">Settings</h1>
             <p className="text-sm-text text-gray-600 mt-0.5">
@@ -60,31 +66,56 @@ const Settings = () => {
           </button>
         </div>
 
+        {/* PRIMARY SETTINGS (Full Width) */}
         <div className="w-full mb-3">
           <StoreShiftSettings />
         </div>
 
+        {/* MASONRY GRID FOR CONFIGURATIONS */}
         <div className="columns-1 md:columns-2 gap-3 space-y-3">
-          <div className="break-inside-avoid mb-3">
+          <div className="break-inside-avoid">
             <ReceiptConfiguration />
           </div>
           
-          <div className="break-inside-avoid space-y-4 mb-3">
+          <div className="break-inside-avoid space-y-3">
             <ConfirmCompletionToggle /> 
             <AutoPrintToggle />
             <ReceiptButtonToggle />
           </div>
 
-          <div className="break-inside-avoid mb-3">
+          <div className="break-inside-avoid">
             <PrintTest />
           </div>
-          <div className="break-inside-avoid mb-3">
+
+          <div className="break-inside-avoid">
             <PaymentSettings />
           </div>
-          <div className="break-inside-avoid mb-3">
+
+          <div className="break-inside-avoid">
             <SessionSecurity />
           </div>
         </div>
+
+        {/* ✨ DATABASE MAINTENANCE SECTION */}
+        <div className="mt-8 pt-8 border-t border-slate-200">
+          <div className="flex items-center gap-2 mb-4 px-1">
+            <IconDatabase className="w-5 h-5 text-text-dark" />
+            <div>
+              <h3 className="text-base-text font-bold text-text-dark">Database Maintenance</h3>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-3">
+            <CleanupCancelledOrders />
+            <CleanupRewardClaims />
+            <CleanupActivityLogs />
+          </div>
+          
+          <p className="mt-2 px-2 text-micro text-text-dark/60 italic">
+            * Note: These actions are permanent and cannot be undone. Please ensure you have backed up any necessary data before clearing.
+          </p>
+        </div>
+
       </div>
     </div>
   );

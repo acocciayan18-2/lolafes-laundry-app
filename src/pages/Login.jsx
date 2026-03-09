@@ -80,7 +80,7 @@ export default function Login() {
           </div>
         </div>
 
-        <h3 className="text-center text-3xl font-extrabold text-text-dark mb-1">
+        <h3 className="text-center text-3xl font-bold text-text-dark mb-1">
           Welcome to Lola Fe's Laundry&nbsp;Shop
         </h3>
         <p className="text-center !text-text-dark/70">Log in to continue</p>

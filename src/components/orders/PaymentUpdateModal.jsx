@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom'; // 1. Import Portal
+import { createPortal } from 'react-dom';
 import { IconCheckCircle, IconWallet, IconCreditCard, IconGCash } from '../icons';
+import Button from '../ui/Button';
 
 const getPaymentIcon = (name) => {
   const lowerName = name?.toLowerCase() || "";
@@ -56,12 +57,11 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, methods }
     }
   };
 
-  // 2. Wrap the entire return in createPortal
   return createPortal(
     <AnimatePresence mode="wait">
       {isOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-          {/* BACKDROP */}
+          
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -99,28 +99,31 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, methods }
                   exit={{ opacity: 0, x: 20 }}
                   className="space-y-4"
                 >
-                  <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <IconCheckCircle className="w-7 h-7 text-white" />
+                  <div className="w-12 h-12   flex items-center justify-center mx-auto ">
+                    <IconCheckCircle className="w-7 h-7 text-emerald-600" />
                   </div>
 
                   <h3 className="text-h3 font-bold text-text-dark">Confirm Payment?</h3>
-                  <p className="text-sm-text text-text-dark/70 leading-relaxed mb-6">
+                  <p className="text-sm-text font-normal text-text-dark/70 leading-relaxed mb-6">
                     Mark order <span className="font-bold text-text-dark">#{orderNumber}</span> as fully paid? This will finalize the billing for this transaction.
                   </p>
 
-                  <div className="flex gap-3">
-                    <button 
-                      className="flex-1 h-11 text-sm-text font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 active:scale-95 transition-all"
+                  <div className="flex gap-3 w-full ">
+                    <Button 
+                      variant="success" 
+                      className="flex-1 order-1" 
                       onClick={() => setStep(2)}
                     >
                       Yes, Paid
-                    </button>
-                    <button 
-                      className="flex-1 h-11 text-sm-text font-medium rounded-lg border border-app-dark text-text-dark hover:bg-slate-50 transition-all"
+                    </Button>
+
+                    <Button 
+                      variant="secondary" 
+                      className="flex-1 order-2" 
                       onClick={handleClose}
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </div>
                 </motion.div>
               ) : (
@@ -178,7 +181,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, methods }
         </div>
       )}
     </AnimatePresence>,
-    document.body // 3. Mount to Body
+    document.body 
   );
 };
 

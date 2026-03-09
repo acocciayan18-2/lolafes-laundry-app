@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconHandover, IconDelivery, IconClose, IconLoading } from '../icons';
+import { IconHandover, IconDelivery, IconClose} from '../icons';
+import Button from '../ui/Button';
 
 export default function ChangeHandoverModal({ isOpen, onClose, onConfirm, currentMethod, currentTotal, currentFee }) {
   const [fee, setFee] = useState("0");
@@ -14,11 +15,13 @@ export default function ChangeHandoverModal({ isOpen, onClose, onConfirm, curren
       setFee("0");
       setIsSubmitting(false);
     }
-  }, [isOpen, currentMethod]); 
+  }, [isOpen, currentMethod]);
 
   const isSwitchingToDelivery = lockedMethod === 'pickup';
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (e) => {
+    if (e) e.stopPropagation(); 
+    
     setIsSubmitting(true);
     let finalFee = 0;
     let finalTotal = Number(currentTotal);
@@ -41,7 +44,10 @@ export default function ChangeHandoverModal({ isOpen, onClose, onConfirm, curren
     <AnimatePresence>
       {isOpen && (
         <div 
-          onClick={() => { if (!isSubmitting) onClose(); }} 
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            if (!isSubmitting) onClose(); 
+          }} 
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-app-dark/40 backdrop-blur-sm"
         >
           <motion.div 
@@ -53,7 +59,10 @@ export default function ChangeHandoverModal({ isOpen, onClose, onConfirm, curren
           >
             {/* Top Right Close Button */}
             <button 
-              onClick={onClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
               disabled={isSubmitting}
               className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${
                 isSubmitting ? 'opacity-30 cursor-not-allowed' : 'text-slate-400 hover:text-text-dark hover:bg-slate-100'
@@ -64,7 +73,7 @@ export default function ChangeHandoverModal({ isOpen, onClose, onConfirm, curren
 
             {/* Header */}
             <div className="text-center mb-3">
-              <div className="w-12 h-12 bg-app-dark/5 rounded-full flex items-center justify-center mx-auto mb-2">
+              <div className="w-12 h-12 flex items-center justify-center mx-auto ">
                 {isSwitchingToDelivery ? <IconDelivery className="w-6 h-6 text-blue-600" /> : <IconHandover className="w-6 h-6 text-amber-600" />}
               </div>
               <h3 className="text-lg font-bold text-text-dark">Change to {isSwitchingToDelivery ? "Delivery" : "Pickup"}</h3>
@@ -96,7 +105,7 @@ export default function ChangeHandoverModal({ isOpen, onClose, onConfirm, curren
                     placeholder="0"
                     onFocus={(e) => e.target.select()} 
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && fee !== "") handleConfirm();
+                      if (e.key === 'Enter' && fee !== "") handleConfirm(e);
                     }}
                     className="w-full pl-8 pr-4 py-2.5 bg-white border border-blue-200 rounded-xl font-bold text-text-dark focus:outline-none focus:border-blue-400 transition-colors shadow-sm"
                   />
@@ -125,38 +134,33 @@ export default function ChangeHandoverModal({ isOpen, onClose, onConfirm, curren
               </span>
             </div>
 
-            
-            
-
             {/* Actions */}
-            <div className="flex gap-3 mt-2">
-              <button 
-                onClick={onClose} 
-                disabled={isSubmitting}
-                className={`flex-1 px-4 py-3 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 transition-colors ${
-                  isSubmitting ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'hover:bg-slate-50'
-                }`}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleConfirm} 
-                disabled={isSubmitting || (isSwitchingToDelivery && fee === "")}
-                className={`flex-1 px-4 py-3 flex items-center justify-center gap-2 rounded-xl text-sm font-medium text-white transition-all 
-                  ${(isSwitchingToDelivery && fee === "") || isSubmitting
-                    ? 'bg-slate-300 cursor-not-allowed' 
-                    : 'bg-app-dark hover:bg-app-dark/90 active:scale-95'}`}
-              >
-                {isSubmitting ? (
-                  <>
-                    <IconLoading className="w-4 h-4 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  "Confirm"
-                )}
-              </button>
-            </div>
+           <div className="flex gap-3 mt-2 w-full">
+  {/* ✨ SECONDARY: Uses your new outline design */}
+  <Button 
+    variant="secondary" 
+    className="flex-1 rounded-xl" 
+    onClick={(e) => {
+      e.stopPropagation();
+      onClose();
+    }} 
+    disabled={isSubmitting}
+  >
+    Cancel
+  </Button>
+
+  {/* ✨ PRIMARY: Automatically handles the loading spinner and "bg-app-dark" */}
+  <Button 
+    variant="primary" 
+    className="flex-1 rounded-xl"
+    onClick={handleConfirm} 
+    // Logic: Disabled if switching to delivery but no fee is entered
+    disabled={isSwitchingToDelivery && fee === ""} 
+    isLoading={isSubmitting}
+  >
+    {isSubmitting ? "Updating..." : "Confirm"}
+  </Button>
+</div>
           </motion.div>
         </div>
       )}
