@@ -214,7 +214,7 @@ export default function SignUp() {
               <input
                 type="text"
                 id="otp"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 tracking-[0.5em] focus:ring-1 focus:ring-app-dark focus:outline-none text-center tracking-widest text-lg !font-bold"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3  focus:ring-1 focus:ring-app-dark focus:outline-none text-center tracking-widest text-lg !font-bold"
                 placeholder="000000"
                 value={enteredOtp}
                 onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, ''))} // Strips non-digits
