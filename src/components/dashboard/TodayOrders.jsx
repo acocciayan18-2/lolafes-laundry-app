@@ -7,7 +7,7 @@ import { useActivityStore } from "../../store/activities/useActivityStore"; // �
 import {
   IconClose, IconShirt, IconStatusCompleted, IconStatusPending,
   IconStatusPickedUp, IconStatusProcessing, IconStatusReady,
-  IconPhone, IconHash, IconEyeOpen, IconEyeClosed, IconMapPin, IconHandover // Included missing icons for new layout
+  IconPhone,  IconEyeOpen, IconEyeClosed, IconMapPin, IconHandover, IconDelivery // Included missing icons for new layout
 } from '../icons';
 import CompleteOrderModal from "../orders/CompleteOrderModal";
 
@@ -30,7 +30,7 @@ const getSafeDate = (ts) => {
 
 // SECURITY: Masking utility for PII
 const maskPhone = (phone) => phone ? phone.replace(/.(?=.{4})/g, '•') : "N/A";
-const maskAddress = (address) => address ? "•••••••• Hidden for privacy" : "N/A";
+const maskAddress = (address) => address ? "••••• Hidden for privacy" : "N/A";
 
 // PERFORMANCE: Memoized Order Card
 const OrderCard = React.memo(({ order, isLocked, unclaimed, stuck, onClick }) => {
@@ -221,7 +221,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[600px]" 
+              className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[600px]" 
             >
               {/* ✨ REDESIGNED HEADER: Matches Cancelled/Unclaimed modal logic */}
               <div className="bg-slate-50/80 pt-5 pb-3 px-4 text-center relative border-b border-slate-100 shrink-0">
@@ -287,12 +287,13 @@ export default function TodayOrders({ orders = [], isLoading }) {
 
                 {/* Logistics Summary */}
                 <div className="px-2 space-y-2.5">
-                  <div className="flex justify-between items-center text-micro font-medium uppercase tracking-wider text-text-dark/70">
+                  <div className="flex justify-between items-center text-sm-text font-medium text-text-dark/70">
                     <div className="flex items-center gap-2">
-                      <IconHandover className="w-3.5 h-3.5" />
+                      <IconHandover className="w-4 h-4" />
+                      <IconDelivery className="w-4 h-4" />
                       <span>Handover</span>
                     </div>
-                    <span className="text-text-dark">{selectedOrder.handover_method || "pickup"}</span>
+                    <span className="text-text-dark capitalize">{selectedOrder.handover_method || "pickup"}</span>
                   </div>
 
                   <div className="flex justify-between items-start">
@@ -323,7 +324,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
                     <span className="text-sm-text font-medium text-text-dark/70">Payment Status</span>
                     <div className="flex items-center gap-1.5">
                       <div className={`w-1.5 h-1.5 rounded-full ${selectedOrder.is_paid ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
-                      <span className={`text-[11px] font-bold tracking-wider uppercase ${selectedOrder.is_paid ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      <span className={`text-micro font-bold  capitalize ${selectedOrder.is_paid ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {selectedOrder.is_paid ? `Paid ${selectedOrder.payment_method ? `via ${selectedOrder.payment_method}` : ''}` : "Unpaid Balance"}
                       </span>
                     </div>
@@ -334,7 +335,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
 
                 {/* Update Actions */}
                 <div className="space-y-2">
-                  <h4 className="text-micro font-bold text-text-dark/40 uppercase tracking-widest mb-2 px-1">Update Status</h4>
+                  <h4 className="text-micro font-bold text-text-dark/40  mb-2 px-1">Update Status</h4>
                   {Object.entries(statusConfig).filter(([k]) => k !== 'pending' && k !== 'delivered').map(([key, cfg]) => {
                     const isCurrent = selectedOrder.status === key;
                     const { allowed } = validate(selectedOrder, key);

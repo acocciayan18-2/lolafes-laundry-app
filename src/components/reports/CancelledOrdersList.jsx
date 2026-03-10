@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   IconBan, IconInfo, IconPhone, 
   IconMapPin, IconClose,
-  IconHandover, IconEyeOpen, IconEyeClosed
+  IconHandover, IconEyeOpen, IconEyeClosed,
+  IconDelivery
 } from "../icons";
 
 const maskPhone = (phone) => phone ? phone.replace(/.(?=.{4})/g, '•') : "N/A";
@@ -14,9 +15,9 @@ const formatFullAuditDate = (ts) => {
   let dateObj;
 
   try {
-    if (ts.seconds) dateObj = new Date(ts.seconds * 1000); // Firestore Timestamp
+    if (ts.seconds) dateObj = new Date(ts.seconds * 1000); 
     else if (typeof ts.toDate === 'function') dateObj = ts.toDate(); 
-    else dateObj = new Date(ts); // String or Date Object
+    else dateObj = new Date(ts); 
 
     if (isNaN(dateObj.getTime())) return null;
 
@@ -135,11 +136,11 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Logistics Summary */}
           <div className="px-2 space-y-2.5">
             <div className="flex justify-between items-center text-micro font-medium uppercase tracking-wider text-text-dark/70">
               <div className="flex items-center gap-2">
                 <IconHandover className="w-3.5 h-3.5" />
+                <IconDelivery className="w-4 h-4" />
                 <span>Handover</span>
               </div>
               <span className="text-text-dark">{order.handover_method || "pickup"}</span>
@@ -182,8 +183,8 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
           {/* Audit Log / Reason Section */}
           <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-2xl space-y-3">
             <div className="text-center pb-2 border-b border-slate-200">
-              <h4 className="text-micro font-bold text-text-dark/40 uppercase tracking-widest mb-1">Cancellation Reason</h4>
-              <p className="text-[13px] font-bold text-rose-600 italic">"{order.cancellation_reason || "No reason recorded"}"</p>
+              <h4 className="text-micro font-bold text-text-dark/40  mb-1">Cancellation Reason</h4>
+              <p className="text-sm-text font-medium text-rose-600 italic">"{order.cancellation_reason || "No reason recorded"}"</p>
             </div>
             
             <div className="grid grid-cols-1 gap-1.5 text-micro font-medium tracking-tight text-text-dark/60">
@@ -250,7 +251,7 @@ const CancelledOrderCard = ({ order, onOpenDetail }) => {
           </h3>
         </div>
         <div className="shrink-0 flex items-center px-1">
-          <span className="text-[10px] font-bold text-rose-600 tracking-tighter uppercase bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
+          <span className="text-nano font-medium text-rose-600 uppercase  px-2 py-0.5 ">
             {timeString}
           </span>
         </div>

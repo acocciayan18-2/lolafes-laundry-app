@@ -108,7 +108,7 @@ export default function RewardRecipients() {
     {/* BOTTOM ROW: Order reference & Timestamp */}
     <div className="flex items-end justify-between pl-1.5">
       <div className="flex items-center gap-1.5">
-        <span className="text-micro font-bold px-1.5 text-text-dark/70 bg-slate-50 rounded border border-slate-100">
+        <span className="text-micro font-medium text-text-dark/70 bg-slate-50 rounded ">
           #{log.order_number || "---"}
         </span>
       </div>
