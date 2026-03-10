@@ -1,43 +1,52 @@
 import React from 'react';
 
-export default function QuickStats({ title, value, icon, trend }) {
-  // We ignore the incoming 'bgColor' prop from the parent to enforce our B&W theme
+export default function QuickStats({ 
+  title = "Metric", 
+  value = "-", 
+  icon = null, 
+  trend = "" 
+}) {
+  const safeTitle = typeof title === 'string' || typeof title === 'number' ? title : "Metric";
+  const safeValue = typeof value === 'string' || typeof value === 'number' ? value : "-";
+  const safeTrend = typeof trend === 'string' || typeof trend === 'number' ? trend : "";
+
   return (
-    <div className="bg-white rounded-xl shadow-md border border-app-dark/10  transform  overflow-hidden">
+    <div className="bg-white rounded-xl shadow-md border border-app-dark/10 transform overflow-hidden">
       <div className="p-4">
-        <div className="flex items-start justify-between gap-2 ">
+        <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             
-            {/* TITLE: Using text-nano (mobile) and text-micro (desktop) */}
-            <p className="text-nano md:text-micro font-bold text-text-dark/70  mb-1 truncate uppercase ">
-              {title}
+            <p className="text-nano md:text-micro font-bold text-text-dark/70 mb-1 truncate uppercase">
+              {safeTitle}
             </p>
             
-            {/* VALUE: Using text-h2 (mobile) and text-h1 (desktop) for maximum impact */}
             <p 
               className="text-h2 md:text-h1 font-bold text-text-dark leading-none truncate tracking-tighter"
-              title={value} 
+              title={String(safeValue)} 
             >
-              {value}
+              {safeValue}
             </p>
             
-            {/* TREND: Using text-nano (mobile) and text-micro (desktop) */}
-            {trend && (
+            {safeTrend && (
               <p className="text-nano md:text-micro font-medium text-text-dark/60 mt-2 truncate">
-                {trend}
+                {safeTrend}
               </p>
             )}
           </div>
           
-          {/* ICON CONTAINER: Styled with hollow shadow and text-dark stroke */}
-          <div className="p-2 md:p-2.5 rounded-lg bg-transparent border shadow-hollow shrink-0">
-            {React.isValidElement(icon) 
-              ? React.cloneElement(icon, { 
-                  className: "w-4 h-4 md:w-5 md:h-5 text-text-dark stroke-text-dark" 
-                }) 
-              : icon
-            }
-          </div>
+          {icon && (
+            <div 
+              className="p-2 md:p-2.5 rounded-lg bg-transparent border shadow-hollow shrink-0"
+              aria-hidden="true"
+            >
+              {React.isValidElement(icon) 
+                ? React.cloneElement(icon, { 
+                    className: "w-4 h-4 md:w-5 md:h-5 text-text-dark stroke-text-dark" 
+                  }) 
+                : icon
+              }
+            </div>
+          )}
         </div>
       </div>
     </div>

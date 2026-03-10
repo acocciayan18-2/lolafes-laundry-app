@@ -3,15 +3,24 @@ import { useActivityStore } from '../../store/activities/useActivityStore';
 import { IconActivity, IconLoading } from "../icons";
 
 const formatTimeAgo = (dateInput) => {
-  if (!dateInput) return '';
+  if (!dateInput) return 'Unknown time';
   const date = new Date(dateInput);
   const now = new Date();
+  
+  // Guard against invalid dates
+  if (isNaN(date.getTime())) return 'Unknown time';
+
   const diff = Math.floor((now - date) / 1000);
   
   if (diff < 60) return 'Just now';
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
+};
+
+// PERFORMANCE: Isolated component prevents the entire list from re-rendering every 60s
+const TimeAgo = ({ timestamp, tick }) => {
+  return <>{formatTimeAgo(timestamp)}</>;
 };
 
 export default function RecentActivity() {
@@ -24,19 +33,26 @@ export default function RecentActivity() {
     cleanupExpiredActivities 
   } = useActivityStore();
 
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
 
+  // Initialize once on mount. Reading directly from getState() avoids dependency loop traps.
   useEffect(() => {
-    cleanupExpiredActivities();
-    if (activities.length === 0) {
-      fetchActivities();
-    }
-  }, [cleanupExpiredActivities, fetchActivities, activities.length]);
+    let mounted = true;
+    
+    const init = async () => {
+      await cleanupExpiredActivities();
+      if (mounted && useActivityStore.getState().activities.length === 0) {
+        fetchActivities();
+      }
+    };
+    
+    init();
+    return () => { mounted = false; };
+  }, [cleanupExpiredActivities, fetchActivities]);
 
+  // Clock tick for relative times
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTick((t) => t + 1);
-    }, 60000); 
+    const interval = setInterval(() => setTick((t) => t + 1), 60000); 
     return () => clearInterval(interval);
   }, []);
 
@@ -60,7 +76,8 @@ export default function RecentActivity() {
         {activities.length > 0 && (
           <button 
             onClick={clearHistory}
-            className="text-micro text-text-dark/30 hover:text-rose-500 transition-colors px-2 py-1"
+            className="text-micro text-text-dark/30 hover:text-rose-500 transition-colors px-2 py-1 outline-none focus:ring-2 focus:ring-rose-200 rounded"
+            aria-label="Clear activity history"
           >
             Clear
           </button>
@@ -71,6 +88,8 @@ export default function RecentActivity() {
         {activities.length > 0 ? (
           <>
             {activities.map((item) => {
+              if (!item || !item.activity_id) return null; // Safe rendering guard
+              
               const title = getActivityTitle(item);
               return (
                 <div key={item.activity_id} className="group border-l-2 border-slate-100 pl-4 hover:border-app-dark/20 transition-colors">
@@ -80,16 +99,16 @@ export default function RecentActivity() {
                         {title}
                       </p>
                       <p className="text-nano text-text-dark/40 font-medium whitespace-nowrap">
-                        {formatTimeAgo(item.timestamp)}
+                        <TimeAgo timestamp={item.timestamp} tick={tick} />
                       </p>
                     </div>
                     
                     <div className="flex items-center gap-2 mt-1">
-                      <p className="text-nano text-text-dark/70 uppercase">
+                      <p className="text-nano text-text-dark/70 uppercase truncate">
                         {item.customer_name || "System"}
                       </p>
                       <span className="w-1 h-1 rounded-full bg-slate-200 shrink-0" />
-                      <p className="text-nano font-bold text-text-dark/80">
+                      <p className="text-nano font-bold text-text-dark/80 shrink-0">
                         {item.order_number !== "SETTINGS" && "#"}{item.order_number || "LOG"}
                       </p>
                     </div>
@@ -103,7 +122,7 @@ export default function RecentActivity() {
                 <button
                   disabled={isFetching}
                   onClick={() => fetchActivities(true)}
-                  className="w-full py-1 text-micro font-medium text-text-dark/40 hover:text-text-dark/70 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-1 text-micro font-medium text-text-dark/40 hover:text-text-dark/70 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isFetching ? (
                     <>

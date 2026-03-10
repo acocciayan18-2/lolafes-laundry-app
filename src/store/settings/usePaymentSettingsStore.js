@@ -24,10 +24,6 @@ export const usePaymentSettingsStore = create((set, get) => ({
     });
   },
 
-  /**
-   * ✨ NEW: Set Default Logic
-   * Uses a batch to unset the old default and set the new one simultaneously.
-   */
   setDefaultMethod: async (methodId) => {
     const showNotify = useNotificationStore.getState().showNotification;
     const currentMethods = get().methods;

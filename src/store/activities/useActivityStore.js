@@ -8,22 +8,29 @@ export const useActivityStore = create(
     (set, get) => ({
       activities: [],
       isFetching: false,
-      lastDoc: null,
       hasMore: true,
 
       fetchActivities: async (isLoadMore = false) => {
-        const { lastDoc, activities, isFetching } = get();
-        if (isFetching) return;
+        const { activities, isFetching, hasMore } = get();
+        
+        if (isFetching || (isLoadMore && !hasMore)) return;
 
         set({ isFetching: true });
 
         try {
           const activityRef = collection(db, "activities");
           const BATCH_LIMIT = 10;
-          
           let q;
-          if (isLoadMore && lastDoc) {
-            q = query(activityRef, orderBy("timestamp", "desc"), startAfter(lastDoc), limit(BATCH_LIMIT));
+          
+          if (isLoadMore && activities.length > 0) {
+            // FIXED PAGINATION: Uses stable timestamp instead of volatile DocumentSnapshot
+            const lastItem = activities[activities.length - 1];
+            q = query(
+              activityRef, 
+              orderBy("timestamp", "desc"), 
+              startAfter(lastItem.timestamp), 
+              limit(BATCH_LIMIT)
+            );
           } else {
             q = query(activityRef, orderBy("timestamp", "desc"), limit(BATCH_LIMIT));
           }
@@ -31,7 +38,7 @@ export const useActivityStore = create(
           const snapshot = await getDocs(q);
           
           if (snapshot.empty) {
-            set({ hasMore: false });
+            set({ hasMore: false, isFetching: false });
             return;
           }
 
@@ -40,11 +47,13 @@ export const useActivityStore = create(
             activity_id: doc.id 
           }));
 
-          const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+          // Deduplicate arrays to prevent React key errors if overlapping data arrives
+          const mergedActivities = isLoadMore 
+            ? [...activities, ...newActivities].filter((v, i, a) => a.findIndex(t => (t.activity_id === v.activity_id)) === i)
+            : newActivities;
 
           set({
-            activities: isLoadMore ? [...activities, ...newActivities] : newActivities,
-            lastDoc: lastVisible,
+            activities: mergedActivities,
             hasMore: snapshot.docs.length === BATCH_LIMIT,
           });
 
@@ -56,20 +65,27 @@ export const useActivityStore = create(
       },
 
       cleanupExpiredActivities: async () => {
-        const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
-        const now = Date.now();
-        const cutoffDate = new Date(now - thirtyDaysInMs).toISOString();
-
-        set((state) => ({
-          activities: state.activities.filter((activity) => {
-            const activityTime = new Date(activity.timestamp).getTime();
-            return now - activityTime < thirtyDaysInMs;
-          }),
-        }));
-
         try {
-          const q = query(collection(db, "activities"), where("timestamp", "<", cutoffDate));
+          const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+          const now = Date.now();
+          
+          // GUARD: Prevent absolute destruction if device clock is wrong (e.g. year 1970)
+          if (now < 1700000000000) return; 
+
+          const cutoffDate = new Date(now - thirtyDaysInMs).toISOString();
+
+          // 1. Clean local memory safely
+          set((state) => ({
+            activities: state.activities.filter((activity) => {
+              if (!activity?.timestamp) return false; 
+              return new Date(activity.timestamp).getTime() >= (now - thirtyDaysInMs);
+            }),
+          }));
+
+          // 2. Clean Firebase safely (capped at 100 to prevent malicious mass-deletion)
+          const q = query(collection(db, "activities"), where("timestamp", "<", cutoffDate), limit(100));
           const snapshot = await getDocs(q);
+          
           if (!snapshot.empty) {
             const batch = writeBatch(db);
             snapshot.docs.forEach((doc) => batch.delete(doc.ref));
@@ -81,50 +97,62 @@ export const useActivityStore = create(
       },
 
       logActivity: async (orderOrMessage, status, metadata = {}) => {
-        const isSystemLog = typeof orderOrMessage === 'string';
-        
-        const customLabel = isSystemLog ? orderOrMessage : (metadata?.label || 'Order Created');
-        const actionType = isSystemLog ? 'system_update' : (metadata?.action || 'status_update');
-
-        const lastActivity = get().activities[0];
-        if (lastActivity) {
-          const timeDiff = Date.now() - new Date(lastActivity.timestamp).getTime();
-          
-          if (isSystemLog) {
-            if (lastActivity.customLabel === customLabel && timeDiff < 5000) return;
-          } else {
-            const isSameOrder = lastActivity.order_number === orderOrMessage?.order_number;
-            if (isSameOrder && lastActivity.customLabel === customLabel && timeDiff < 5000) return;
-            if (customLabel === 'Order Created' && isSameOrder && timeDiff < 5000) return;
-          }
-        }
-
-        if (!isSystemLog && actionType === 'status_update' && status?.toLowerCase() === 'pending' && !metadata?.label) return; 
-
-        const activity_id = crypto.randomUUID();
-        const timestamp = new Date().toISOString();
-
-        const newActivity = {
-          customer_name: isSystemLog ? "System" : (orderOrMessage?.customer_name || "System"),
-          order_number: isSystemLog ? "SETTINGS" : (orderOrMessage?.order_number || "LOG"),
-          status: isSystemLog ? "Updated" : (status || "N/A"),
-          actionType,
-          customLabel,
-          activity_id,
-          timestamp,
-        };
-
         try {
+          const isSystemLog = typeof orderOrMessage === 'string';
+          
+          // DATA SANITIZATION: Truncate strings to prevent DB payload bloat/XSS
+          const safeOrderNumber = isSystemLog ? "SETTINGS" : String(orderOrMessage?.order_number || "LOG").substring(0, 50);
+          const safeCustomerName = isSystemLog ? "System" : String(orderOrMessage?.customer_name || "System").substring(0, 100);
+          const safeStatus = isSystemLog ? "Updated" : String(status || "N/A").substring(0, 50);
+          const customLabel = String(isSystemLog ? orderOrMessage : (metadata?.label || 'Order Created')).substring(0, 200);
+          const actionType = String(isSystemLog ? 'system_update' : (metadata?.action || 'status_update')).substring(0, 50);
+
+          const { activities } = get();
+          const lastActivity = activities[0];
+
+          // SPAM PREVENTION: Block rapid duplicates
+          if (lastActivity && lastActivity.timestamp) {
+            const timeDiff = Date.now() - new Date(lastActivity.timestamp).getTime();
+            
+            if (timeDiff < 5000) {
+              if (isSystemLog && lastActivity.customLabel === customLabel) return;
+              if (!isSystemLog && lastActivity.order_number === safeOrderNumber && lastActivity.customLabel === customLabel) return;
+              if (customLabel === 'Order Created' && lastActivity.order_number === safeOrderNumber) return;
+            }
+          }
+
+          // Ignore empty pending states
+          if (!isSystemLog && actionType === 'status_update' && safeStatus.toLowerCase() === 'pending' && !metadata?.label) return; 
+
+          // Fallback if browser doesn't support crypto.randomUUID
+          const activity_id = crypto?.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2);
+          const timestamp = new Date().toISOString();
+
+          const newActivity = {
+            activity_id,
+            timestamp,
+            customer_name: safeCustomerName,
+            order_number: safeOrderNumber,
+            status: safeStatus,
+            actionType,
+            customLabel,
+          };
+
+          // OPTIMISTIC UI UPDATE: Feel instantly fast, keep LS capped at 100
+          set((state) => {
+            const filtered = state.activities.filter(a => a.activity_id !== activity_id);
+            return { activities: [newActivity, ...filtered].slice(0, 100) }; 
+          });
+
+          // FIREBASE SYNC
           await addDoc(collection(db, "activities"), newActivity);
-          set((state) => ({
-            activities: [newActivity, ...state.activities].slice(0, 50),
-          }));
+          
         } catch (error) {
-          console.error("Firebase Save Error:", error);
+          console.error("Activity Logging Error:", error);
         }
       },
 
-      clearHistory: () => set({ activities: [], lastDoc: null, hasMore: true }),
+      clearHistory: () => set({ activities: [], hasMore: true }),
     }),
     {
       name: 'laundry-activity-log',

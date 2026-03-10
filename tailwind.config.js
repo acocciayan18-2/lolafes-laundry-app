@@ -12,10 +12,10 @@ module.exports = {
         'h1': ['28px', { lineHeight: '34px', letterSpacing: '-0.02em', fontWeight: '700' }],
         'h2': ['22px', { lineHeight: '28px', letterSpacing: '-0.01em', fontWeight: '700' }],
         'h3': ['18px', { lineHeight: '24px', fontWeight: '700' }],
-        'base-text': ['15px', { lineHeight: '22px', fontWeight: '500' }],
-        'sm-text': ['13px', { lineHeight: '18px', fontWeight: '400' }],
-        'micro': ['11px', { lineHeight: '14px', fontWeight: '600' }],
-        'nano': ['10px', { lineHeight: '12px', fontWeight: '700', letterSpacing: '0.05em' }],
+        'base-text': ['15px', { lineHeight: '22px', fontWeight: '400' }],
+        'sm-text': ['14px', { lineHeight: '18px', fontWeight: '400' }],
+        'micro': ['12px', { lineHeight: '14px', fontWeight: '400' }],
+        'nano': ['10px', { lineHeight: '12px', fontWeight: '400', letterSpacing: '0.03em' }],
       },
       colors: {
         // Base Theme Colors

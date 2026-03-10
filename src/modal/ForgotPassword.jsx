@@ -40,8 +40,7 @@ export default function ForgotPassword({
           <IconClose className="w-5 h-5" />
         </button>
 
-        {/* ✨ ICON: Centered Minimalist Style */}
-        <div className="w-16 h-16 flex items-center justify-center mx-auto mb-2">
+        <div className="w-16 h-16 flex items-center justify-center mx-auto">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" className="text-text-dark" viewBox="0 0 16 16">
             <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
             <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0" />
@@ -50,13 +49,13 @@ export default function ForgotPassword({
 
         {/* ✨ HEADER & SUBTEXT */}
         <h3 className="text-h3 font-bold text-text-dark ">Reset Password</h3>
-        <p className="text-sm-text font-normal text-text-dark/70 mt-2 mb-8 px-2">
+        <p className="text-sm-text font-normal text-text-dark/70 mt-2 mb-4 px-2">
           Only fully registered admin accounts will receive a password reset link via email.
         </p>
 
         {/* EMAIL INPUT FIELD */}
         <div className="mb-8 text-left">
-          <label htmlFor="email" className="block text-micro font-medium text-text-dark/70 mb-3 ">
+          <label htmlFor="email" className="block text-micro text-text-dark/70 mb-2 ">
             Admin Email Address
           </label>
           <div className="relative flex items-center">
@@ -69,7 +68,7 @@ export default function ForgotPassword({
               type="email"
               id="email"
               disabled={resetLoading}
-              className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm-text font-normal focus:outline-none focus:border-app-dark focus:bg-white transition-all"
+              className="w-full px-4 pl-10 py-2.5 border text-sm-text border-slate-300 rounded-lg ring-0 focus:ring-app-dark focus:border-app-dark outline-none transition-all"
               placeholder="Enter registered email"
               autoComplete="off"
               value={resetEmail}

@@ -1,37 +1,48 @@
 import { Link } from 'react-router-dom';
-import { IconAddNewOrder, IconUsers } from '../icons';
+import { IconPlus, IconUsers } from '../icons';
+
+// ----------------------------------------------------------------------
+// CONFIGURATION & STYLES
+// Extracted outside the component to prevent memory reallocation on every re-render
+// ----------------------------------------------------------------------
+
+const ACTION_BUTTON_CLASSES = "group flex items-center justify-center w-9 h-9 shadow-md bg-white active:bg-app-dark/5 rounded-xl border border-text-dark/20 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-app-dark/20";
+
+const QUICK_ACTIONS = [
+  {
+    id: 'new-order',
+    path: '/main/neworder',
+    label: 'Create New Order',
+    icon: IconPlus,
+  },
+  {
+    id: 'customers',
+    path: '/main/customers',
+    label: 'View Customers Directory',
+    icon: IconUsers,
+  }
+];
 
 export default function QuickActions() {
-  // 1. PERFORMANCE (DRY Principle): 
-  // Extracting common classes makes the component lighter, easier to maintain, 
-  // and prevents you from having to update styling in multiple places.
-  // Note: I removed 'border-1' as 'border' natively handles the 1px width in Tailwind.
-  const actionButtonClasses = "group flex items-center justify-center w-9 h-9 shadow-md bg-white  active:bg-app-dark/5 rounded-xl border border-text-dark/20 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-app-dark/20";
-
   return (
-    <div 
+    <nav 
       className="flex items-center gap-1.5" 
-      role="group" 
       aria-label="Quick Navigation Actions"
     >
-    
-      <Link 
-        to="/main/neworder"
-        className={actionButtonClasses}
-        aria-label="Create New Order"
-        title="Create New Order"
-      >
-        <IconAddNewOrder className="w-5 h-5" aria-hidden="true" />
-      </Link>
-
-      <Link 
-        to="/main/customers"
-        className={actionButtonClasses}
-        aria-label="View Customers Directory"
-        title="View Customers"
-      >
-        <IconUsers className="w-4 h-4" aria-hidden="true" />
-      </Link>
-    </div>
+      {QUICK_ACTIONS.map(({ id, path, label, icon: Icon }) => (
+        <Link 
+          key={id}
+          to={path}
+          className={ACTION_BUTTON_CLASSES}
+          aria-label={label}
+          title={label} // Provides a native browser tooltip on hover
+          // Prevent default drag behavior which can accidentally trigger on touch devices
+          onDragStart={(e) => e.preventDefault()} 
+        >
+          {/* Defensive rendering: ensures the app doesn't crash if an icon is missing */}
+          {Icon ? <Icon className="w-4 h-4 text-text-dark" aria-hidden="true" /> : null}
+        </Link>
+      ))}
+    </nav>
   );
 }

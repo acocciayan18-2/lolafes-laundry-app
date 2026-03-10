@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "../../store/orders/useOrderStore";
 
 export default function CompactIntelligence() {
   const metrics = useOrderStore((state) => state.metrics);
   const [index, setIndex] = useState(0);
-  
-  // 1. ADDED UX FUNCTIONALITY: Pause the ticker if the user is hovering to read it
   const [isPaused, setIsPaused] = useState(false);
+  const timerRef = useRef(null);
 
-  // 2. DATA SECURITY & VALIDATION: Memoized with Fallbacks
+  // ==========================================
+  // DATA SECURITY: Defensive parsing and default fallbacks
+  // ==========================================
   const slides = useMemo(() => {
-    // Safely destructure with default values so the app never crashes if metrics are null/undefined
+    // Safely destructure with robust defaults to prevent undefined reference crashes
     const {
       salesToday = 0,
       salesYesterdayTotal = 0,
@@ -22,63 +23,86 @@ export default function CompactIntelligence() {
       staleOrders = []
     } = metrics || {};
 
-    const salesPercent = salesYesterdayTotal > 0 
-        ? ((salesToday / salesYesterdayTotal) * 100).toFixed(1) : 0;
+    // Defensively parse floats to ensure math doesn't result in NaN if a string is passed
+    const parsedSalesToday = parseFloat(salesToday) || 0;
+    const parsedSalesYesterday = parseFloat(salesYesterdayTotal) || 0;
+    const parsedOrdersToday = parseFloat(ordersTodayCount) || 0;
+    const parsedOrdersYesterday = parseFloat(ordersYesterdayTotalCount) || 0;
+    const parsedRisk = parseFloat(revenueAtRisk) || 0;
+
+    const salesPercent = parsedSalesYesterday > 0 
+        ? ((parsedSalesToday / parsedSalesYesterday) * 100).toFixed(1) : "0.0";
     
-    const ordersPercent = ordersYesterdayTotalCount > 0 
-        ? ((ordersTodayCount / ordersYesterdayTotalCount) * 100).toFixed(1) : 0;
+    const ordersPercent = parsedOrdersYesterday > 0 
+        ? ((parsedOrdersToday / parsedOrdersYesterday) * 100).toFixed(1) : "0.0";
 
     const baseSlides = [
       { 
         label: "Sales Progress", 
         val: `${salesPercent}%`, 
-        // Number() ensures safe formatting even if a string slips through
-        sub: `Today's revenue is ₱${Number(salesToday).toLocaleString()} vs yesterday's ₱${Number(salesYesterdayTotal).toLocaleString()}`, 
+        sub: `Today's revenue is ₱${parsedSalesToday.toLocaleString()} vs yesterday's ₱${parsedSalesYesterday.toLocaleString()}`, 
       },
       { 
         label: "Order Pacing", 
         val: `${ordersPercent}%`, 
-        sub: `${ordersTodayCount} orders today vs ${ordersYesterdayTotalCount} yesterday`, 
+        sub: `${parsedOrdersToday} orders today vs ${parsedOrdersYesterday} yesterday`, 
       },
       { 
         label: "Financial Risk", 
-        val: `₱${Number(revenueAtRisk).toLocaleString()}`, 
+        val: `₱${parsedRisk.toLocaleString()}`, 
         sub: `Unpaid orders waiting to be collected`, 
       },
       { 
         label: "Shop Speed", 
-        val: avgVelocity || "N/A", 
+        val: String(avgVelocity || "N/A"), 
         sub: `Average time to finish laundry today`, 
       },
     ];
 
-    const staleSlides = staleOrders.map(order => ({
-      label: "Action Needed",
-      val: `#${order.order_number || "Unknown"}`,
-      sub: `${order.customer_name || "Customer"}'s order is stuck in "${(order.status || "").replace('_', ' ')}"`,
-      pulse: true
-    }));
+    // Array guarding: Ensure staleOrders is iterable before mapping
+    const safeStaleOrders = Array.isArray(staleOrders) ? staleOrders : [];
+    
+    const staleSlides = safeStaleOrders.map(order => {
+      // Safe object access
+      const orderNumber = order?.order_number || "Unknown";
+      const customerName = order?.customer_name || "Customer";
+      const status = (order?.status || "Processing").replace('_', ' ');
+
+      return {
+        label: "Action Needed",
+        val: `#${orderNumber}`,
+        sub: `${customerName}'s order is stuck in "${status}"`,
+        pulse: true
+      };
+    });
 
     return [...staleSlides, ...baseSlides];
   }, [metrics]);
 
-  // 3. ERROR HANDLING: Reset index safely if the data length suddenly shrinks
+  // ==========================================
+  // PERFORMANCE & ERROR HANDLING: Safe Indexing
+  // ==========================================
   useEffect(() => {
+    // If the data payload shrinks (e.g. stale orders resolved), reset safely to prevent Out of Bounds errors
     if (slides.length > 0 && index >= slides.length) {
       setIndex(0);
     }
   }, [slides.length, index]);
 
-  // 4. PERFORMANCE: Optimized Interval Logic
   useEffect(() => {
-    if (slides.length === 0 || isPaused) return;
+    if (slides.length === 0 || isPaused) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
 
-    const timer = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setIndex((prev) => (prev + 1) % slides.length);
     }, 6000);
 
-    return () => clearInterval(timer);
-  }, [slides.length, isPaused]); // Removed 'index' from dependency array to stop constant re-renders
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [slides.length, isPaused]);
 
   const current = slides[index];
   if (!current) return null;
@@ -88,10 +112,11 @@ export default function CompactIntelligence() {
       className="flex items-center overflow-hidden px-2"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      role="marquee"
+      aria-live="polite"
     >
       <AnimatePresence mode="wait">
         <motion.div
-          // Added the 'index' to the key to guarantee the animation fires even if two identical values sit back-to-back
           key={`${current.label}-${current.val}-${index}`} 
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
@@ -101,9 +126,7 @@ export default function CompactIntelligence() {
         >
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0 ">
             <div className="flex items-center gap-2">
-              
-              <span className={`text-nano uppercase whitespace-nowrap 
-                ${current.pulse ? 'text-text-dark animate-pulse' : 'text-text-dark/50'}`}>
+              <span className={`text-nano uppercase whitespace-nowrap ${current.pulse ? 'text-text-dark animate-pulse' : 'text-text-dark/50'}`}>
                 {current.label}:
               </span>
               

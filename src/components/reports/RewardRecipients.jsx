@@ -81,21 +81,46 @@ export default function RewardRecipients() {
         <div className="flex-1 overflow-y-auto max-h-[300px] custom-scrollbar pr-1">
           <div className="space-y-2">
             {rewardLogs.map((log) => (
-              <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} key={log.id} className="group relative bg-white border transition-all duration-300 rounded-xl overflow-hidden border-slate-100 hover:border-amber-200">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-400" />
-                <div className="p-3 pl-4 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-text-dark text-sm-text truncate">{log.customer_name}</h3>
-                    <p className="text-[10px] font-bold text-text-dark/70">#{log.order_number}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-micro font-bold text-amber-600 uppercase tracking-tight">{log.reward_name}</p>
-                   
-                    <p className="text-[10px] font-medium text-text-dark/70 uppercase mt-0.5">{formatDateTime(log.date)}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+  <motion.div
+    layout
+    initial={{ opacity: 0, y: 15 }}
+    animate={{ opacity: 1, y: 0 }}
+    key={log.id}
+    className="w-full text-left relative overflow-hidden rounded-xl bg-white border border-amber-100/60 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-300 group mb-1 p-3.5"
+  >
+    {/* Animated Left Accent Bar */}
+    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400 transition-all group-hover:w-2" />
+
+    {/* TOP ROW: Name & Reward Type Badge */}
+    <div className="flex items-start justify-between mb-1 pl-1.5">
+      <div className="min-w-0 pr-3">
+        <h3 className="text-sm-text font-bold text-text-dark truncate">
+          {log.customer_name || "Unknown Customer"}
+        </h3>
+      </div>
+      <div className="shrink-0 flex items-center px-1">
+        <span className="text-micro font-bold text-amber-600 tracking-tighter uppercase bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+          {log.reward_name || "Reward Redeemed"}
+        </span>
+      </div>
+    </div>
+
+    {/* BOTTOM ROW: Order reference & Timestamp */}
+    <div className="flex items-end justify-between pl-1.5">
+      <div className="flex items-center gap-1.5">
+        <span className="text-micro font-bold px-1.5 text-text-dark/70 bg-slate-50 rounded border border-slate-100">
+          #{log.order_number || "---"}
+        </span>
+      </div>
+      
+      <div className="flex flex-col items-end">
+        <span className="text-nano font-medium text-text-dark/60 uppercase tracking-tight">
+          {formatDateTime(log.date)}
+        </span>
+      </div>
+    </div>
+  </motion.div>
+))}
           </div>
         </div>
       </div>

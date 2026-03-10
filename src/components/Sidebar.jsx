@@ -242,14 +242,14 @@ const LogoutConfirmationModal = ({ onCancel, onConfirm }) => (
 
       <div className="flex flex-col items-center text-center">
         {/* LOGOUT ICON */}
-        <div className="w-16 h-16 bg-app-dark rounded-[1.5rem] flex items-center justify-center mb-6 shadow-lg">
-           <svg width="28" height="28" fill="none" stroke="#ffffff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <div className="w-16 h-16 flex items-center justify-center">
+           <svg width="28" height="28" fill="none" stroke="#1F2937" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M13 12v.01"></path><path d="M3 21h18"></path><path d="M17 13.5V21"></path><path d="M5 21V5a2 2 0 0 1 2-2h7.5"></path><path d="M21 7h-7"></path><path d="m18 4 3 3-3 3"></path>
           </svg>
         </div>
 
         <h3 className="text-xl font-bold mb-2 text-text-dark ">Confirm Logout</h3>
-        <p className="text-sm font-medium text-text-dark/60 mb-8 px-4">
+        <p className="text-sm-text text-text-dark/60 mb-8 px-4">
           Are you sure you want to log out? Any unsaved changes might be lost.
         </p>
 
