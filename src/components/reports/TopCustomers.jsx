@@ -77,7 +77,7 @@ export default function TopCustomers({ range }) {
                     <div className="min-w-0 flex-1">
                       {/* NAME: text-base-text (15px) */}
                       <p 
-                        className="text-base-text text-text-dark font-bold leading-tight uppercase truncate " 
+                        className="text-base-text text-text-dark font-bold leading-tight truncate " 
                         title={customer.name}
                       >
                         {customer.name}
