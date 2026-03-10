@@ -41,7 +41,7 @@ export default function ReceiptConfiguration() {
         
         <div className="p-8 pb-4 pl-5 pt-5 flex items-center justify-between">
           <div className="flex items-center gap-2 text-app-dark">
-            <h2 className="font-bold text-h3">Receipt Configurations</h2>
+            <h2 className="font-bold text-base-text">Receipt Configurations</h2>
           </div>
         </div>
 

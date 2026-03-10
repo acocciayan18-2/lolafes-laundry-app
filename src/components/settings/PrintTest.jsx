@@ -49,7 +49,7 @@ const PrintTest = () => {
       className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm"
     >
       <div className="flex items-center gap-2 mb-4 text-app-dark">
-        <h2 className="font-bold text-h3">Hardware & Printing</h2>
+        <h2 className="font-bold  text-base-text">Hardware & Printing</h2>
       </div>
       
       <p className="text-sm-text text-gray-600 mb-6">

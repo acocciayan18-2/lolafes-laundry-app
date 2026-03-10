@@ -170,7 +170,7 @@ export default function PopularServices({ range: initialRange }) {
                 </div>
 
                 <div className="text-right">
-                  <span className="text-sm-text font-black text-text-dark">
+                  <span className="text-sm-text font-bold text-text-dark">
                     {service.share.toFixed(0)}%
                   </span>
                 </div>

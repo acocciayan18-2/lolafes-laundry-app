@@ -19,7 +19,7 @@ module.exports = {
       },
       colors: {
         // Base Theme Colors
-        'app-light': '#F9FAFB',
+        'app-light': '#FBFCFD',
         'app-light-secondary': '#F3f4f6',
         'app-dark': '#252525',
         'text-dark': '#1F2937',

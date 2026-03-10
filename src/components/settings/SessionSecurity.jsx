@@ -29,7 +29,7 @@ const SessionSecurity = () => {
     <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2 mb-4 text-app-dark">
-          <h2 className="font-bold text-h3">Session Security</h2>
+          <h2 className="font-bold text-base-text">Session Security</h2>
         </div>
 
         <button 

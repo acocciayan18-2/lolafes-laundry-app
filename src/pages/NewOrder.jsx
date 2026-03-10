@@ -153,28 +153,40 @@ export default function NewOrder() {
   }, [safeCustomers, customer?.phone, selectedCustomerId]);
 
   const [showClearWarning, setShowClearWarning] = useState(false);
+  
+  // ==========================================
+  // BUG FIX: Track the ID so we can restore it
+  // ==========================================
   const prevCustomerRef = useRef(customer);
+  const prevCustomerIdRef = useRef(selectedCustomerId);
 
   useEffect(() => {
     const hasItems = selectedServices.length > 0;
+    
+    // Check if the actual identity (ID) changed, not just the text inputs
+    const idChanged = prevCustomerIdRef.current !== selectedCustomerId;
     const nameChanged = prevCustomerRef.current.name !== customer.name && prevCustomerRef.current.name !== "";
     const phoneChanged = prevCustomerRef.current.phone !== customer.phone && prevCustomerRef.current.phone !== "";
 
-    if (hasItems && (nameChanged || phoneChanged) && !isProcessing) {
+    if (hasItems && (idChanged || nameChanged || phoneChanged) && !isProcessing) {
       setShowClearWarning(true);
     } else {
       prevCustomerRef.current = { ...customer };
+      prevCustomerIdRef.current = selectedCustomerId; // Keep ID ref synced
     }
-  }, [customer, selectedServices.length, isProcessing]);
+  }, [customer, selectedCustomerId, selectedServices.length, isProcessing]);
 
   const handleConfirmClear = () => {
     setSelectedServices([]); 
     prevCustomerRef.current = customer; 
+    prevCustomerIdRef.current = selectedCustomerId; // Save the new ID
     setShowClearWarning(false);
   };
 
   const handleCancelClear = () => {
     setCustomer(prevCustomerRef.current); 
+    // CRITICAL FIX: Restore the ID back to the previous one
+    setSelectedCustomerId(prevCustomerIdRef.current); 
     setShowClearWarning(false);
   };
 
@@ -292,7 +304,6 @@ export default function NewOrder() {
       };
 
       // 5. SUBMIT ORDER
-      // This function in your store is handling the +1 point atomic update!
       await submitOrder(orderPayload);
 
       const customerRef = doc(db, "customers", finalCustomerId);
@@ -317,7 +328,6 @@ export default function NewOrder() {
       // 7. LOG ACTIVITY & PRINTING
       logActivity(orderPayload, 'pending');
 
-      // ✨ THE FIX: ONLY listen to the Firebase system settings!
       const shouldAutoPrint = systemConfig?.autoPrint === true;
 
       if (shouldAutoPrint) {

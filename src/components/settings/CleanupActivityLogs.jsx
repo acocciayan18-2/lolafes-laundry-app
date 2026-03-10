@@ -22,7 +22,7 @@ export default function CleanupActivityLogs() {
     <>
       <div className="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-rose-200 transition-colors">
         <div>
-          <h2 className="font-bold text-h3">Activity Logs</h2>
+          <h2 className="font-bold text-base-text">Activity Logs</h2>
           <p className="text-micro font-medium text-text-dark/70 mt-1">Clear the master log of all system activity.</p>
         </div>
         <Button

@@ -22,7 +22,7 @@ export default function CleanupCancelledOrders() {
     <>
       <div className="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-rose-200 transition-colors">
         <div>
-          <h2 className="font-bold text-h3">Cancelled Orders</h2>
+          <h2 className="font-bold  text-base-text">Cancelled Orders</h2>
           <p className="text-micro font-medium text-text-dark/70 mt-1">
             Permanently delete all orders marked as cancelled.
           </p>

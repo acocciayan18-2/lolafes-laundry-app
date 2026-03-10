@@ -76,7 +76,7 @@ export default function PaymentSettings() {
   return (
     <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-6">
       <div className="flex items-center gap-3">
-        <h2 className="font-bold text-h3 text-app-dark">Payment Methods</h2>
+        <h2 className="font-bold  text-base-text text-app-dark">Payment Methods</h2>
       </div>
 
       <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3">

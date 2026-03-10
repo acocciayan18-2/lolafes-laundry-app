@@ -91,7 +91,7 @@ export default function StoreShiftSettings() {
       <div className="flex flex-col sm:flex-row !mt-0 items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div>
-            <h2 className="font-bold text-h3 mb-1">System Access Restriction</h2>
+            <h2 className="font-bold  text-base-text mb-1">System Access Restriction</h2>
             <p className="text-micro text-text-dark/70">Enable to lock the system outside shift hours</p>
           </div>
         </div>

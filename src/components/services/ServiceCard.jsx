@@ -300,9 +300,9 @@ export default function ServiceCard({ service, isEditing, tempData, setTempData,
             <div className="min-w-0 flex-1">
               <h3 className="text-sm-text font-bold text-text-dark truncate">{service.name}</h3>
               <div className="flex flex-wrap gap-2 mt-1">
-                <Badge className="bg-blue-100/50 text-blue-700 border-blue-200 px-3 py-0.5">{serviceTypeLabels[service.type] || service.type}</Badge>
+                <Badge className="bg-blue-100/50 text-blue-700 border-blue-200  px-3 py-0.5">{serviceTypeLabels[service.type] || service.type}</Badge>
                 <Badge className="bg-white text-gray-600 border-gray-200 px-2 font-bold py-0.5">₱{Number(service.price_per_kg).toFixed(2)}</Badge>
-                <Badge className={`py-0.5 ${service.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{service.is_active ? "Active" : "Inactive"}</Badge>
+                <Badge className={`py-0.5 !capitalize  !font-medium ${service.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100 ' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{service.is_active ? "Active" : "Inactive"}</Badge>
               </div>
             </div>
           </div>

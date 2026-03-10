@@ -325,7 +325,7 @@ export const CancelledOrdersList = ({ cancelledOrders, totalLost }) => {
                         exit={{ opacity: 0, scale: 0.95 }}
                         className="absolute left-[-50px] top-7 w-52 p-3 bg-white border border-app-dark/10 shadow-xl rounded-xl z-[100]"
                       > 
-                        <p className="text-[13px] text-text-dark/90 leading-relaxed font-medium">
+                        <p className="text-[13px] text-text-dark/90 leading-relaxed font-normal">
                           Use this archive to analyze Revenue Leakage from cancelled orders. Click any record for a detailed Audit Trail.
                         </p>
                       </motion.div>

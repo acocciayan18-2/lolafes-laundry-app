@@ -282,7 +282,7 @@ export default function LoyaltySettings() {
               <div className="space-y-3 text-center">
                 <h4 className={`text-nano font-bold uppercase ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-400'}`}>Reward Summary</h4>
                 <div className={`p-3 rounded-lg border border-dashed shadow-sm transition-colors ${localSettings.is_enabled ? 'bg-white border-sky-300' : 'bg-slate-100 border-slate-300'}`}>
-                  <div className="text-h3 font-black text-text-dark">FREE</div>
+                  <div className="text-h3 font-bold text-text-dark">FREE</div>
                   <div className={`text-micro font-bold uppercase truncate ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-500'}`}>
                     {localSettings.free_service_type || "No Service"}
                   </div>
