@@ -65,29 +65,52 @@ export default function Reports() {
   const { cancelledOrders, subscribeToCancelledOrders } = useOrderStore();
   
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(true);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
+  // 1. Network Status Listener
   useEffect(() => {
-    const unsubscribe = subscribeToReports();
-    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
-  }, [subscribeToReports]);
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
+  // 2. Firebase Subscriptions
   useEffect(() => {
-    const unsubscribe = subscribeToCancelledOrders();
-    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
-  }, [subscribeToCancelledOrders]);
+    const unsubscribeReports = subscribeToReports();
+    const unsubscribeCancelled = subscribeToCancelledOrders();
+    return () => { 
+      if (typeof unsubscribeReports === 'function') unsubscribeReports(); 
+      if (typeof unsubscribeCancelled === 'function') unsubscribeCancelled(); 
+    };
+  }, [subscribeToReports, subscribeToCancelledOrders]);
+
+  // 3. Strict Data Guarding
+  const safeOrders = useMemo(() => Array.isArray(orders) ? orders : [], [orders]);
+  const safeCancelledOrders = useMemo(() => Array.isArray(cancelledOrders) ? cancelledOrders : [], [cancelledOrders]);
+
+  // ✨ FIX: The dashboard now checks if ANY data exists (active or cancelled)
+  const hasAnyData = safeOrders.length > 0 || safeCancelledOrders.length > 0;
 
   const totalLost = useMemo(() => {
-    return cancelledOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
-  }, [cancelledOrders]);
-
-  const hasOrders = useMemo(() => Array.isArray(orders) && orders.length > 0, [orders]);
+    return safeCancelledOrders.reduce((sum, order) => {
+      const amount = Math.max(0, Number(order?.total_amount) || 0);
+      return sum + amount;
+    }, 0);
+  }, [safeCancelledOrders]);
 
   const hasRewards = useMemo(() => {
-    return orders?.some(order => 
-      Number(order.loyalty_points_to_deduct || 0) > 0 || 
-      order.services?.some(s => s.is_reward === true)
-    );
-  }, [orders]);
+    return safeOrders.some(order => {
+      if (!order) return false;
+      const hasPointsDeducted = Number(order.loyalty_points_to_deduct || 0) > 0;
+      const hasRewardService = Array.isArray(order.services) && order.services.some(s => s?.is_reward === true);
+      return hasPointsDeducted || hasRewardService;
+    });
+  }, [safeOrders]);
 
   useEffect(() => {
     let timer;
@@ -103,68 +126,85 @@ export default function Reports() {
     <div className="min-h-screen bg-app-light p-2">
       <div className="max-w-6xl mx-auto px-1 md:px-2 pb-20">
         
-        <header className="flex flex-row justify-between items-center mb-1">
+        <header className="flex flex-row justify-between items-start md:items-center mb-1">
           <div className="flex flex-col">
-            <h1 className="text-h2 font-bold text-text-dark">Reports</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-h2 font-bold text-text-dark">Reports</h1>
+              {isOffline && (
+                <span className="text-micro font-bold text-rose-500 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full animate-pulse">
+                  Offline Mode
+                </span>
+              )}
+            </div>
             <ReportHeaderClock />
           </div>
-          <ExportOrdersButton />
+          
+          <div className={isOffline || safeOrders.length === 0 ? "opacity-50 pointer-events-none" : ""}>
+            <ExportOrdersButton disabled={isOffline || safeOrders.length === 0} />
+          </div>
         </header>
 
         <AnimatePresence mode="wait">
           {shouldShowSkeleton ? (
-             <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-               <ReportsSkeleton />
-             </motion.div>
-          ) : !hasOrders ? (
-             <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-20 bg-white rounded-3xl border border-dashed border-slate-200 text-center">
-               <p className="text-slate-400 font-medium italic">No data found.</p>
-             </motion.div>
+              <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <ReportsSkeleton />
+              </motion.div>
+          ) : !hasAnyData ? (
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-20 bg-white rounded-3xl border border-dashed border-slate-200 text-center shadow-sm">
+                <div className="w-16 h-16 mx-auto mb-3 bg-slate-50 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <h3 className="text-sm-text font-bold text-text-dark">No data available</h3>
+                <p className="text-micro text-slate-400 mt-1 max-w-[200px] mx-auto leading-relaxed">
+                  Process or cancel some orders to generate analytics.
+                </p>
+              </motion.div>
           ) : (
             <motion.div key="content" className="flex flex-col gap-4" variants={containerVariants} initial="hidden" animate="visible">
               
-              {/* TOP ANCHORS */}
-              <motion.div variants={itemVariants} className="w-full">
-                <KpiCards range="7" />
-              </motion.div>
-              
-              <motion.div variants={itemVariants} className="w-full">
-                <SalesPerformance range="7" />
-              </motion.div>
-              
-              <motion.div variants={itemVariants} className="w-full">
-                <RushPulse range="7" />
-              </motion.div>
+              {safeOrders.length > 0 && (
+                <>
+                  <motion.div variants={itemVariants} className="w-full">
+                    <KpiCards range="7" />
+                  </motion.div>
+                  <motion.div variants={itemVariants} className="w-full">
+                    <SalesPerformance range="7" />
+                  </motion.div>
+                  <motion.div variants={itemVariants} className="w-full">
+                    <RushPulse range="7" />
+                  </motion.div>
+                </>
+              )}
 
-              {/* GALLERY SECTION (Masonry / Columns) */}
               <div className="columns-1 lg:columns-2 gap-4 w-full mt-2">
                 
-                <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
-                  <CustomerMix range="7" />
-                </motion.div>
-                
-                <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
-                  <TopCustomers range="7" />
-                </motion.div>
+                {safeOrders.length > 0 && (
+                  <>
+                    <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
+                      <CustomerMix range="7" />
+                    </motion.div>
+                    <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
+                      <TopCustomers range="7" />
+                    </motion.div>
+                    <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
+                      <PopularServicesCard range="7" />
+                    </motion.div>
+                  </>
+                )}
 
-                <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
-                  <PopularServicesCard range="7" />
-                </motion.div>
-
-                {/* CANCELLED ORDERS (Conditional) */}
-                {cancelledOrders.length > 0 && (
+                {/* ✨ FIX: Cancelled Orders now renders independently of the successful orders */}
+                {safeCancelledOrders.length > 0 && (
                   <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
                     <CancelledOrdersList 
-                      cancelledOrders={cancelledOrders} 
+                      cancelledOrders={safeCancelledOrders} 
                       totalLost={totalLost} 
                     />
                   </motion.div>
                 )}
 
-                {/* REWARD RECIPIENTS (Conditional) */}
                 {hasRewards && (
                   <motion.div variants={itemVariants} className="break-inside-avoid mb-4 block">
-                     <RewardRecipients orders={orders} />
+                      <RewardRecipients orders={safeOrders} />
                   </motion.div>
                 )}
                 

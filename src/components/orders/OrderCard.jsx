@@ -26,7 +26,7 @@ const statusConfig = {
   ready: { banner: "bg-status-ready", theme: "bg-status-ready/10 text-status-ready border border-status-ready", icon: IconStatusReady, label: "Ready", nextStatus: "completed" },
   completed: { banner: "bg-status-complete", theme: "bg-status-complete/10 text-status-complete border border-status-complete", icon: IconStatusCompleted, label: "Completed", nextStatus: 'picked_up' },
   picked_up: { banner: "bg-status-picked", theme: "bg-status-picked/10 text-status-picked border border-status-picked", icon: IconStatusPickedUp, label: "Picked Up", nextStatus: null },
-  delivered: { banner: "bg-emerald-500", theme: "bg-status-picked/10 text-status-picked border border-status-picked", icon: IconStatusPickedUp, label: "Delivered", nextStatus: null }
+  delivered: { banner: "bg-status-picked", theme: "bg-status-picked/10 text-status-picked border border-status-picked", icon: IconStatusPickedUp, label: "Delivered", nextStatus: null }
 };
 
 const handoverConfig = {
