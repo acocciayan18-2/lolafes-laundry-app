@@ -26,13 +26,13 @@ const ReportHeaderClock = memo(() => {
 
   return (
     <div className="flex items-center gap-2 mt-0.5">
-      <p className="text-text-dark text-sm-text font-medium whitespace-nowrap">
+      <p className="text-text-dark/80 text-micro font-medium whitespace-nowrap">
         {time.toLocaleDateString('en-US', { 
           weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' 
         })}
       </p>
-      <span className='text-sm-text text-text-dark/20 font-light select-none'>|</span>
-      <span className="text-sm-text font-medium text-text-dark uppercase whitespace-nowrap">
+      <span className='text-micro text-text-dark/80 font-light select-none'>|</span>
+      <span className="text-micro font-medium text-text-dark/80 uppercase whitespace-nowrap">
         {time.toLocaleTimeString([], { 
           hour: '2-digit', minute: '2-digit', hour12: true 
         })}

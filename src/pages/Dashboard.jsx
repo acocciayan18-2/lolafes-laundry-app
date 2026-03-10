@@ -41,17 +41,17 @@ const LiveClockHeader = () => {
   return (
     <div>
       <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-text-dark capitalize">
+        <h1 className="text-h2 font-bold text-text-dark capitalize">
           {greeting}
         </h1>
       </div>
       <div>
         <div className="flex items-center justify-between text-white py-0.5 gap-2">
-          <p className="text-text-dark text-sm-text font-medium ">
+          <p className="text-text-dark/80 text-micro font-medium ">
             {dateString}
           </p>
-          <span className='text-sm-text text-text-dark/20 font-light select-none'> | </span>
-          <span className="text-text-dark text-sm-text font-medium">
+          <span className='text-micro text-text-dark/80 font-light select-none'> | </span>
+          <span className="text-text-dark/70 text-micro font-medium">
             {timeString}
           </span>
         </div>

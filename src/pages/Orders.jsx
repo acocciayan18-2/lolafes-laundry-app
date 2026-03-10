@@ -1,7 +1,7 @@
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { IconAddNewOrder, IconShirt } from "../components/icons";
+import { IconShirt, IconPlus } from "../components/icons";
 import OrderCard from "../components/orders/OrderCard";
 import OrderFilters from "../components/orders/OrderFilters";
 import { OrderListSkeleton } from "../components/skeleton-loader";
@@ -185,7 +185,7 @@ export default function Orders() {
             
             <Link to="/main/neworder">
               <button className="group flex items-center justify-center w-9 h-9 shadow-md bg-white  active:bg-app-dark/5 rounded-xl border border-text-dark/20 active:scale-95 transition-all duration-200">
-                <IconAddNewOrder className="w-5 h-5" />
+                <IconPlus className="w-4 h-4" />
               </button>
             </Link>
           </motion.div>
