@@ -2,7 +2,7 @@ name: CI and CD Pipeline
 
 on:
   push:
-    branches: [dev] # Runs on pushes to the dev branch
+    branches: [dev] 
 
 jobs:
   test-and-deploy:
@@ -24,10 +24,6 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
-
-      # # 1. Run Tests (The Gatekeeper)
-      # - name: Run CI Tests
-      #   run: npm test -- --watchAll=false
 
       # 2. Install Vercel CLI
       - name: Install Vercel CLI

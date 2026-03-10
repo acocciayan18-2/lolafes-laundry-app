@@ -170,7 +170,7 @@ export default function Orders() {
         <LayoutGroup>
           
           {/* Header Section */}
-          <motion.div layout className="flex flex-row items-center mb-3 gap-4">
+          <motion.div layout className="flex flex-row items-center justify-between mb-3 gap-4">
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <h1 className="text-h2 text-text-dark">All Orders</h1>

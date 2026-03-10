@@ -4,6 +4,7 @@ import { useOrderStore } from '../../store/orders/useOrderStore';
 import { useUnclaimedStore } from '../../store/orders/useUnclaimedStore';
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
 import { usePaymentSettingsStore } from '../../store/settings/usePaymentSettingsStore';
+import { useActivityStore } from '../../store/activities/useActivityStore'; // ✨ Imported Activity Store
 import {
   IconAlertCircle, IconArrowRight, IconClose, IconHash, IconPhone, IconEyeOpen, IconEyeClosed
 } from '../icons';
@@ -42,7 +43,6 @@ const SwipeToConfirm = ({ onConfirm, onOpenPaymentModal, isDisabled, isUpdating 
   const x = useMotionValue(0);
   const textOpacity = useTransform(x, [0, 100], [1, 0]);
 
-  // If unpaid, trigger the external Payment Modal
   if (isDisabled) {
     return (
       <button 
@@ -55,7 +55,6 @@ const SwipeToConfirm = ({ onConfirm, onOpenPaymentModal, isDisabled, isUpdating 
     );
   }
 
-  // Default Swipe to Claim behavior
   return (
     <div 
       ref={containerRef} 
@@ -108,12 +107,12 @@ const UnclaimedOrders = () => {
 
   const { orders, isLoading, togglePaymentStatus } = useOrderStore();
   const { unclaimedOrders, computeUnclaimed, markAsClaimed } = useUnclaimedStore();
-  const { methods: allPaymentMethods } = usePaymentSettingsStore(); // ✨ Fetch from settings
+  const { methods: allPaymentMethods } = usePaymentSettingsStore(); 
+  const { logActivity } = useActivityStore(); // ✨ Initialize Activity Store
   const showNotification = useNotificationStore((state) => state.showNotification);
 
   const safeUnclaimedOrders = Array.isArray(unclaimedOrders) ? unclaimedOrders : [];
 
-  // ✨ DATA GUARD: Memoize active methods and provide a safe fallback if settings are still loading
   const activePaymentMethods = useMemo(() => {
     if (!Array.isArray(allPaymentMethods)) return [{ id: 'fallback', name: 'Cash' }];
     const active = allPaymentMethods.filter(m => m.isActive);
@@ -158,6 +157,13 @@ const UnclaimedOrders = () => {
     setIsUpdating(true);
     try {
       await markAsClaimed(order);
+      
+      // ✨ LOG ACTIVITY: Track when an overdue order is successfully handed over
+      logActivity?.(order, 'claimed', { 
+        label: `Claimed overdue order`, 
+        action: 'status_update' 
+      });
+
       showNotification("Order successfully claimed", "success");
       setSelectedOrder(null);
     } catch (err) {
@@ -165,16 +171,20 @@ const UnclaimedOrders = () => {
     } finally {
       setIsUpdating(false);
     }
-  }, [markAsClaimed, showNotification]);
+  }, [markAsClaimed, showNotification, logActivity]);
 
-  // Payment Confirmation Handler
   const handlePaymentConfirm = async (methodName) => {
     if (!selectedOrder) return;
     
     try {
-      // Toggle payment status passing the dynamically selected method
       await togglePaymentStatus(selectedOrder.id, true, methodName);
       
+      // ✨ LOG ACTIVITY: Track the exact payment method used to unlock the overdue order
+      logActivity?.(selectedOrder, 'paid', { 
+        label: `Payment collected via ${methodName}`, 
+        action: 'payment_update' 
+      });
+
       setSelectedOrder(prev => prev ? { ...prev, is_paid: true, payment_method: methodName } : null);
       showNotification(`Payment processed via ${methodName}. You may now claim the order.`, "success");
       setShowPaymentModal(false);
@@ -384,7 +394,7 @@ const UnclaimedOrders = () => {
                     isUpdating={isUpdating}
                     isDisabled={!selectedOrder.is_paid}
                     onConfirm={() => handleClaim(selectedOrder)}
-                    onOpenPaymentModal={() => setShowPaymentModal(true)} // ✨ TRIGGERS DYNAMIC MODAL
+                    onOpenPaymentModal={() => setShowPaymentModal(true)} 
                   />
                   {!selectedOrder.is_paid && (
                     <p className="text-micro text-rose-500 text-center mt-3 ">
@@ -399,7 +409,6 @@ const UnclaimedOrders = () => {
         )}
       </AnimatePresence>
 
-      {/* ✨ DYNAMIC PAYMENT MODAL */}
       <PaymentUpdateModal 
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
