@@ -13,13 +13,17 @@ import PaymentSettings from "../components/settings/PaymentSettings";
 import StoreShiftSettings from "../components/settings/StoreShiftSettings"; 
 import ConfirmCompletionToggle from '../components/settings/ConfirmCompletionToggle';
 
-// ✨ New Cleanup Imports
+// Cleanup Imports
 import CleanupCancelledOrders from '../components/settings/CleanupCancelledOrders';
 import CleanupRewardClaims from '../components/settings/CleanupRewardClaims';
 import CleanupActivityLogs from '../components/settings/CleanupActivityLogs';
 
 const Settings = () => {
-  const { systemConfig, subscribeToSettings, isLoading } = useSettingsStore();
+  // ✨ FIX: Grab the individual loading states directly
+  const { systemConfig, subscribeToSettings, isLoadingReceipt, isLoadingSystem } = useSettingsStore();
+  
+  // ✨ FIX: Calculate the combined loading state inside the component for guaranteed reactivity
+  const isLoading = isLoadingReceipt || isLoadingSystem;
   
   const [isUnlocked, setIsUnlocked] = useState(() => {
     return localStorage.getItem('settings_unlocked') === 'true';
@@ -59,7 +63,7 @@ const Settings = () => {
 
           <button 
             onClick={() => handleToggleLock(false)}
-            className="group flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-micro font-normal text-text-dark hover:text-rose-500 hover:border-rose-100 transition-all shadow-sm"
+            className="group flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-micro font-normal text-text-dark hover:text-rose-500 hover:border-rose-100 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
           >
             <IconLock className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
             Lock Settings
@@ -96,7 +100,7 @@ const Settings = () => {
           </div>
         </div>
 
-        {/* ✨ DATABASE MAINTENANCE SECTION */}
+        {/* DATABASE MAINTENANCE SECTION */}
         <div className="mt-8 pt-8 border-t border-slate-200">
           <div className="flex items-center gap-2 mb-4 px-1">
             <IconDatabase className="w-5 h-5 text-text-dark" />

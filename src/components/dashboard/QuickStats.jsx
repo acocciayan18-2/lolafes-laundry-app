@@ -16,19 +16,21 @@ export default function QuickStats({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             
-            <p className="text-nano md:text-micro font-bold text-text-dark/70 mb-1 truncate uppercase">
+            {/* ✨ FIX: Added pb-0.5 to prevent bottom clipping */}
+            <p className="text-nano md:text-micro font-bold text-text-dark/70 mb-1 pb-0.5 truncate uppercase">
               {safeTitle}
             </p>
             
+            {/* ✨ FIX: Changed leading-none to leading-tight and added pb-1 */}
             <p 
-              className="text-h2 md:text-h1 font-bold text-text-dark leading-none truncate tracking-tighter"
+              className="text-h2 md:text-h1 font-bold text-text-dark leading-tight pb-1 truncate tracking-tighter"
               title={String(safeValue)} 
             >
               {safeValue}
             </p>
             
             {safeTrend && (
-              <p className="text-nano md:text-micro font-medium text-text-dark/60 mt-2 truncate">
+              <p className="text-nano md:text-micro font-medium text-text-dark/60 mt-2 pb-0.5 truncate">
                 {safeTrend}
               </p>
             )}

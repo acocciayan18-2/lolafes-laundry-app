@@ -123,32 +123,37 @@ export default function KpiCards() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {items.map((kpi, i) => (
-          <div key={i} className="bg-white rounded-xl shadow-md border border-app-dark/10 overflow-hidden">
-            <div className="p-3 md:p-5">
-              <div className="flex items-start justify-between gap-1">
-                <div className="min-w-0 flex-1">
-                  <p className="text-nano md:text-micro font-bold text-text-dark/70 mb-1 truncate uppercase">
-                    {kpi.label}
-                  </p>
-                  <p className="text-h2 md:text-h1 font-bold text-text-dark leading-none truncate tracking-tighter cursor-default" title={kpi.value}>
-                    {kpi.value}
-                  </p>
-                  <p className="text-nano md:text-micro font-medium text-text-dark/60 mt-2 truncate">
-                    {kpi.trend}
-                  </p>
-                </div>
-                
-                <div className="p-2 md:p-2.5 rounded-lg bg-transparent border border-app-dark/10 shadow-hollow shrink-0">
-                  {require('react').cloneElement(kpi.icon, { 
-                    className: "w-4 h-4 md:w-5 md:h-5 text-text-dark stroke-text-dark" 
-                  })}
-                </div>
-              </div>
-            </div>
+  {items.map((kpi, i) => (
+    <div key={i} className="bg-white rounded-xl shadow-md border border-app-dark/10 overflow-hidden">
+      <div className="p-4 ">
+        <div className="flex items-start justify-between gap-1">
+          <div className="min-w-0 flex-1">
+            {/* ✨ FIX: Added pb-0.5 to prevent bottom clipping */}
+            <p className="text-nano md:text-micro font-bold text-text-dark/70 mb-1 pb-0.5 truncate uppercase">
+              {kpi.label}
+            </p>
+            
+            {/* ✨ FIX: Changed leading-none to leading-tight and added pb-1 */}
+            <p className="text-h2 md:text-h1 font-bold text-text-dark leading-tight pb-1 truncate tracking-tighter cursor-default" title={kpi.value}>
+              {kpi.value}
+            </p>
+            
+            {/* ✨ FIX: Added pb-0.5 to prevent bottom clipping */}
+            <p className="text-nano md:text-micro font-medium text-text-dark/60 mt-2 pb-0.5 truncate">
+              {kpi.trend}
+            </p>
           </div>
-        ))}
+          
+          <div className="p-2 md:p-2.5 rounded-lg bg-transparent border border-app-dark/10 shadow-hollow shrink-0">
+            {require('react').cloneElement(kpi.icon, { 
+              className: "w-4 h-4 md:w-5 md:h-5 text-text-dark stroke-text-dark" 
+            })}
+          </div>
+        </div>
       </div>
+    </div>
+  ))}
+</div>
     </div>
   );
 }
