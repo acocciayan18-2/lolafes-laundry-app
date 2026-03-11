@@ -41,7 +41,7 @@ export default function CompleteOrderModal({ isOpen, onClose, onConfirm, orderNu
                 <IconStatusCompleted className="w-8 h-8" />
               </div>
               <h3 className="text-xl font-bold text-text-dark tracking-tight">Mark as Completed?</h3>
-              <p className="text-sm-text font-medium text-text-dark/70 mt-1">
+              <p className="text-sm-text font-normal text-text-dark/70 mt-1">
                 Order #{orderNumber} for {customerName}
               </p>
             </div>
