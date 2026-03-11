@@ -404,12 +404,12 @@ export const OrderSummary = ({
           <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} className="fixed bottom-0 left-0 right-0 z-[9999] bg-white shadow-[0_-8px_30px_rgb(0,0,0,0.12)] p-3 lg:hidden">
             <div className="flex items-center justify-between max-w-lg mx-auto gap-4">
               <div className="flex flex-col min-w-0">
-                <span className="text-micro font-medium text-text-dark/70 uppercase tracking-tighter">Total Amount</span>
-                <span className="text-h3 font-bold text-green-700 truncate">
+                <span className="text-micro font-medium text-text-dark/70">Total Amount</span>
+                <span className="text-h3 font-bold text-green-700 tracking-tighter truncate">
                   ₱{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <button onClick={onSubmit} disabled={isOrderInvalid} className={`flex-1 h-12 text-base-text font-bold rounded-lg text-white ${isOrderInvalid ? "bg-gray-300 opacity-80" : "bg-green-700 active:scale-95"}`}>
+              <button onClick={onSubmit} disabled={isOrderInvalid} className={`flex-1 h-12 text-base-text font-medium rounded-lg text-white ${isOrderInvalid ? "bg-gray-300 opacity-80" : "bg-green-700 active:scale-95"}`}>
                 {getButtonText()}
               </button>
             </div>
