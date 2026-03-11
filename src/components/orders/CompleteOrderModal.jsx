@@ -37,7 +37,7 @@ export default function CompleteOrderModal({ isOpen, onClose, onConfirm, orderNu
             </button>
 
             <div className="text-center mb-6 mt-2">
-              <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-100 shadow-sm">
+              <div className="w-16 h-16 text-emerald-600 flex items-center justify-center mx-auto mb-2 ">
                 <IconStatusCompleted className="w-8 h-8" />
               </div>
               <h3 className="text-xl font-bold text-text-dark tracking-tight">Mark as Completed?</h3>
