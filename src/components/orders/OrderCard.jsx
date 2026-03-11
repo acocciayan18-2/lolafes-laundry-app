@@ -246,7 +246,7 @@ export default function OrderCard({ order, tick }) {
       
       if (sendSms && order.customer_phone) {
         import('../../services/smsService').then(service => {
-          service.sendStatusSMS(order.customer_phone, order.customer_name, order.order_number, "ready for pickup/delivery");
+          service.sendStatusSMS(order.customer_phone, order.customer_name, order.order_number, "completed");
         });
       }
     } catch (err) {
