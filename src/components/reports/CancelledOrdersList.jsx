@@ -29,9 +29,6 @@ const formatFullAuditDate = (ts) => {
   }
 };
 
-// ==========================================
-// 1. DETAIL MODAL COMPONENT
-// ==========================================
 const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
   const [isPiiRevealed, setIsPiiRevealed] = useState(false);
 
@@ -206,22 +203,23 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
   );
 };
 
-// ==========================================
-// 2. MAIN CARD COMPONENT
-// ==========================================
 const CancelledOrderCard = ({ order, onOpenDetail }) => {
+  // ✨ FIX: Simplified dependency array to just [order] to resolve the warning
   const timeString = useMemo(() => {
-    if (!order) return "--:--"; // Guard inside the hook
+    if (!order) return "--:--"; 
     try {
-      const d = order.cancelled_at_date instanceof Date ? order.cancelled_at_date : new Date(order.cancelled_at || order.cancelled_at_date);
+      const d = order.cancelled_at_date instanceof Date 
+        ? order.cancelled_at_date 
+        : new Date(order.cancelled_at || order.cancelled_at_date);
+        
       if (isNaN(d.getTime())) return "--:--";
       return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     } catch {
       return "--:--";
     }
-  }, [order?.cancelled_at_date, order?.cancelled_at]); // Safely check dependencies
+  }, [order]); // <-- Missing dependency fixed here
 
-  // ✨ FIX: Early return is now AFTER the hook, satisfying React's Rules of Hooks
+  // ✨ FIX: Early return must always be AFTER all hooks (useState, useMemo, etc.)
   if (!order) return null;
 
   return (
@@ -265,9 +263,6 @@ const CancelledOrderCard = ({ order, onOpenDetail }) => {
   );
 };
 
-// ==========================================
-// 3. MAIN LIST COMPONENT
-// ==========================================
 export const CancelledOrdersList = ({ cancelledOrders, totalLost }) => {
   const [showInfo, setShowInfo] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
