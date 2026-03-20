@@ -8,11 +8,18 @@ import {
   signOut,
 } from "firebase/auth";
 
-// --- OOP Concept: Encapsulation of Helper Logic ---
+/**
+ * @namespace AuthHelper
+ * @description Encapsulated security and validation utilities for authentication.
+ */
 const AuthHelper = {
+  /**
+   * Safely maps Firebase auth errors to user-friendly, non-exposing messages.
+   * O(1) lookup complexity.
+   * @param {Object} error - The Firebase error object.
+   * @returns {string} Sanitized error message.
+   */
   parseError(error) {
-    // SECURITY: Avoid specific email/password errors to prevent enumeration attacks.
-    // Firebase now groups "user-not-found" and "wrong-password" under 'invalid-credential'.
     const errorMap = {
       "auth/invalid-email": "The provided email address is invalid.",
       "auth/user-disabled": "This account has been suspended. Please contact support.",
@@ -20,11 +27,17 @@ const AuthHelper = {
       "auth/too-many-requests": "Access temporarily locked due to too many failed attempts. Try again later.",
       "auth/network-request-failed": "Network connection error. Please check your internet and try again.",
     };
-    return errorMap[error.code] || "An unexpected error occurred during authentication.";
+    return errorMap[error?.code] || "An unexpected error occurred during authentication.";
   },
 
+  /**
+   * Strictly validates email format to prevent malformed payload injections.
+   * @param {string} email 
+   * @returns {boolean}
+   */
   isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email?.trim());
+    if (!email || email.length > 254) return false; // RFC 5321 length limit
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   }
 };
 
@@ -33,13 +46,17 @@ export const useLoginStore = create((set, get) => ({
   isLoginLoading: false,
   isResetLoading: false,
   popup: { message: "", type: "" },
-  popupTimeoutId: null, // Tracks the timeout to prevent overlapping popups
+  popupTimeoutId: null,
 
   // --- ACTIONS ---
+  
+  /**
+   * Triggers a global notification popup with auto-dismissal.
+   * @param {string} message - The text to display.
+   * @param {'success'|'error'|'info'} type - The severity type.
+   */
   triggerPopup: (message, type) => {
     const { popupTimeoutId } = get();
-    
-    // Clear any existing timeout so popups don't overwrite/hide each other prematurely
     if (popupTimeoutId) clearTimeout(popupTimeoutId);
 
     const id = setTimeout(() => {
@@ -49,21 +66,28 @@ export const useLoginStore = create((set, get) => ({
     set({ popup: { message, type }, popupTimeoutId: id });
   },
 
+  /**
+   * Manually clears the active popup and its timeout.
+   */
   clearPopup: () => {
     const { popupTimeoutId } = get();
     if (popupTimeoutId) clearTimeout(popupTimeoutId);
     set({ popup: { message: "", type: "" }, popupTimeoutId: null });
   },
 
+  /**
+   * Authenticates the user securely with Firebase.
+   * @param {string} email 
+   * @param {string} password 
+   * @param {Function} navigate - React Router navigation function
+   * @returns {Promise<boolean>} True if successful, false otherwise.
+   */
   loginUser: async (email, password, navigate) => {
     const state = get();
-    
-    // Prevent double-submissions
     if (state.isLoginLoading) return false;
 
     const cleanEmail = email?.trim() || "";
 
-    // Pre-flight Validation: Prevent unnecessary network requests
     if (!AuthHelper.isValidEmail(cleanEmail) || !password) {
       state.triggerPopup("Please provide a valid email and password.", "error");
       return false;
@@ -72,47 +96,48 @@ export const useLoginStore = create((set, get) => ({
     set({ isLoginLoading: true });
     
     try {
-      // Ensure session persists locally across browser restarts
       await setPersistence(auth, browserLocalPersistence);
-      
       const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
       const user = userCredential.user;
 
-      // SECURITY: Ensure email verification before allowing dashboard access
       if (!user.emailVerified) {
         get().triggerPopup("Access Denied: Please verify your email first.", "error");
-        await signOut(auth); // Immediately revoke the local token
-        set({ isLoginLoading: false });
+        await signOut(auth); 
         return false; 
       }
 
       get().triggerPopup("Login successful!", "success");
       
-      // Allow the UI to reflect success state briefly before routing
       setTimeout(() => {
         navigate("/main");
-        set({ isLoginLoading: false }); // Clean up state in case of back-navigation
+        set({ isLoginLoading: false }); 
       }, 500);
       
       return true;
 
     } catch (error) {
-      console.error("Authentication Error:", error.code || error.message);
+      console.error("Auth Error:", error.code); // Log code, not full object for security
       get().triggerPopup(AuthHelper.parseError(error), "error");
-      set({ isLoginLoading: false });
       return false;
+    } finally {
+      // Ensure loading state resets if navigation doesn't occur
+      if (!auth.currentUser?.emailVerified) {
+        set({ isLoginLoading: false });
+      }
     }
   },
 
+  /**
+   * Sends a secure password reset link.
+   * @param {string} email 
+   * @param {Function} onSuccessCallback 
+   */
   resetPassword: async (email, onSuccessCallback) => {
     const state = get();
-    
-    // Prevent double-submissions
     if (state.isResetLoading) return;
 
     const cleanEmail = email?.trim() || "";
 
-    // Pre-flight Validation
     if (!AuthHelper.isValidEmail(cleanEmail)) {
       state.triggerPopup("Please enter a valid email address.", "error");
       return;
@@ -123,13 +148,10 @@ export const useLoginStore = create((set, get) => ({
     try {
       await sendPasswordResetEmail(auth, cleanEmail);
       get().triggerPopup("Reset link sent! Check your email inbox.", "success");
-      
-      if (onSuccessCallback) onSuccessCallback();
+      if (typeof onSuccessCallback === 'function') onSuccessCallback();
     } catch (error) {
-      console.error("Password Reset Error:", error.code || error.message);
       get().triggerPopup(AuthHelper.parseError(error), "error");
     } finally {
-      // Always ensure the loading state resets, even if the request fails
       set({ isResetLoading: false });
     }
   },

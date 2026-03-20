@@ -5,7 +5,6 @@ import { auth } from "../services/firebase";
 import "../style/main-app.css";
 import "../style/sidebar.css";
 import Button from "./ui/Button";
-import { IconClose } from "./icons";
 
 import {
   IconChart,
@@ -14,6 +13,7 @@ import {
   IconPlus,
   IconSettings,
   IconShirt,
+  IconClose,
   IconUsers,
   IconMinimizeSidebar,
   IconMaximizeSidebar 

@@ -1,222 +1,318 @@
+/**
+ * @file printService.js
+ * @description Enterprise-grade Hardware and Browser Print Orchestrator.
+ * Implements ESC/POS encoding, WebUSB/WebBluetooth interfacing, and Auto-Print HTML rendering.
+ */
+
 import EscPosEncoder from 'esc-pos-encoder';
+
+// ==========================================
+// CONFIGURATION CONSTANTS
+// ==========================================
+const PRINTER_CONFIG = Object.freeze({
+  BT_SERVICE_UUID: '000018f0-0000-1000-8000-00805f9b34fb',
+  BT_CHARACTERISTIC_UUID: '00002af1-0000-1000-8000-00805f9b34fb',
+});
+
+// ==========================================
+// UTILITY HELPERS
+// ==========================================
+
+const sanitizeText = (text) => {
+  if (!text) return "";
+  return String(text).replace(/[<>]/g, '').trim().toUpperCase();
+};
+
+const formatMoney = (val) => {
+  const num = Number(val);
+  return isNaN(num) ? "0.00" : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
 
 const formatSafeDate = (dateSource) => {
   if (!dateSource) return "N/A";
-  let date;
-  if (dateSource && typeof dateSource === 'object' && 'seconds' in dateSource) {
-    date = new Date(dateSource.seconds * 1000);
-  } else {
-    date = new Date(dateSource);
+  try {
+    let date = dateSource;
+    if (typeof dateSource === 'object' && 'seconds' in dateSource) {
+      date = new Date(dateSource.seconds * 1000);
+    } else if (typeof dateSource !== 'object') {
+      date = new Date(dateSource);
+    }
+    if (isNaN(date.getTime())) return "INVALID DATE";
+    return date.toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    }).toUpperCase();
+  } catch (e) {
+    return "INVALID DATE";
   }
-  if (isNaN(date.getTime())) return "Invalid Date";
-  return date.toLocaleString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
 };
 
+const checkHardwareSupport = (type) => {
+  if (type === 'usb' && !navigator.usb) {
+    throw new Error("WebUSB is not supported in this browser.");
+  }
+  if (type === 'bluetooth' && !navigator.bluetooth) {
+    throw new Error("WebBluetooth is not supported in this browser.");
+  }
+  return true;
+};
+
+// ==========================================
+// MAIN PRINT SERVICE
+// ==========================================
+
 export const silentPrint = async (order, type, config) => {
+  if (!order || typeof order !== 'object') {
+    return { success: false, error: "Invalid order data provided for printing." };
+  }
+
   const { 
-    storeName, address, phone, email, website, footerMessage,
-    showOrderDate, showPrintDate 
+    storeName = "LOLA FE'S LAUNDRY", 
+    address = "", phone = "", email = "", website = "", 
+    footerMessage = "THANK YOU FOR COMING!",
+    showOrderDate = true, showPrintDate = true 
   } = config || {};
 
+  // --- DATA PREPARATION ---
   const orderDateLabel = formatSafeDate(order.created_at || order.created_date);
-  const printDateLabel = new Date().toLocaleString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
+  const printDateLabel = formatSafeDate(new Date());
+  
+  const customerName = sanitizeText(order.customer_name || "WALK-IN CUSTOMER");
+  const orderNumber = sanitizeText(order.order_number || "000000");
+  
+  const paymentStatus = order.is_paid ? "PAID" : "UNPAID";
+  const paymentMethod = sanitizeText(order.payment_method) || "CASH";
+  
+  const services = Array.isArray(order.services) ? order.services : [];
+  const deliveryFee = Number(order.delivery_fee) || 0;
+  const totalAmount = Number(order.total_amount) || 0;
+  
+  const isCash = paymentMethod.includes('CASH');
+  const amountTendered = isCash && order.is_paid ? (Number(order.amount_tendered) || totalAmount) : null;
+  const changeDue = isCash && order.is_paid ? (Number(order.change_due) || 0) : null;
+  
+  const orderNotes = sanitizeText(order.special_instructions || order.notes || "");
 
-  // --- HARDWARE PRINTING (USB / BLUETOOTH) ---
+  // ==========================================
+  // HARDWARE PRINTING (USB / BLUETOOTH)
+  // ==========================================
   if (type === 'usb' || type === 'bluetooth') {
-    const encoder = new EscPosEncoder();
-    let result = encoder
-      .initialize()
-      .align('center')
-      .size('large')
-      .line(storeName || "LOLA FE'S LAUNDRY")
-      .size('normal');
-
-    if (address) result.line(address);
-    if (phone) result.line(`Tel: ${phone}`);
-    if (email) result.line(email);
-    if (website) result.line(website);
-    
-    result.line("--------------------------------")
-      .size('large').bold(true).line(order.customer_name.toUpperCase()).bold(false).size('normal')
-      .line(`ORDER ID: #${order.order_number}`)
-      .line("--------------------------------");
-
-    if (showOrderDate) result.align('left').line(`ORDERED: ${orderDateLabel}`);
-    if (showPrintDate) result.align('left').line(`PRINTED: ${printDateLabel}`);
-    if (showOrderDate || showPrintDate) result.line("--------------------------------");
-
-    order.services?.forEach(s => {
-      result.table(
-        [{ width: 20, align: 'left' }, { width: 4, align: 'center' }, { width: 8, align: 'right' }],
-        [[s.service_name, (s.quantity || s.weight_kg || 1).toString(), `P${Number(s.subtotal || 0)}`]]
-      );
-    });
-
-    result.line("--------------------------------");
-    result.align('left')
-      .line(`PAYMENT METHOD: ${order.payment_method?.toUpperCase() || "CASH"}`)
-      // ✅ FIXED: Using is_paid boolean
-      .line(`PAYMENT STATUS: ${order.is_paid ? "PAID" : "UNPAID"}`);
-
-    if (order.delivery_fee > 0) result.line(`DELIVERY FEE: P${order.delivery_fee}`);
-
-    result.line("--------------------------------")
-      .align('right')
-      .size('large')
-      .bold(true)
-      .line(`TOTAL: P${Number(order.total_amount).toLocaleString()}`)
-      .size('normal')
-      .bold(false)
-      .newline()
-      .align('center')
-      .line(footerMessage || "THANK YOU!")
-      .newline()
-      .cut();
-
-    const receiptData = result.encode();
+    let device = null;
+    let server = null;
 
     try {
+      checkHardwareSupport(type);
+      const encoder = new EscPosEncoder();
+      let result = encoder.initialize().align('center');
+
+      // Header Block
+      result.size('large').line(sanitizeText(storeName)).size('normal');
+      if (address) result.line(sanitizeText(address));
+      if (phone) result.line(`TEL: ${sanitizeText(phone)}`);
+      if (email) result.line(sanitizeText(email));
+      if (website) result.line(sanitizeText(website));
+      
+      // Customer Block (Compact)
+      result.line("--------------------------------")
+        .size('large').bold(true).line(customerName).bold(false).size('normal')
+        .line(`ORDER ID: #${orderNumber}`)
+        .line("--------------------------------");
+
+      // Timestamp Block
+      if (showOrderDate) result.align('left').line(`ORDERED: ${orderDateLabel}`);
+      if (showPrintDate) result.align('left').line(`PRINTED: ${printDateLabel}`);
+      if (showOrderDate || showPrintDate) result.line("--------------------------------");
+
+      // Services Block
+      services.forEach(s => {
+        const sName = sanitizeText(s.service_name).substring(0, 18); 
+        const sQty = String(s.quantity || s.weight_kg || 1);
+        const sSub = `P${formatMoney(s.subtotal)}`;
+        result.table(
+          [{ width: 20, align: 'left' }, { width: 4, align: 'center' }, { width: 8, align: 'right' }],
+          [[sName, sQty, sSub]]
+        );
+      });
+
+      // Totals & Status Block
+      result.line("--------------------------------").align('left');
+      if (order.is_paid) result.line(`PAY METHOD: ${paymentMethod}`);
+      result.line(`PAY STATUS: ${paymentStatus}`);
+      if (deliveryFee > 0) result.line(`DELIVERY  : P${formatMoney(deliveryFee)}`);
+
+      result.line("--------------------------------")
+        .align('right')
+        .size('large').bold(true)
+        .line(`TOTAL: P${formatMoney(totalAmount)}`)
+        .size('normal').bold(false);
+
+      if (isCash && order.is_paid && amountTendered !== null) {
+        result.align('right')
+          .line(`CASH : P${formatMoney(amountTendered)}`)
+          .line(`CHANGE: P${formatMoney(changeDue)}`);
+      }
+
+      // Notes Block
+      if (orderNotes) {
+        result.line("--------------------------------").align('left').line("NOTES:");
+        orderNotes.split('\n').forEach(line => {
+          if (line.trim()) result.line(line.trim());
+        });
+      }
+
+      // Footer Block (Aggressively compacted)
+      result.align('center').line("--------------------------------").line(sanitizeText(footerMessage)).cut();
+      
+      const receiptData = result.encode();
+
+      // Transmission
       if (type === 'usb') {
-        const device = await navigator.usb.requestDevice({ filters: [] });
+        device = await navigator.usb.requestDevice({ filters: [] });
         await device.open();
-        await device.selectConfiguration(1);
+        if (device.configuration === null) await device.selectConfiguration(1);
         await device.claimInterface(0);
         await device.transferOut(1, receiptData);
-        await device.close();
       } else {
-        const device = await navigator.bluetooth.requestDevice({
-          filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }]
-        });
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-        const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+        device = await navigator.bluetooth.requestDevice({ filters: [{ services: [PRINTER_CONFIG.BT_SERVICE_UUID] }] });
+        server = await device.gatt.connect();
+        const service = await server.getPrimaryService(PRINTER_CONFIG.BT_SERVICE_UUID);
+        const characteristic = await service.getCharacteristic(PRINTER_CONFIG.BT_CHARACTERISTIC_UUID);
         await characteristic.writeValue(receiptData);
       }
+      
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error(`[Hardware Print Error - ${type}]:`, error);
+      const msg = error.name === 'NotFoundError' ? 'Hardware selection cancelled by user.' 
+                : error.name === 'SecurityError' ? 'Browser blocked hardware access.' 
+                : error.message || "Hardware connection failed.";
+      return { success: false, error: msg };
+    } finally {
+      try {
+        if (type === 'usb' && device?.opened) await device.close();
+        if (type === 'bluetooth' && server?.connected) server.disconnect();
+      } catch (cleanupError) {
+        console.warn("Failed to gracefully close printer connection:", cleanupError);
+      }
     }
   }
 
-  // --- BROWSER / PDF FALLBACK ---
+  // ==========================================
+  // BROWSER / PDF FALLBACK
+  // ==========================================
   if (type === 'browser') {
     try {
       const printWindow = window.open('', '_blank', 'width=400,height=600');
+      if (!printWindow) throw new Error("Popup blocked! Please allow popups for this site.");
       
-     const receiptHtml = `
+      const receiptHtml = `
         <!DOCTYPE html>
         <html>
           <head>
-            <title>RECEIPT - ${order.customer_name.toUpperCase()}</title>
+            <title>RECEIPT - ${customerName}</title>
             <style>
-              /* ✨ GLOBAL BOLD & UPPERCASE */
               body { 
                 font-family: 'Courier New', Courier, monospace; 
-                width: 72mm; 
-                margin: 0 auto; 
-                padding: 10px; 
-                color: #000; 
-                text-transform: uppercase; 
-                font-weight: bold; 
+                width: 72mm; margin: 0 auto; padding: 5px; color: #000; 
+                text-transform: uppercase; font-weight: bold; 
+                line-height: 1.1; /* ✨ Aggressive Y-Axis Compression */
               }
               .center { text-align: center; }
-              .line { border-top: 1px dashed black; margin: 10px 0; } /* Made line thicker for bold look */
-              .customer-name { font-size: 20px; font-weight: 900; margin: 5px 0 3px 0; }
-              .timestamp-box { font-size: 11px; margin: 5px 0; line-height: 1.4; }
-              table { width: 100%; border-collapse: collapse; }
-              td { padding: 2px 0; font-size: 13px; font-weight: bold; }
-              .total-row { font-size: 21px; font-weight: 900; margin-top: 10px; text-align: right; }
-              .payment-info { font-size: 11px; }
-              .btn-print { 
-                display: block; 
-                width: 100%; 
-                padding: 12px; 
-                background: #000; 
-                color: #fff; 
-                border: none; 
-                margin-bottom: 20px; 
-                cursor: pointer; 
-                border-radius: 4px; 
-                font-weight: 400; 
-                text-transform: uppercase; 
+              .line { border-top: 1px dashed black; margin: 4px 0; opacity:50%; }
+              .customer-name { font-size: 20px; font-weight: 900; margin: 2px 0; }
+              .timestamp-box { font-size: 11px; margin: 2px 0; line-height: 1.2; }
+              table { width: 100%; border-collapse: collapse; margin-bottom: 2px; }
+              td { padding: 1px 0; font-size: 13px; font-weight: bold; }
+              .total-row { font-size: 21px; font-weight: 900; margin-top: 5px; text-align: right; }
+              .cash-row { font-size: 14px; font-weight: bold; text-align: right; margin-top: 1px; }
+              .payment-info { font-size: 11px; margin-top: 2px; }
+              .notes-section { font-size: 11px; text-align: left; margin-top: 2px; white-space: pre-wrap; word-wrap: break-word; }
+              .header-info { font-size: 11px; font-weight: bold; margin-bottom: 2px; }
+              @media print { 
+                @page { margin: 0; }
+                body { padding: 0; width: 100%; } 
               }
-              @media print { .btn-print { display: none; } body { padding: 0; width: 100%; } }
             </style>
           </head>
           <body>
-            <button class="btn-print" onclick="window.print()">PRINT RECEIPT</button>
             <div class="receipt">
+              <!-- Header Block -->
               <div class="center">
-                <h4 style="margin:0; ">${(storeName || "LOLA FE'S LAUNDRY").toUpperCase()}</h4>
-                <div style="font-size:12px; font-weight: bold;">
-                  ${address ? `<div>${address.toUpperCase()}</div>` : ''}
-                  ${phone ? `<div>${phone}</div>` : ''}
-                  ${email ? `<div>${email.toUpperCase()}</div>` : ''}
-                  ${website ? `<div>${website.toUpperCase()}</div>` : ''}
+                <h4 style="margin: 0 0 2px 0;">${sanitizeText(storeName)}</h4>
+                <div class="header-info">
+                  ${address ? `<div>${sanitizeText(address)}</div>` : ''}
+                  ${phone ? `<div>TEL: ${sanitizeText(phone)}</div>` : ''}
+                  ${email ? `<div>${sanitizeText(email)}</div>` : ''}
+                  ${website ? `<div>${sanitizeText(website)}</div>` : ''}
                 </div>
                 <div class="line"></div>
-                <div class="customer-name">${order.customer_name.toUpperCase()}</div>
-                <div style="font-size: 17px; font-weight: 900;">#${order.order_number}</div>
+                <!-- Customer Block -->
+                <div class="customer-name">${customerName}</div>
+                <div style="font-size: 17px; font-weight: 900; margin-bottom: 2px;">#${orderNumber}</div>
               </div>
 
+              <!-- Timestamp Block -->
+              <div class="line"></div>
               <div class="timestamp-box">
-                ${showOrderDate ? `<div style="display:flex; justify-content:space-between"><span>ORDERED:</span> <span>${orderDateLabel.toUpperCase()}</span></div>` : ''}
-                ${showPrintDate ? `<div style="display:flex; justify-content:space-between"><span>PRINTED:</span> <span>${printDateLabel.toUpperCase()}</span></div>` : ''}
+                ${showOrderDate ? `<div style="display:flex; justify-content:space-between"><span>ORDERED:</span> <span>${orderDateLabel}</span></div>` : ''}
+                ${showPrintDate ? `<div style="display:flex; justify-content:space-between"><span>PRINTED:</span> <span>${printDateLabel}</span></div>` : ''}
               </div>
 
-              <div class="payment-info" style="margin-top: 5px;">
-                <div style="display:flex; justify-content:space-between">
-                  <span>PAYMENT METHOD:</span>
-                  <span>${(order.payment_method || "CASH").toUpperCase()}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between">
-                  <span>PAYMENT STATUS:</span>
-                  <span>${(order.is_paid ? "PAID" : "UNPAID").toUpperCase()}</span>
-                </div>
-                ${order.delivery_fee > 0 ? `
-                  <div style="display:flex; justify-content:space-between; margin-top:2px;">
-                    <span>DELIVERY FEE:</span>
-                    <span>₱${Number(order.delivery_fee).toLocaleString()}</span>
-                  </div>
-                ` : ''}
-              </div>
-
+              <!-- Services Block -->
               <div class="line"></div>
               <table>
                 <tbody>
-                  ${order.services.map(s => `
+                  ${services.map(s => `
                     <tr>
-                      <td align="left" style="font-weight: bold;">${s.service_name.toUpperCase()} ${s.quantity || s.weight_kg}X</td>
-                      <td align="right" style="font-weight: bold;">₱${Number(s.subtotal || 0).toLocaleString()}</td>
+                      <td align="left">${sanitizeText(s.service_name).substring(0, 15)} ${s.quantity || s.weight_kg || 1}X</td>
+                      <td align="right">P${formatMoney(s.subtotal)}</td>
                     </tr>
                   `).join('')}
                 </tbody>
               </table>
 
+              <!-- Totals & Status Block -->
               <div class="line"></div>
-              <div class="total-row">TOTAL: ₱${Number(order.total_amount).toLocaleString()}</div>
+              <div class="payment-info">
+                ${order.is_paid ? `<div style="display:flex; justify-content:space-between"><span>PAY METHOD:</span><span>${paymentMethod}</span></div>` : ''}
+                <div style="display:flex; justify-content:space-between"><span>PAY STATUS:</span><span>${paymentStatus}</span></div>
+                ${deliveryFee > 0 ? `<div style="display:flex; justify-content:space-between;"><span>DELIVERY:</span><span>P${formatMoney(deliveryFee)}</span></div>` : ''}
+              </div>
 
-              <div class="center" style="margin-top:20px; font-size:12px;">
-                <p style="font-weight: 900; font-size: 14px;">${(footerMessage || "THANK YOU FOR YOUR COMING!").toUpperCase()}</p>
-                <p style="opacity: 0.7">--- END OF RECEIPT ---</p>
+            
+              <div class="total-row">TOTAL: P${formatMoney(totalAmount)}</div>
+              
+              ${isCash && order.is_paid && amountTendered !== null ? `
+                <div class="cash-row">CASH: P${formatMoney(amountTendered)}</div>
+                <div class="cash-row">CHANGE: P${formatMoney(changeDue)}</div>
+              ` : ''}
+
+             
+              <div class="center" style="margin-top: 6px; font-size:12px;">
+             
+                <p style="font-weight: 900; font-size: 14px; margin: 4px 0;">${sanitizeText(footerMessage)}</p>
               </div>
             </div>
+            
+            <script>
+              window.onload = function() {
+                setTimeout(function() { window.print(); window.close(); }, 250);
+              };
+            </script>
           </body>
         </html>
       `;
 
-      printWindow.document.body.parentElement.innerHTML = receiptHtml;
+      printWindow.document.open();
+      printWindow.document.write(receiptHtml);
       printWindow.document.close();
       
       return { success: true };
     } catch (error) {
-      return { success: false, error: "Popup blocked! Please enable popups." };
+      console.error("[Browser Print Error]:", error);
+      return { success: false, error: error.message || "Failed to execute browser print." };
     }
   }
+
+  return { success: false, error: "Invalid print type specified." };
 };

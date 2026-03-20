@@ -203,7 +203,7 @@ export default function StoreShiftSettings() {
       showNotification("System access hours updated!", "success");
       
       const statusText = isEnabled ? `Enabled (${formatTo12Hr(openTime)} - ${formatTo12Hr(closeTime)})` : "Disabled";
-      logActivity?.(`Settings: Shift Restrictions ${statusText}`);
+      logActivity?.(` Shift Restrictions ${statusText}`);
     } catch (err) {
       console.error("Shift Settings Sync Error:", err);
       showNotification("Failed to sync settings.", "error");

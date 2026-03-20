@@ -1,187 +1,353 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { IconCheckCircle, IconWallet, IconCreditCard, IconGCash } from '../icons';
-import Button from '../ui/Button';
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useState, useRef, useCallback} from "react";
+import { createPortal } from "react-dom";
+import { IconWallet, IconClose } from "../icons";
+import Button from "../ui/Button";
 
 const getPaymentIcon = (name) => {
-  const lowerName = name?.toLowerCase() || "";
-  if (lowerName.includes('cash')) return <IconWallet className="w-5 h-5 text-green-600" />;
-  if (lowerName.includes('gcash')) return <IconGCash className="w-5 h-5 text-blue-600" />;
-  return <IconCreditCard className="w-5 h-5 text-slate-600" />;
+  if (!name || typeof name !== 'string') {
+    return <div className="w-4 h-4 rounded-full border-2 border-dashed border-text-dark/20" aria-hidden="true" />;
+  }
+  // 🛡️ ENFORCEMENT: Universally return the wallet icon for all payment methods per requirements
+  return <IconWallet className="w-5 h-5 text-text-dark/70" aria-hidden="true" />;
 };
 
-const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, methods }) => {
-  const [step, setStep] = useState(1);
+const formatSafeMoney = (val) => {
+  const num = Number(val);
+  if (isNaN(num) || num < 0) return "0.00";
+  return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
+
+const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMethods, totalAmount }) => {
+  // --- STATE ---
   const [isUpdating, setIsUpdating] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [portalNode, setPortalNode] = useState(null);
+  
+  const [tendered, setTendered] = useState("");
+  const [selectedMethod, setSelectedMethod] = useState("");
 
-  useEffect(() => {
-    if (isOpen) {
-      setStep(1);
-      setIsUpdating(false);
-      setErrorMessage(null);
+  // --- REFS ---
+  const isMounted = useRef(false);
+  const modalRef = useRef(null);
+  const inputRef = useRef(null); // ✨ NEW: Ref for auto-focusing the tendered input
+
+  // --- DERIVED STATE ---
+  const safeMethods = Array.isArray(paymentMethods) ? paymentMethods : [];
+  const parsedTotal = Number(totalAmount) || 0;
+  const parsedTendered = Number(tendered);
+  
+  const isInsufficient = tendered !== "" && !isNaN(parsedTendered) && parsedTendered < parsedTotal;
+  const changeDue = !isNaN(parsedTendered) && parsedTendered > parsedTotal ? parsedTendered - parsedTotal : 0;
+
+  // --- HANDLERS (Hoisted before UseEffects) ---
+  const handleClose = useCallback((e) => {
+    if (e) e.stopPropagation();
+    if (!isUpdating && typeof onClose === 'function') {
+      onClose();
     }
-  }, [isOpen]);
+  }, [isUpdating, onClose]);
 
-  useEffect(() => {
-    const handleEsc = (e) => {
-      // ✨ FIXED: Call onClose() directly since we already check !isUpdating right here
-      if (e.key === 'Escape' && !isUpdating) onClose(); 
-    };
+  const handleTenderedChange = useCallback((e) => {
+    let val = e.target.value.replace(/[^0-9.]/g, ''); 
+    if ((val.match(/\./g) || []).length > 1) val = val.replace(/\.+$/, ""); 
+    setTendered(val.substring(0, 8)); 
+    setErrorMessage(null); 
+  }, []);
 
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleEsc);
+  const handleQuickDenomination = useCallback((amount) => {
+    setTendered(String(amount));
+    setErrorMessage(null);
+    inputRef.current?.focus(); // Return focus to input after quick select
+  }, []);
+
+  const handleMethodClick = useCallback((methodName) => {
+    setSelectedMethod(methodName);
+    setErrorMessage(null);
+    inputRef.current?.focus(); // Return focus to input after changing method
+  }, []);
+
+  const handleConfirmSubmit = useCallback(async () => {
+    if (isUpdating) return; 
+
+    if (!selectedMethod) {
+      setErrorMessage("Please select a payment method.");
+      return;
     }
-    return () => {
-      document.body.style.overflow = 'unset';
-      window.removeEventListener('keydown', handleEsc);
-    };
-  }, [isOpen, isUpdating, onClose]); 
+    
+    const finalTendered = tendered !== "" && !isNaN(Number(tendered)) ? Number(tendered) : parsedTotal;
 
-  const handleClose = () => {
-    if (isUpdating) return;
-    onClose();
-  };
+    // 🚨 ARCHITECTURE UPDATE: Require exact/over-payment for ALL methods, not just cash
+    if (finalTendered < parsedTotal) {
+      setErrorMessage(`Insufficient amount. Minimum required: ₱${formatSafeMoney(parsedTotal)}`);
+      return;
+    }
 
-  const handleMethodSelect = async (methodName) => {
-    if (isUpdating) return;
     setIsUpdating(true);
     setErrorMessage(null);
+    
     try {
-      await onConfirm(methodName);
+      if (typeof onConfirm !== 'function') throw new Error("Confirmation handler missing.");
+      await onConfirm(selectedMethod, finalTendered);
     } catch (error) {
-      setErrorMessage(error.message || "Update failed. Please try again.");
-      setIsUpdating(false);
+      if (isMounted.current) {
+        console.error("[PaymentUpdateModal] Error:", error?.message || error);
+        setErrorMessage(error?.message?.substring(0, 100) || "Update failed. Please try again.");
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsUpdating(false);
+      }
     }
-  };
+  }, [isUpdating, selectedMethod, tendered, parsedTotal, onConfirm]);
 
+  // --- LIFECYCLE & PORTAL SETUP ---
+  useEffect(() => {
+    isMounted.current = true;
+    setPortalNode(document.body);
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsUpdating(false);
+      setErrorMessage(null);
+      setTendered(""); 
+      
+      if (safeMethods.length > 0) {
+        const configuredDefault = safeMethods.find(m => m.isDefault === true || m.is_default === true);
+        setSelectedMethod(configuredDefault ? configuredDefault.name : safeMethods[0].name);
+      } else {
+        setSelectedMethod("");
+      }
+
+      // ✨ NEW: Auto-focus the input 50ms after modal mounts to allow for animation
+      const timer = setTimeout(() => {
+        if (isMounted.current) inputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, paymentMethods]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Modal Lifecycle Esc Guard
+  const handleCloseRef = useRef(handleClose);
+
+  useEffect(() => {
+    handleCloseRef.current = handleClose;
+  }, [handleClose]);
+
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return;
+
+    const previousFocus = document.activeElement;
+
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && !isUpdating) {
+        handleCloseRef.current?.(e);
+      }
+    };
+
+    const originalOverflow = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+
+    window.addEventListener('keydown', handleEsc);
+    
+    return () => {
+      document.body.style.overflow = originalOverflow; 
+      window.removeEventListener('keydown', handleEsc);
+      if (previousFocus instanceof HTMLElement) {
+        previousFocus.focus();
+      }
+    };
+  }, [isOpen, isUpdating]);
+
+  // --- EARLY RETURN FOR SSR/PORTAL ---
+  if (!portalNode) return null;
+
+  // --- RENDER ---
   return createPortal(
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-          
+        <div 
+          onClick={handleClose} 
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-app-dark/60 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="payment-modal-title"
+        >
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={handleClose}
-            className="absolute inset-0  bg-app-dark/40 backdrop-blur-sm"
-          />
-
-          {/* MODAL BODY */}
-         <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            ref={modalRef}
+            tabIndex={-1}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            onClick={(e) => e.stopPropagation()}
-            className="relative bg-white p-6 rounded-2xl shadow-2xl border border-white max-w-sm w-full text-center overflow-hidden"
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(e) => e.stopPropagation()} 
+            className="relative bg-white rounded-3xl p-4 shadow-2xl w-full max-w-[380px] max-h-[90vh] h-fit overflow-hidden focus:outline-none flex flex-col"
           >
-            {/* CLOSE BUTTON */}
-            <button 
-              onClick={handleClose}
-              disabled={isUpdating}
-              className="absolute top-4 right-4 p-1 rounded-full text-text-dark/20 hover:text-text-dark/50 transition-colors disabled:opacity-50"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            {/* Header */}
+            <header className="p-4 text-center relative">
+              <button
+                onClick={handleClose}
+                disabled={isUpdating}
+                className="absolute top-1 right-1 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Close modal"
+              >
+                <IconClose className="w-5 h-5" aria-hidden="true" />
+              </button>
 
-            <AnimatePresence mode="wait">
-              {step === 1 ? (
-                /* STEP 1: CONFIRMATION */
-                <motion.div 
-                  key="confirm"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="space-y-4"
-                >
-                  <div className="w-12 h-12   flex items-center justify-center mx-auto ">
-                    <IconCheckCircle className="w-7 h-7 text-emerald-600" />
-                  </div>
+              <h3 id="payment-modal-title" className="text-sm-text font-medium text-text-dark/70 mb-1">
+                Collect Payment
+              </h3>
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <span className="text-lg font-bold text-text-dark/50">₱</span>
+                <span className="text-h2 font-bold text-emerald-600 leading-none">
+                  {formatSafeMoney(totalAmount)}
+                </span>
+              </div>
+              <p className="text-micro font-bold text-text-dark/60 mt-1.5">
+                <span className="text-text-dark/90">#{orderNumber || "null"}</span>
+              </p>
+            </header>
 
-                  <h3 className="text-h3 font-bold text-text-dark">Confirm Payment?</h3>
-                  <p className="text-sm-text font-normal text-text-dark/70 leading-relaxed mb-6">
-                    Mark order <span className="font-bold text-text-dark">#{orderNumber}</span> as fully paid? This will finalize the billing for this transaction.
-                  </p>
+            <div className="p-4 bg-white space-y-4">
+              
+              {/* ✨ MODIFIED: Unconditional Render of Amount Received */}
+              <div>
+                <label htmlFor="tendered-input" className="block text-sm-text text-text-dark/60 font-medium mb-1.5">
+                  Amount Received 
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-text-dark/40">₱</span>
+                  <input
+                    id="tendered-input"
+                    ref={inputRef} 
+                    type="text"
+                    inputMode="decimal"
+                    value={tendered}
+                    onChange={handleTenderedChange}
+                    placeholder={formatSafeMoney(totalAmount)}
+                    className={`w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-bold text-base-text text-text-dark transition-all focus:outline-none focus:bg-white ${isInsufficient ? 'border-rose-300 focus:border-rose-500 bg-rose-50/30 text-rose-600' : 'focus:border-emerald-500 hover:border-slate-300'}`}
+                  />
+                </div>
+                
+                <div className="mt-2 mb-2 flex items-center justify-between px-1" aria-live="polite">
+                  {isInsufficient ? (
+                    <span className="text-rose-500 text-micro font-medium">Amount is less than total.</span>
+                  ) : changeDue > 0 ? (
+                    <>
+                      <span className="text-micro font-medium text-text-dark/50 ">Change Due:</span>
+                      <span className="font-bold text-emerald-600 text-sm-text">₱{formatSafeMoney(changeDue)}</span>
+                    </>
+                  ) : (
+                    <span />
+                  )}
+                </div>
 
-                  <div className="flex gap-3 w-full ">
-                    <Button 
-                      variant="success" 
-                      className="flex-1 order-1" 
-                      onClick={() => setStep(2)}
-                    >
-                      Yes, Paid
-                    </Button>
+                <div className="flex gap-1.5 mt-1.5">
+                  <button onClick={() => handleQuickDenomination(totalAmount)} className="flex-1 py-2 bg-emerald-50 text-emerald-700 text-micro font-medium rounded-md hover:bg-emerald-100 border border-emerald-100 active:scale-95 transition-all">Exact</button>
+                  <button onClick={() => handleQuickDenomination(100)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro font-medium rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱100</button>
+                  <button onClick={() => handleQuickDenomination(500)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro font-medium rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱500</button>
+                  <button onClick={() => handleQuickDenomination(1000)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro font-medium rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱1000</button>
+                </div>
+              </div>
 
-                    <Button 
-                      variant="secondary" 
-                      className="flex-1 order-2" 
-                      onClick={handleClose}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </motion.div>
-              ) : (
-                /* STEP 2: METHOD SELECTION */
-                <motion.div 
-                  key="select"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-4"
-                >
-                  <div className="text-left mb-2">
-                    <button 
-                      onClick={() => setStep(1)} 
-                      disabled={isUpdating}
-                      className="text-micro font-bold text-blue-600 tracking-widest hover:text-blue-700 disabled:opacity-50"
-                    >
-                      ← Back
-                    </button>
-                    <h3 className="text-h3 font-medium text-text-dark mt-1">Select Method</h3>
-                  </div>
+              <AnimatePresence>
+                {errorMessage && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0, marginBottom: 0 }} 
+                    animate={{ opacity: 1, height: 'auto', marginBottom: 12 }} 
+                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    role="alert"
+                    className="p-2.5 bg-rose-50 text-rose-600 text-micro font-medium rounded-lg border border-rose-100 text-center"
+                  >
+                    {errorMessage}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                  {errorMessage && (
-                    <div className="p-2 bg-red-50 text-red-500 text-micro rounded-lg border border-red-100">
-                      {errorMessage}
+              {/* Stacked Payment Methods */}
+              <div className="pt-1.5 border-t border-slate-100">
+                <p className="text-sm-text text-text-dark/70 font-medium mb-2">
+                  Select Payment Method
+                </p>
+                <div className="flex flex-col gap-1.5 max-h-fit overflow-y-auto pr-1 custom-scrollbar" role="radiogroup" aria-label="Select Payment Method">
+                  {safeMethods.length > 0 ? (
+                    safeMethods.map((method) => {
+                      const isSelected = selectedMethod === method.name;
+                      return (
+                        <button
+                          key={method.id || method.name}
+                          disabled={isUpdating}
+                          role="radio"
+                          aria-checked={isSelected}
+                          onClick={() => handleMethodClick(method.name)}
+                          className={`w-full p-2.5 flex items-center justify-between rounded-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 active:scale-[0.98] ${
+                            isSelected 
+                              ? 'bg-emerald-50 border border-emerald-500 shadow-sm' 
+                              : 'bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                          } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center m" aria-hidden="true">
+                              {getPaymentIcon(method.name)}
+                            </div>
+                            <span className={`block font-medium text-sm-text transition-colors ${isSelected ? 'text-emerald-800' : 'text-text-dark'}`}>
+                              {method.name}
+                            </span>
+                          </div>
+                          
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-emerald-500 bg-emerald-500' : 'border-slate-200 bg-white'}`} aria-hidden="true">
+                            {isSelected && (
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="py-4 text-center text-micro text-text-dark/40 font-medium border border-dashed border-slate-200 rounded-lg">
+                      No active payment methods.
                     </div>
                   )}
+                </div>
+              </div>
 
-                  <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
-                    {methods.map((method) => (
-                      <button
-                        key={method.id}
-                        disabled={isUpdating}
-                        onClick={() => handleMethodSelect(method.name)}
-                        className={`w-full p-4 flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl hover:bg-white hover:border-green-300 hover:shadow-md transition-all group active:scale-[0.98] ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div >
-                            {getPaymentIcon(method.name)}
-                          </div>
-                          <span className="font-medium text-sm text-text-dark">{method.name}</span>
-                        </div>
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-green-500 transition-colors" />
-                      </button>
-                    ))}
-                  </div>
+              {/* Confirmation Buttons */}
+              <div className="flex gap-2 w-full pt-2">
+                <Button 
+                  variant="success"
+                  onClick={handleConfirmSubmit}
+                  disabled={isUpdating || isInsufficient} 
+                  className="flex-1 order-1 py-2.5 text-sm shadow-sm active:scale-95"
+                >
+                  {isUpdating ? "Processing..." : "Confirm Payment"}
+                </Button>
+                
+                <Button 
+                  variant="secondary"
+                  onClick={handleClose}
+                  disabled={isUpdating}
+                  className="flex-1 order-2 py-2.5 text-sm active:scale-95"
+                >
+                  Cancel
+                </Button>
+              </div>
 
-                  <p className="text-[10px] text-text-dark/40 font-medium">
-                    {isUpdating ? "Finalizing transaction..." : "Choose how the customer settled the bill."}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            </div>
           </motion.div>
         </div>
       )}
     </AnimatePresence>,
-    document.body 
+    portalNode 
   );
 };
 

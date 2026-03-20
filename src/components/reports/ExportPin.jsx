@@ -1,7 +1,7 @@
 /**
- * @file CleanupPINModal.jsx
- * @description Secure, accessible, and high-performance PIN verification gateway.
- * Resolves Destructuring Type Errors and Zustand Selector Anti-patterns.
+ * @file ExportPin.jsx
+ * @description Secure, accessible, and high-performance PIN verification gateway for Data Exports.
+ * Adapted from the Cleanup/Destructive PIN template for non-destructive sensitive actions.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -16,11 +16,11 @@ const SHAKE_ANIMATION = Object.freeze({
   transition: { duration: 0.4 } 
 });
 
-export default function CleanupPINModal({ 
+export default function ExportPin({ 
   isOpen, 
   onClose, 
-  onConfirm, 
-  title = "this action", 
+  onSuccess, // Mapped to onSuccess to match your ExportOrdersButton logic
+  title = "Data Export", 
   isProcessing 
 }) {
   const [pin, setPin] = useState("");
@@ -66,14 +66,13 @@ export default function CleanupPINModal({
       const result = await verifyPINAtSource(pin);
 
       // 🛡️ CRITICAL ARCHITECTURE FIX: Polymorphic Response Handling
-      // Safely handles both legacy Boolean returns and new Object returns from the store
       const isSuccess = result && typeof result === 'object' ? result.success : result === true;
       const isLocked = result && typeof result === 'object' ? result.locked : false;
       const timeRemaining = result && typeof result === 'object' ? result.remainingTime : 0;
 
       if (isSuccess) {
         setPin("");
-        onConfirm(); 
+        onSuccess(); // Trigger the export!
       } else {
         setError(isLocked ? "Too many attempts. System Locked." : "Invalid Security PIN");
         setPin("");
@@ -83,7 +82,7 @@ export default function CleanupPINModal({
       console.error("[PIN_Verification_Error]:", err);
       setError("Security Gateway Error. Try again.");
     }
-  }, [pin, lockout.isLocked, isProcessing, verifyPINAtSource, onConfirm]);
+  }, [pin, lockout.isLocked, isProcessing, verifyPINAtSource, onSuccess]);
 
   if (!isOpen) return null;
 
@@ -112,11 +111,9 @@ export default function CleanupPINModal({
             <IconClose className="w-4 h-4" />
           </button>
 
-          {/* Security Icon */}
+          {/* Security Icon - Adapted for non-destructive action (Blue instead of Rose) */}
           <div 
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors ${
-              lockout.isLocked ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600'
-            }`}
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-blue-50 text-blue-600 transition-colors"
           >
             <IconLock className="w-6 h-6" aria-hidden="true" />
           </div>
@@ -126,7 +123,7 @@ export default function CleanupPINModal({
           </h3>
           <p className="text-sm text-slate-500 mt-2 mb-8">
             Please enter PIN to authorize <br />
-            <span className="text-rose-500 font-semibold">{title}</span>
+            <span className="text-blue-600 font-semibold">{title}</span>
           </p>
 
           {lockout.isLocked ? (
@@ -149,7 +146,7 @@ export default function CleanupPINModal({
                   className={`w-full text-center text-3xl font-bold tracking-[0.5em] py-4 bg-slate-50 border-2 rounded-2xl transition-all outline-none focus:ring-4 ${
                     error 
                       ? 'border-rose-400 text-rose-600 focus:ring-rose-100' 
-                      : 'border-slate-100 focus:border-slate-800 focus:ring-slate-100'
+                      : 'border-slate-100 focus:border-blue-500 focus:ring-blue-100'
                   } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                   placeholder="••••••"
                   aria-label="6 digit security pin"
@@ -163,20 +160,21 @@ export default function CleanupPINModal({
               </div>
 
               <div className="flex flex-row gap-3">
+                {/* Changed variant to primary since this isn't a destructive action */}
                 <Button
-                  variant="danger"
+                  variant="primary"
                   type="submit"
-                  className="flex-1 "
+                  className="flex-1"
                   disabled={pin.length < PIN_LENGTH || isProcessing}
                   isLoading={isProcessing}
                 >
-                  Authorize Action
+                  Authorize Export
                 </Button>
 
                 <Button
                   variant="secondary"
                   type="button"
-                  className="flex-1 "
+                  className="flex-1"
                   onClick={onClose}
                   disabled={isProcessing}
                 >

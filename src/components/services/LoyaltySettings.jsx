@@ -1,5 +1,5 @@
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
 import { useActivityStore } from "../../store/activities/useActivityStore";
 import { useLoyaltyStore } from "../../store/services/useLoyaltyStore";
 import { useServiceStore } from "../../store/services/useServiceStore";
@@ -8,54 +8,67 @@ import { useNotificationStore } from '../../store/ui/useNotificationStore';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react'; 
 import Button from '../ui/Button';
 
-const Label = ({ children }) => (
-  <label className="text-micro font-medium text-text-dark/60 block mb-1.5 ml-1 ">
+
+const Label = React.memo(({ htmlFor, children }) => (
+  <label htmlFor={htmlFor} className="text-micro font-medium text-text-dark/60 block mb-1.5 ml-1">
     {children}
   </label>
-);
+));
+Label.displayName = "Label";
 
-const Input = ({ type, value, onChange, disabled, className, placeholder, inputMode }) => (
+const Input = React.memo(({ id, type = "text", value, onChange, disabled, className = "", placeholder, inputMode }) => (
   <input 
+    id={id}
     type={type} 
     value={value} 
     onChange={onChange} 
     disabled={disabled}
     placeholder={placeholder}
     inputMode={inputMode}
-    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text font-medium focus:outline-none focus:ring-1 shadow-sm disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
+    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text font-medium focus:outline-none focus:ring-1 focus:ring-app-dark/90  disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
   />
-);
+));
+Input.displayName = "Input";
 
-const Switch = ({ checked, onCheckedChange }) => (
+const Switch = React.memo(({ checked, onCheckedChange, id, ariaLabel }) => (
   <button 
+    id={id}
     type="button" 
+    role="switch"
+    aria-checked={checked}
+    aria-label={ariaLabel}
     onClick={() => onCheckedChange(!checked)}
-    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${checked ? 'bg-emerald-500' : 'bg-slate-200'}`}
+    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark focus-visible:ring-offset-2 ${checked ? 'bg-emerald-500' : 'bg-slate-300 hover:bg-slate-400'}`}
   >
     <span 
       className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${checked ? 'translate-x-6' : 'translate-x-1'}`} 
+      aria-hidden="true"
     />
   </button>
-);
+));
+Switch.displayName = "Switch";
 
-const HeadlessSelect = ({ value, onChange, options, disabled }) => {
-  const selectedOption = options.find(o => o.name === value) || { id: 'none', name: value || "Select Service" };
+const HeadlessSelect = React.memo(({ id, value, onChange, options, disabled }) => {
+  const selectedOption = useMemo(() => {
+    return options.find(o => o.name === value) || { id: 'none', name: value || "Select Service" };
+  }, [options, value]);
 
   return (
-    <div className="relative w-full z-[100]">
+    <div className="relative w-full z-20">
       <Listbox value={selectedOption} onChange={(opt) => onChange(opt.name)} disabled={disabled}>
         {({ open }) => (
           <>
             <ListboxButton 
-              className={`flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm-text font-medium focus:outline-none focus:ring-1 transition-colors
-                ${open ? " bg-white" : "border-slate-200 hover:border-gray-300 bg-white"}
-                ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50" : "cursor-pointer"}
+              id={id}
+              className={`flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm-text font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark transition-colors
+                ${open ? "bg-white border-app-dark" : "border-slate-200 hover:border-gray-300 bg-white"}
+                ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50 hover:border-slate-200" : "cursor-pointer"}
               `}
             >
               <span className={`block truncate ${value ? "text-text-dark" : "text-slate-400"}`}>
                 {selectedOption.name}
               </span>
-              <IconArrowUp className={`w-4 h-4 text-text-dark transition-transform duration-200 ${open ? 'rotate-0' : 'rotate-180'}`} />
+              <IconArrowUp className={`w-4 h-4 text-text-dark transition-transform duration-200 ${open ? 'rotate-0' : 'rotate-180'}`} aria-hidden="true" />
             </ListboxButton>
 
             <AnimatePresence>
@@ -67,36 +80,37 @@ const HeadlessSelect = ({ value, onChange, options, disabled }) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -5 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute mt-2 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 shadow-xl border border-gray-100 focus:outline-none custom-scrollbar"
+                  className="absolute mt-2 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 shadow-xl border border-gray-100 focus:outline-none custom-scrollbar z-50"
                 >
-                  {options.map((option) => (
-                    <ListboxOption
-                      key={option.id}
-                      className={({ active }) =>
-                        `relative cursor-pointer select-none py-2.5 px-3 text-sm-text font-medium transition-colors flex items-center justify-between ${
-                          active ? 'bg-gray-50 text-text-dark' : 'text-text-dark'
-                        }`
-                      }
-                      value={option}
-                    >
-                      {({ selected }) => (
-                        <>
-                          <span className={`block truncate ${selected ? 'font-bold' : 'font-medium'}`}>
-                            {option.name}
-                          </span>
-                          {selected && (
-                            <svg className="h-3.5 w-3.5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </>
-                      )}
-                    </ListboxOption>
-                  ))}
-                  {options.length === 0 && (
-                    <div className="px-3 py-3 text-center text-nano font-bold text-slate-400 uppercase">
+                  {options.length > 0 ? (
+                    options.map((option) => (
+                      <ListboxOption
+                        key={option.id}
+                        className={({ active }) =>
+                          `relative cursor-pointer select-none py-2.5 px-3 text-sm-text font-medium transition-colors flex items-center justify-between ${
+                            active ? 'bg-gray-50 text-text-dark' : 'text-text-dark'
+                          }`
+                        }
+                        value={option}
+                      >
+                        {({ selected }) => (
+                          <>
+                            <span className={`block truncate ${selected ? 'font-bold' : 'font-medium'}`}>
+                              {option.name}
+                            </span>
+                            {selected && (
+                              <svg className="h-3.5 w-3.5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </>
+                        )}
+                      </ListboxOption>
+                    ))
+                  ) : (
+                    <li className="px-3 py-3 text-center text-nano font-bold text-slate-400 uppercase">
                       No Active Services Found!
-                    </div>
+                    </li>
                   )}
                 </ListboxOptions>
               )}
@@ -106,40 +120,85 @@ const HeadlessSelect = ({ value, onChange, options, disabled }) => {
       </Listbox>
     </div>
   );
-};
+});
+HeadlessSelect.displayName = "HeadlessSelect";
+
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
 
 export default function LoyaltySettings() {
+  // --- GLOBAL STATE ---
   const { loyaltySettings, saveLoyaltySettings, subscribeToLoyalty, isLoading } = useLoyaltyStore();
   const { services, subscribeToServices } = useServiceStore();
   const logActivity = useActivityStore((state) => state.logActivity);
+  const showNotification = useNotificationStore((state) => state.showNotification);
 
-  const [localSettings, setLocalSettings] = useState(loyaltySettings);
+  // --- LOCAL STATE ---
+  const [localSettings, setLocalSettings] = useState(loyaltySettings || {});
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
+  // --- REFS ---
+  const isMounted = useRef(false);
+
+  // --- LIFECYCLE ---
   useEffect(() => {
-    const unsubL = subscribeToLoyalty();
-    const unsubS = subscribeToServices();
-    return () => { unsubL(); unsubS(); };
+    isMounted.current = true;
+    const unsubL = typeof subscribeToLoyalty === 'function' ? subscribeToLoyalty() : () => {};
+    const unsubS = typeof subscribeToServices === 'function' ? subscribeToServices() : () => {};
+    
+    return () => { 
+      isMounted.current = false;
+      unsubL(); 
+      unsubS(); 
+    };
   }, [subscribeToLoyalty, subscribeToServices]);
 
   useEffect(() => {
-    if (!isLoading) setLocalSettings(loyaltySettings);
+    if (!isLoading && loyaltySettings) {
+      setLocalSettings(loyaltySettings);
+    }
   }, [loyaltySettings, isLoading]);
 
-  const handleInputChange = (field, rawValue) => {
-    let val = rawValue.replace(/\D/g, ""); 
-    if (val.length > 0) val = String(Number(val)); 
-    setLocalSettings({ ...localSettings, [field]: val });
-  };
 
-  const executeStatusChange = async (newStatus, wipePoints = false) => {
-    const { showNotification } = useNotificationStore.getState();
+  // --- DERIVED STATE (MEMOIZED) ---
+  const activeServices = useMemo(() => {
+    if (!Array.isArray(services)) return [];
+    return services.filter(s => s?.is_active);
+  }, [services]);
+
+  const hasChanges = useMemo(() => {
+    return JSON.stringify(localSettings) !== JSON.stringify(loyaltySettings);
+  }, [localSettings, loyaltySettings]);
+
+  const isValid = useMemo(() => {
+    const req = Number(localSettings?.orders_required);
+    return !isNaN(req) && req > 0 && typeof localSettings?.free_service_type === 'string' && localSettings.free_service_type.trim() !== "";
+  }, [localSettings]);
+
+
+  // --- HANDLERS ---
+
+  const handleInputChange = useCallback((field, rawValue) => {
+    // SECURITY: Ensure output is strictly numeric string, cap length to prevent bloat
+    let val = String(rawValue).replace(/\D/g, "").substring(0, 4); 
+    if (val.length > 0) val = String(Number(val)); // Trims leading zeros safely
+    setLocalSettings(prev => ({ ...prev, [field]: val }));
+  }, []);
+
+  const handleSelectChange = useCallback((val) => {
+    setLocalSettings(prev => ({ ...prev, free_service_type: val }));
+  }, []);
+
+  const executeStatusChange = useCallback(async (newStatus, wipePoints = false) => {
+    if (isSaving) return;
     setIsSaving(true);
+    
     try {
       const updated = { ...localSettings, is_enabled: newStatus };
       await saveLoyaltySettings(updated, wipePoints);
-      setLocalSettings(updated);
       
       const labelText = newStatus ? "Voucher Enabled" : wipePoints ? "Voucher Reset & Disabled" : "Voucher Paused";
 
@@ -148,22 +207,35 @@ export default function LoyaltySettings() {
         { action: 'status_update', label: labelText }
       );
 
-      showNotification(labelText, "success");
-      setShowConfirmDialog(false);
+      if (isMounted.current) {
+        setLocalSettings(updated);
+        setShowConfirmDialog(false);
+        showNotification(labelText, "success");
+      }
     } catch (err) {
-      showNotification("Failed to update status", "error");
+      if (isMounted.current) {
+        showNotification("Failed to update status", "error");
+      }
     } finally {
-      setIsSaving(false);
+      if (isMounted.current) setIsSaving(false);
     }
-  };
+  }, [localSettings, saveLoyaltySettings, logActivity, showNotification, isSaving]);
 
-  const handleToggle = (checked) => {
-    if (checked) executeStatusChange(true);
-    else setShowConfirmDialog(true);
-  };
+  const handleToggle = useCallback((checked) => {
+    if (checked) {
+      executeStatusChange(true);
+    } else {
+      setShowConfirmDialog(true);
+    }
+  }, [executeStatusChange]);
 
-  const handleSave = async () => {
-    const { showNotification } = useNotificationStore.getState();
+  const handleCancelDisable = useCallback(() => {
+    setShowConfirmDialog(false);
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    if (isSaving || !hasChanges || !isValid) return;
+    
     setIsSaving(true);
     try {
       const changes = [];
@@ -176,36 +248,47 @@ export default function LoyaltySettings() {
         return;
       }
 
-      await saveLoyaltySettings({ ...localSettings, orders_required: Number(localSettings.orders_required) });
+      // Sanitize the payload exactly before transmission
+      const payload = { 
+        ...localSettings, 
+        orders_required: Math.max(1, Number(localSettings.orders_required)) 
+      };
+
+      await saveLoyaltySettings(payload);
 
       logActivity({ customer_name: "Voucher", order_number: "CONFIG", total_amount: 0 }, 'in_progress', {
         action: 'status_update', label: `${changes.join(" & ")} Updated`
       });
 
-      showNotification("Voucher updated successfully!", "success");
+      if (isMounted.current) {
+        showNotification("Voucher updated successfully!", "success");
+      }
     } catch (err) {
-      showNotification("Failed to update voucher.", "error");
+      if (isMounted.current) {
+        showNotification("Failed to update voucher.", "error");
+      }
     } finally {
-      setIsSaving(false);
+      if (isMounted.current) setIsSaving(false);
     }
-  };
+  }, [isSaving, hasChanges, isValid, localSettings, loyaltySettings, saveLoyaltySettings, logActivity, showNotification]);
 
-  const hasChanges = JSON.stringify(localSettings) !== JSON.stringify(loyaltySettings);
-  const isValid = localSettings.orders_required > 0 && localSettings.free_service_type !== "";
-
+  // --- RENDER EARLY RETURN ---
   if (isLoading) return null;
 
+  // --- RENDER ---
   return (
-    <div className="w-full relative z-10">
+    <section className="w-full relative z-10" aria-label="Loyalty Program Settings">
       <AnimatePresence mode="wait">
         {showConfirmDialog ? (
           <motion.div key="confirm" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
             className="w-full bg-white border border-slate-200 shadow-xl rounded-xl p-4 flex flex-col items-center text-center"
+            role="alertdialog"
+            aria-labelledby="disable-voucher-title"
           >
-            <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mb-4 text-amber-600">
+            <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mb-4 text-amber-600" aria-hidden="true">
               <IconGift className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-extrabold text-text-dark mb-1">Disable Voucher?</h3>
+            <h3 id="disable-voucher-title" className="text-xl font-extrabold text-text-dark mb-1">Disable Voucher?</h3>
             <p className="text-sm-text text-text-dark/80 max-w-sm leading-relaxed mb-3">
               Choose how to handle existing customer points. You can resume them later or clear them entirely.
             </p>
@@ -229,7 +312,10 @@ export default function LoyaltySettings() {
                 <span className="text-[11px] font-normal text-white/80">Clear all points to zero</span>
               </Button>
             </div>
-            <button onClick={() => setShowConfirmDialog(false)} className="mt-2 h-11 text-sm-text font-normal text-text-dark/80 hover:text-text-dark hover:underline">
+            <button 
+              onClick={handleCancelDisable} 
+              className="mt-2 h-11 px-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark text-sm-text font-normal text-text-dark/80 hover:text-text-dark hover:underline"
+            >
               Nevermind, keep it active
             </button>
           </motion.div>
@@ -238,72 +324,85 @@ export default function LoyaltySettings() {
             className="flex flex-col md:flex-row bg-white border border-slate-200 shadow-sm rounded-xl"
           >
             <div className="flex-1 p-4 rounded-t-xl md:rounded-l-xl bg-white">
-              <div className="flex items-center justify-between mb-4">
+              <header className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`border w-9 h-9 rounded-lg flex items-center justify-center shadow-hollow transition-colors ${localSettings.is_enabled ? 'bg-app-light' : 'bg-slate-100'}`}>
-                    <IconGift className={`w-5 h-5 ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-400'}`} />
+                  <div className={`border w-9 h-9 rounded-lg flex items-center justify-center shadow-hollow transition-colors ${localSettings?.is_enabled ? 'bg-app-light' : 'bg-slate-100'}`} aria-hidden="true">
+                    <IconGift className={`w-5 h-5 ${localSettings?.is_enabled ? 'text-teal-600' : 'text-slate-400'}`} />
                   </div>
                   <div>
-                    <h3 className="text-h3 font-bold text-text-dark ">Customer Loyalty</h3>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${localSettings.is_enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
-                      <span className={`text-nano font-bold uppercase ${localSettings.is_enabled ? 'text-emerald-600' : 'text-slate-400'}`}>
-                        {localSettings.is_enabled ? 'Promo Active' : 'Promo Inactive'}
+                    <h3 className="text-h3 font-bold text-text-dark">Customer Loyalty</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5" aria-live="polite">
+                      <span className={`w-1.5 h-1.5 rounded-full ${localSettings?.is_enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} aria-hidden="true"></span>
+                      <span className={`text-nano font-bold uppercase ${localSettings?.is_enabled ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        {localSettings?.is_enabled ? 'Promo Active' : 'Promo Inactive'}
                       </span>
                     </div>
                   </div>
                 </div>
-                <Switch checked={localSettings.is_enabled} onCheckedChange={handleToggle} />
-              </div>
+                <Switch 
+                  id="loyalty-toggle"
+                  checked={!!localSettings?.is_enabled} 
+                  onCheckedChange={handleToggle} 
+                  ariaLabel="Toggle Loyalty Program Status" 
+                />
+              </header>
 
-              <div className={`space-y-4 ${!localSettings.is_enabled ? 'opacity-50 pointer-events-none' : ''}`}>
+              <fieldset className={`space-y-4 border-none p-0 m-0 ${!localSettings?.is_enabled ? 'opacity-50 pointer-events-none' : ''}`}>
+                <legend className="sr-only">Loyalty Program Configuration</legend>
                 <div className="space-y-0.5 relative z-20"> 
-                  <Label>Free Service Reward</Label>
+                  <Label htmlFor="reward-service-select">Free Service Reward</Label>
                   <HeadlessSelect 
-                    options={services.filter(s => s.is_active)} 
-                    value={localSettings.free_service_type}
-                    onChange={(val) => setLocalSettings({...localSettings, free_service_type: val})}
+                    id="reward-service-select"
+                    options={activeServices} 
+                    value={localSettings?.free_service_type || ""}
+                    onChange={handleSelectChange}
+                    disabled={!localSettings?.is_enabled}
                   />
                 </div>
                 <div className="space-y-0.5 relative z-10">
-                  <Label>Orders Needed</Label>
-                  <Input type="text" inputMode="numeric" value={localSettings.orders_required}
+                  <Label htmlFor="orders-required-input">Orders Needed</Label>
+                  <Input 
+                    id="orders-required-input"
+                    type="text" 
+                    inputMode="numeric" 
+                    value={localSettings?.orders_required || ""}
                     onChange={(e) => handleInputChange('orders_required', e.target.value)}
+                    disabled={!localSettings?.is_enabled}
                   />
                 </div>
-              </div>
+              </fieldset>
             </div>
 
-            <div className="relative flex items-center justify-center bg-white md:bg-transparent">
+            <div className="relative flex items-center justify-center bg-white md:bg-transparent" aria-hidden="true">
                 <div className="w-[calc(100%-2rem)] mx-auto h-px md:w-px md:h-[calc(100%-2rem)] border-t-2 md:border-l-2 border-dashed border-slate-300" />
             </div>
 
-            <div className={`w-full md:w-60 p-4 flex flex-col justify-between rounded-b-xl md:rounded-r-xl transition-colors ${localSettings.is_enabled ? 'bg-app-light' : 'bg-slate-50'}`}>
+            <aside className={`w-full md:w-60 p-4 flex flex-col justify-between rounded-b-xl md:rounded-r-xl transition-colors ${localSettings?.is_enabled ? 'bg-app-light' : 'bg-slate-50'}`}>
               <div className="space-y-3 text-center">
-                <h4 className={`text-nano font-bold uppercase ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-400'}`}>Reward Summary</h4>
-                <div className={`p-3 rounded-lg border border-dashed shadow-sm transition-colors ${localSettings.is_enabled ? 'bg-white border-sky-300' : 'bg-slate-100 border-slate-300'}`}>
-                  <div className="text-h3 font-bold text-text-dark">FREE</div>
-                  <div className={`text-micro font-bold uppercase truncate ${localSettings.is_enabled ? 'text-teal-600' : 'text-slate-500'}`}>
-                    {localSettings.free_service_type || "No Service"}
+                <h4 className={`text-nano font-bold uppercase ${localSettings?.is_enabled ? 'text-teal-600' : 'text-slate-400'}`}>Reward Summary</h4>
+                <div className={`p-3 rounded-lg border border-dashed shadow-sm transition-colors ${localSettings?.is_enabled ? 'bg-white border-sky-300' : 'bg-slate-100 border-slate-300'}`}>
+                  <div className="text-h3 font-bold text-text-dark" aria-hidden="true">FREE</div>
+                  <div className={`text-micro font-bold uppercase truncate ${localSettings?.is_enabled ? 'text-teal-600' : 'text-slate-500'}`} title={localSettings?.free_service_type}>
+                    {localSettings?.free_service_type || "No Service"}
                   </div>
-                  <div className="h-px bg-slate-100 my-2" />
-                  <p className="text-micro text-slate-500 font-medium">After {localSettings.orders_required} visits</p>
+                  <div className="h-px bg-slate-100 my-2" aria-hidden="true" />
+                  <p className="text-micro text-slate-500 font-medium">After {localSettings?.orders_required || 0} visits</p>
                 </div>
               </div>
 
               <Button
                 variant="success"
                 onClick={handleSave}
-                disabled={!localSettings.is_enabled || !hasChanges || !isValid}
+                disabled={!localSettings?.is_enabled || !hasChanges || !isValid || isSaving}
                 isLoading={isSaving}
                 className="mt-3 w-full !h-10 shadow-md"
               >
                 Save Ticket
               </Button>
-            </div>
+            </aside>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </section>
   );
 }

@@ -3,70 +3,134 @@ import { useOrderStore } from './useOrderStore';
 import { useNotificationStore } from '../ui/useNotificationStore';
 
 // ==========================================
-// CONFIGURATION & CONSTANTS
+// CONFIGURATION & CONSTANTS (Frozen)
 // ==========================================
-const TERMINAL_STATUSES = ['picked_up', 'delivered'];
-const VALID_STATUSES = ['pending', 'in_progress', 'ready', 'completed', ...TERMINAL_STATUSES];
-const TERMINAL_LOCK_WINDOW_MS = 5 * 60 * 1000; // 5 Minutes
+/**
+ * @constant TERMINAL_STATUSES
+ * @description States representing the absolute end of the order lifecycle.
+ */
+const TERMINAL_STATUSES = Object.freeze(['picked_up', 'delivered']);
+
+/**
+ * @constant VALID_STATUSES
+ * @description Master list of allowed state transitions.
+ */
+const VALID_STATUSES = Object.freeze([
+  'pending', 
+  'in_progress', 
+  'ready', 
+  'completed', 
+  ...TERMINAL_STATUSES,
+  'cancelled'
+]);
+
+/**
+ * @constant TERMINAL_LOCK_WINDOW_MS
+ * @description Time window (5 minutes) allowing correction of a terminal status.
+ */
+const TERMINAL_LOCK_WINDOW_MS = 5 * 60 * 1000; 
 
 // ==========================================
 // UTILITY HELPERS
 // ==========================================
 
-// TYPE GUARD: Ensures formatting doesn't crash if an unexpected type is passed
+/**
+ * Safely formats status strings for UI display.
+ * @param {string} status 
+ * @returns {string} Capitalized, space-separated string.
+ */
 const formatStatus = (status) => {
   if (!status || typeof status !== 'string') return "Unknown Status";
+  // O(N) where N is word count. Fast enough for small status strings.
   return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
-// DEFENSIVE PARSING: Safely extracts epoch timestamps from mixed Firestore/JS Date formats
+/**
+ * Safely parses heterogeneous date formats (Firestore Timestamps, JS Dates, Strings, Integers)
+ * into a reliable Epoch timestamp.
+ * @param {any} ts - The unknown timestamp payload.
+ * @returns {number} Epoch timestamp in milliseconds. Returns 0 if invalid.
+ */
 const getSafeTime = (ts) => {
   if (!ts) return 0;
   if (typeof ts === 'number') return ts;
-  if (ts.seconds) return ts.seconds * 1000;
-  if (typeof ts.toDate === 'function') return ts.toDate().getTime();
   
+  // Firestore Timestamp handling
+  if (ts && typeof ts === 'object') {
+    if (typeof ts.toDate === 'function') return ts.toDate().getTime();
+    if (ts.seconds) return ts.seconds * 1000;
+  }
+  
+  // String or JS Date handling
   const parsed = new Date(ts).getTime();
   return isNaN(parsed) ? 0 : parsed;
 };
 
+
 // ==========================================
 // THE STORE
 // ==========================================
+/**
+ * @store useTodayOrdersStore
+ * @description Manages transient UI state and business logic validation for active daily orders.
+ */
 export const useTodayOrdersStore = create((set, get) => ({
+  
   // --- STATE ---
   selectedOrder: null,
   isUpdating: false,
 
   // --- ACTIONS ---
-  setSelectedOrder: (order) => set({ selectedOrder: order }),
-  clearSelectedOrder: () => set({ selectedOrder: null }),
 
   /**
-   * INTERNAL VALIDATOR
-   * Strictly evaluates business rules before allowing database mutations.
+   * Safely sets the active order for the modal.
+   * Prevents overwriting if an update is currently in progress.
+   * @param {Object} order - The order object.
+   */
+  setSelectedOrder: (order) => {
+    if (get().isUpdating) return; 
+    set({ selectedOrder: order });
+  },
+
+  /**
+   * Clears the active order, closing modals.
+   */
+  clearSelectedOrder: () => {
+    if (get().isUpdating) return;
+    set({ selectedOrder: null });
+  },
+
+  /**
+   * @function validate
+   * @description STRICT FRONTEND VALIDATION
+   * Checks business rules before allowing database mutations.
+   * * ⚠️ ARCHITECTURE NOTE (Frontend vs Backend):
+   * This validation is strictly for UI/UX gating (disabling buttons, showing tooltips).
+   * It DOES NOT guarantee security. A malicious user can bypass this store and call
+   * Firebase directly. The authoritative version of this logic MUST exist in
+   * Firestore Security Rules or Cloud Functions.
+   * * @param {Object} order 
+   * @param {string} newStatus 
+   * @returns {{allowed: boolean, error?: string}}
    */
   validate: (order, newStatus) => {
-    // 1. Data Integrity Checks
-    if (!order || !order.id) {
-      return { allowed: false, error: "Invalid order selection." };
+    // 1. Data Integrity Guards
+    if (!order || typeof order !== 'object' || !order.id) {
+      return { allowed: false, error: "Invalid order data payload." };
     }
-    if (!newStatus || !VALID_STATUSES.includes(newStatus)) {
-      return { allowed: false, error: "Invalid or unrecognized status update." };
+    if (!newStatus || typeof newStatus !== 'string' || !VALID_STATUSES.includes(newStatus)) {
+      return { allowed: false, error: "System Error: Unrecognized status transition." };
     }
 
-    // 2. Redundancy Check
+    // 2. Redundancy Guard
     if (order.status === newStatus) {
       return { allowed: false, error: `Order is already marked as ${formatStatus(newStatus)}.` };
     }
 
-    // 3. Terminal Lock Rule (5-Minute Window)
-    // Prevents tampering with completed orders after a brief correction window
-    const isTerminal = TERMINAL_STATUSES.includes(order.status);
-    if (isTerminal) {
-      const terminalTime = getSafeTime(order.picked_up_at || order.delivered_at || order.updated_at);
+    // 3. Immutability/Terminal Lock Guard
+    if (TERMINAL_STATUSES.includes(order.status) || order.status === 'cancelled') {
+      const terminalTime = getSafeTime(order.picked_up_at || order.delivered_at || order.cancelled_at || order.updated_at);
       
-      // Fallback: If time parsing fails entirely, lock it immediately as a safety precaution
       if (terminalTime === 0 || (Date.now() - terminalTime > TERMINAL_LOCK_WINDOW_MS)) {
         return { 
           allowed: false, 
@@ -75,55 +139,71 @@ export const useTodayOrdersStore = create((set, get) => ({
       }
     }
 
-    // 4. Financial Security Rule: Payment before release
-    const isHandoverStatus = TERMINAL_STATUSES.includes(newStatus);
-    if (isHandoverStatus && !order.is_paid) {
+    // 4. Financial Security Guard
+    if (TERMINAL_STATUSES.includes(newStatus) && order.is_paid !== true) {
       return { 
         allowed: false, 
-        error: "Financial Hold: Order must be PAID before it can be handed over." 
+        error: "Financial Hold: Order must be PAID before handover." 
       };
     }
 
     return { allowed: true };
   },
 
-  executeStatusUpdate: async (newStatus) => {
+  /**
+   * @function executeStatusUpdate
+   * @description Orchestrates the status update process, invoking validation, 
+   * global stores, and error handling.
+   * @param {string} newStatus 
+   * @param {string} [paymentMethod=null] - Optional override if updating status forces a payment resolution
+   * @param {number|string} [amountTendered=null] - Smart Cash Metric passing
+   * @returns {Promise<boolean>} Success indicator.
+   */
+  executeStatusUpdate: async (newStatus, paymentMethod = null, amountTendered = null) => {
     const state = get();
     
-    // RACE CONDITION GUARD: Prevent double-submissions from impatient clicking
-    if (state.isUpdating) return false;
+    // RACE CONDITION & IDEMPOTENCY GUARD
+    if (state.isUpdating || !state.selectedOrder) return false;
 
-    const { updateOrderStatus } = useOrderStore.getState();
-    const { showNotification } = useNotificationStore.getState();
+    // Cache instances to prevent React re-renders during async execution
+    const orderStore = useOrderStore.getState();
+    const notificationStore = useNotificationStore.getState();
 
-    // Run client-side validation
+    // Re-verify payload right before execution
     const check = state.validate(state.selectedOrder, newStatus);
     if (!check.allowed) {
-      showNotification(check.error, "error");
+      notificationStore.showNotification(check.error, "error");
       return false;
     }
 
     set({ isUpdating: true });
     
     try {
-      await updateOrderStatus(state.selectedOrder, newStatus);
-      showNotification(`Order moved to ${formatStatus(newStatus)}`, "success");
-      state.clearSelectedOrder();
+      // ✨ QA FIX: Pass the new Cash metrics down to the authoritative data layer
+      await orderStore.updateOrderStatus(
+        state.selectedOrder, 
+        newStatus, 
+        paymentMethod, 
+        amountTendered
+      );
+      
+      notificationStore.showNotification(`Order moved to ${formatStatus(newStatus)}`, "success");
+      set({ selectedOrder: null }); // Force clear to close UI
       return true;
       
     } catch (error) {
-      console.error("Status Update Failed:", error);
+      console.error("[TodayOrdersStore] Status Update Failed:", error.code || error.message);
       
-      // Extract specific validation errors from the main OrderStore if available
-      const errorMessage = error instanceof Error && error.message 
-        ? error.message 
+      // Ensure error messages don't leak internal stack traces to the UI
+      const errorMessage = (error && typeof error === 'object' && error.message)
+        ? error.message.substring(0, 100) // Truncate excessively long backend errors
         : "System error: Could not sync status.";
         
-      showNotification(`❌ ${errorMessage}`, "error");
+      notificationStore.showNotification(`❌ ${errorMessage}`, "error");
       return false;
       
     } finally {
-      // Ensure the loading state is ALWAYS cleared, even on network failure
+      // GUARANTEE: Reset lock state regardless of Promise resolution
       set({ isUpdating: false });
     }
   }

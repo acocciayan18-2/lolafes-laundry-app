@@ -1,19 +1,21 @@
+import React, { useEffect, useMemo, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useCallback } from "react";
 import { useServiceStore } from "../../store/services/useServiceStore";
 import { IconPackage } from "../icons";
 
-// 1. PERFORMANCE: Move statics outside the component to prevent memory reallocation
-const SPRING_TRANSITION = {
+// ==========================================
+// ⚙️ CONFIGURATION & CONSTANTS
+// ==========================================
+const SPRING_TRANSITION = Object.freeze({
   type: "spring", stiffness: 300, damping: 30, mass: 1, restDelta: 0.01
-};
+});
 
-const SERVICE_TYPE_LABELS = {
+const SERVICE_TYPE_LABELS = Object.freeze({
   wash_only: "Wash Only",
   dry_only: "Dry Only",
+  wash_dry: "Wash & Dry",
   fold_only: "Fold Only",
   press_only: "Press Only",
-  wash_dry: "Wash & Dry",
   wash_fold: "Wash & Fold",
   dry_fold: "Dry & Fold",
   dry_press: "Dry & Press",
@@ -24,29 +26,58 @@ const SERVICE_TYPE_LABELS = {
   special_care: "Delicates / Handwash",
   bulk_items: "Bulk (Comforters/Rug)",
   add_on: "Add-ons & Supplies"
+});
+
+// ==========================================
+// 🛡️ UTILITY HELPERS
+// ==========================================
+/**
+ * @description Safely parses numbers to avoid floating point math errors and NaN propagation.
+ */
+const safeMoney = (val) => {
+  const num = Number(val);
+  return isNaN(num) || num < 0 ? 0 : Math.round(num * 100) / 100;
 };
 
+// ==========================================
+// 🧩 MAIN COMPONENT
+// ==========================================
 export const ServiceSelector = ({
-  selectedServices,
+  selectedServices = [],
   setSelectedServices,
   Badge,
-  isCustomerIncomplete = true 
+  isCustomerIncomplete = true // Required for both regular and walk-in guests
 }) => {
   const { services, subscribeToServices, isLoading } = useServiceStore();
+  const isMounted = useRef(false);
 
+  // --- LIFECYCLE ---
   useEffect(() => {
-    const unsubscribe = subscribeToServices();
-    return () => unsubscribe();
+    isMounted.current = true;
+    let unsubscribe = () => {};
+
+    try {
+      if (typeof subscribeToServices === 'function') {
+        unsubscribe = subscribeToServices();
+      }
+    } catch (err) {
+      console.error("[ServiceSelector] Subscription Failed:", err);
+    }
+
+    return () => {
+      isMounted.current = false;
+      unsubscribe();
+    };
   }, [subscribeToServices]);
 
-  // ==========================================
-  // 2. PERFORMANCE: O(1) Quantity Lookup Map
-  // Instead of using .find() inside a map loop, we create a dictionary once.
-  // ==========================================
+  // --- DERIVED STATE (MEMOIZED) ---
+
+  // O(1) Lookup dictionary for selected quantities
   const quantityMap = useMemo(() => {
+    if (!Array.isArray(selectedServices)) return {};
     const map = {};
     selectedServices.forEach(s => {
-      if (!s.is_reward) map[s.id] = s.quantity;
+      if (s && !s.is_reward) map[s.id] = s.quantity || 0;
     });
     return map;
   }, [selectedServices]);
@@ -55,15 +86,14 @@ export const ServiceSelector = ({
     return quantityMap[serviceId] || 0;
   }, [quantityMap]);
 
-  // ==========================================
-  // 3. PERFORMANCE: Memoized Grouping & Sorting
-  // Stops the component from re-categorizing 50+ services on every click
-  // ==========================================
+  // Categorize and sort services strictly once per service payload change
   const { groupedServices, sortedServiceTypes } = useMemo(() => {
-    if (!services || services.length === 0) return { groupedServices: {}, sortedServiceTypes: [] };
+    if (!Array.isArray(services) || services.length === 0) {
+      return { groupedServices: {}, sortedServiceTypes: [] };
+    }
 
     const grouped = services
-      .filter(s => s.is_active)
+      .filter(s => s && s.is_active)
       .reduce((acc, service) => {
         const type = service.type || 'other';
         if (!acc[type]) acc[type] = [];
@@ -83,35 +113,47 @@ export const ServiceSelector = ({
     return { groupedServices: grouped, sortedServiceTypes: sortedTypes };
   }, [services]);
 
-  // ==========================================
-  // 4. SECURITY & DATA SANITIZATION: Safe Updates
-  // ==========================================
-  const updateQuantity = useCallback((service, delta) => {
-    if (isCustomerIncomplete) return;
+  // --- HANDLERS ---
 
-    // Sanitize price to ensure math doesn't result in NaN
-    const price = Number(service.price_per_kg) || 0; 
-    const existingIndex = selectedServices.findIndex((s) => s.id === service.id && !s.is_reward);
+  /**
+   * @description Safely increments/decrements service quantities and calculates exact subtotals.
+   * @security Implements a strict gate against `isCustomerIncomplete`.
+   */
+  const updateQuantity = useCallback((service, delta) => {
+    // ✨ SECURITY FIX: Hard gate. Prevent JS/Console bypassing of the UI disabled state.
+    if (isCustomerIncomplete) {
+      console.warn("Action Denied: Customer name is required before selecting services.");
+      return;
+    }
+    
+    if (!service || !service.id || typeof setSelectedServices !== 'function') return;
+
+    const safeDelta = Number(delta);
+    if (isNaN(safeDelta)) return;
+
+    const price = safeMoney(service.price_per_kg); 
+    const currentServices = Array.isArray(selectedServices) ? selectedServices : [];
+    const existingIndex = currentServices.findIndex((s) => s.id === service.id && !s.is_reward);
     
     if (existingIndex !== -1) {
-      const updatedServices = [...selectedServices];
-      const newQty = updatedServices[existingIndex].quantity + delta;
+      const updatedServices = [...currentServices];
+      const newQty = Math.max(0, Number(updatedServices[existingIndex].quantity) + safeDelta);
 
       if (newQty <= 0) {
-        setSelectedServices(selectedServices.filter((_, i) => i !== existingIndex));
+        setSelectedServices(currentServices.filter((_, i) => i !== existingIndex));
       } else {
         updatedServices[existingIndex] = {
           ...updatedServices[existingIndex],
           quantity: newQty,
-          subtotal: newQty * price,
+          subtotal: safeMoney(newQty * price),
         };
         setSelectedServices(updatedServices);
       }
-    } else if (delta > 0) {
-      setSelectedServices([...selectedServices, {
-        id: service.id,
-        service_name: service.name,
-        service_type: service.type,
+    } else if (safeDelta > 0) {
+      setSelectedServices([...currentServices, {
+        id: String(service.id),
+        service_name: String(service.name).substring(0, 100), // Prevent payload injection
+        service_type: String(service.type),
         quantity: 1,
         price_per_kg: price,
         subtotal: price,
@@ -120,29 +162,35 @@ export const ServiceSelector = ({
     }
   }, [isCustomerIncomplete, selectedServices, setSelectedServices]);
 
+  // --- RENDER ---
   return (
-    <div className={`bg-white shadow-md rounded-xl border border-gray-100 overflow-hidden transition-opacity duration-300 ${isCustomerIncomplete ? 'opacity-60' : 'opacity-100'}`}>
-      <div className="p-4 pb-2 border-b border-gray-50 bg-white">
-        <h3 className="flex items-center justify-between text-h3 font-bold text-text-dark">
-          <div className="flex items-center gap-2">
-            <IconPackage className="w-6 h-6 !text-btn-primary !stroke-btn-primary" />
+    <section 
+      aria-labelledby="service-selector-title"
+      className={`bg-white shadow-md rounded-xl border border-gray-100 overflow-hidden transition-opacity duration-300 ${isCustomerIncomplete ? 'opacity-60' : 'opacity-100'}`}
+    >
+      <header className="p-4 pb-2 border-b border-gray-50 bg-white">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h3 id="service-selector-title" className="flex items-center gap-2 text-h3 font-bold text-text-dark">
+            <IconPackage aria-hidden="true" className="w-6 h-6 !text-btn-primary !stroke-btn-primary" />
             Services
-          </div>
+          </h3>
           {isCustomerIncomplete && (
-            <span className="text-micro bg-amber-50 text-amber-600 px-2 py-1 rounded-md border border-amber-100 animate-pulse">
-              Complete Customer Info First
+            <span role="alert" className="text-micro bg-amber-50 text-amber-600 px-2 py-1 rounded-md border border-amber-100 w-fit font-medium">
+             Provide customer info first
             </span>
           )}
-        </h3>
-      </div>
+        </div>
+      </header>
 
       <div className="p-4 pt-0 space-y-8 bg-white">
         {isLoading ? (
-          <div className="py-10 text-center text-sm-text text-gray-400 italic">Syncing with cloud...</div>
+          <div aria-live="polite" className="py-10 text-center text-sm-text text-gray-400 italic">
+            Loading catalog...
+          </div>
         ) : (
           sortedServiceTypes.map((type) => (
-            <div key={type} className="space-y-2 !mt-4">
-              <h4 className="text-sm-text uppercase font-bold text-btn-primary ml-1">
+            <div key={type} className="space-y-2 !mt-4" role="group" aria-labelledby={`group-${type}`}>
+              <h4 id={`group-${type}`} className="text-sm-text uppercase font-bold text-btn-primary ml-1">
                 {SERVICE_TYPE_LABELS[type] || type.replace('_', ' ')}
               </h4>
               
@@ -150,31 +198,40 @@ export const ServiceSelector = ({
                 {groupedServices[type].map((service) => {
                   const qty = getQuantity(service.id);
                   return (
-                    <div 
+                    <article 
                       key={service.id} 
                       className={`flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
                         qty > 0 
-                          ? " border border-app-dark/70 shadow-md scale-[1.0]" 
-                          : "bg-gray-60/100 border border-gray-100"
+                          ? "border border-app-dark/70 shadow-md" 
+                          : "bg-gray-50 border border-gray-100"
                       }`}
                     >
-                      <div className="flex-1">
-                        <h5 className="font-bold text-gray-900 text-sm-text">{service.name}</h5>
-                        <Badge className=" font-bold text-gray-600"> ₱{Number(service.price_per_kg).toFixed(2)}</Badge>
+                      <div className="flex-1 min-w-0 pr-2">
+                        <h5 className="font-bold text-gray-900 text-sm-text truncate" title={service.name}>{service.name}</h5>
+                        {Badge && (
+                          <Badge className="font-bold text-gray-600"> 
+                            ₱{safeMoney(service.price_per_kg).toFixed(2)}
+                          </Badge>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-2 p-1 rounded-lg">
+                      <div className="flex items-center gap-2 p-1 rounded-lg shrink-0">
                         <button
                           type="button"
                           onClick={() => updateQuantity(service, -1)}
                           disabled={qty === 0 || isCustomerIncomplete}
                           aria-label={`Decrease quantity of ${service.name}`}
-                          className="w-8 h-8 flex items-center justify-center rounded-md transition-all active:scale-90 hover:bg-gray-100 disabled:opacity-20 disabled:cursor-not-allowed"
+                          className="w-8 h-8 flex items-center justify-center rounded-md transition-all active:scale-90 hover:bg-gray-100 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark"
                         >
-                          <p className="text-h3 font-medium text-gray-800 leading-none">–</p>
+                          <span className="text-h3 font-medium text-gray-800 leading-none" aria-hidden="true">–</span>
                         </button>
                         
-                        <div className="w-8 text-center font-bold text-sm-text text-gray-800" aria-live="polite">
+                        <div 
+                          className="w-8 text-center font-bold text-sm-text text-gray-800" 
+                          aria-live="polite"
+                          aria-atomic="true"
+                          aria-label={`Current quantity: ${qty}`}
+                        >
                           {qty}
                         </div>
 
@@ -183,16 +240,16 @@ export const ServiceSelector = ({
                           onClick={() => updateQuantity(service, 1)}
                           disabled={isCustomerIncomplete}
                           aria-label={`Increase quantity of ${service.name}`}
-                          className={`w-10 h-8 flex items-center justify-center rounded-md transition-all active:scale-95 ${
+                          className={`w-10 h-8 flex items-center justify-center rounded-md transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-btn-primary ${
                             isCustomerIncomplete 
                               ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
-                              : "bg-btn-primary text-white hover:bg-btn-primary/80"
+                              : "bg-btn-primary text-white hover:bg-btn-primary/80 shadow-sm"
                           }`}
                         >
-                          <span className="text-h3 font-medium leading-none">+</span>
+                          <span className="text-h3 font-medium leading-none" aria-hidden="true">+</span>
                         </button>
                       </div>
-                    </div>
+                    </article>
                   );
                 })}
               </div>
@@ -200,41 +257,43 @@ export const ServiceSelector = ({
           ))
         )}
         
-         <AnimatePresence>
-          {selectedServices.length > 0 && (
+        {/* Selected Services Summary Panel */}
+        <AnimatePresence>
+          {Array.isArray(selectedServices) && selectedServices.length > 0 && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
             >
               <h3 className="text-sm-text font-bold text-text-dark/70 mb-3 ml-1 tracking-wider">Current Selection</h3>
-              <div className="space-y-3">
+              <div className="space-y-3" role="list" aria-label="Selected Services">
                 {selectedServices.map((service, index) => (
                   <motion.div 
                     key={service.id || index} 
                     layout
                     transition={SPRING_TRANSITION}
+                    role="listitem"
                     className="flex justify-between items-center bg-gray-50/30 p-3 rounded-xl border-2 border-gray-100 hover:border-gray-200 transition-all"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-row items-center justify-center">
-                         <span className="text-micro font-medium text-text-dark/70 leading-none">x</span>
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="flex flex-row items-center justify-center shrink-0" aria-label={`Quantity: ${service.quantity}`}>
+                         <span className="text-micro font-medium text-text-dark/70 leading-none" aria-hidden="true">x</span>
                          <span className="text-sm-text font-bold text-text-dark/70 leading-none">{service.quantity}</span>
                       </div>
 
-                      <div className="flex flex-col">
-                        <span className="text-sm-text font-bold text-gray-900 leading-tight">
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <span className="text-sm-text font-bold text-gray-900 leading-tight truncate" title={service.service_name}>
                           {service.service_name}
                         </span>
-                        <span className="text-sm-text font-bold text-text-dark/90 uppercase mt-0.5 ">
-                            ₱{Number(service.price_per_kg).toFixed(2)}
+                        <span className="text-sm-text font-bold text-text-dark/90 uppercase mt-0.5">
+                            ₱{safeMoney(service.price_per_kg).toFixed(2)}
                         </span>
                       </div>
                     </div>
 
-                    <div className=" py-1.5 ">
-                      <span className="font-bold text-text-dark text-sm-text">
-                        ₱{Number(service.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <div className="py-1.5 shrink-0 text-right">
+                      <span className="font-bold text-text-dark text-sm-text" aria-label={`Subtotal: ₱${safeMoney(service.subtotal).toFixed(2)}`}>
+                        ₱{safeMoney(service.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   </motion.div>
@@ -244,6 +303,6 @@ export const ServiceSelector = ({
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </section>
   );
 };

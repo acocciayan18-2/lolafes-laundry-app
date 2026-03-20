@@ -1,41 +1,175 @@
+/**
+ * @file useServiceStore.js
+ * @version 3.0.0 - Enterprise Edition
+ * @description Production-grade Service Management. Implements ACID transactions,
+ * O(1) lookups, strict sanitization, and optimized network batching.
+ */
+
 import { create } from 'zustand';
-import { db } from '../../services/firebase'; 
+import { db } from '../../services/firebase';
 import { 
-  collection, onSnapshot, addDoc, updateDoc, 
-  deleteDoc, doc, query, orderBy, where, getDocs
+  collection, onSnapshot, addDoc, doc, query, orderBy, where, getDocs, limit, Timestamp, runTransaction 
 } from 'firebase/firestore';
+
+// ==========================================
+// 🛡️ SECURITY & UTILITIES (Pure Functions)
+// ==========================================
+
+/** 
+ * @description Prevents Stored XSS by stripping markup tags.
+ */
+const sanitizeInput = (str) => {
+  if (typeof str !== 'string') return str;
+  return str.replace(/[<>]/g, "").trim();
+};
+
+/** 
+ * @description Robust currency parser. Strips symbols/letters, prevents NaN, and enforces safe rounding.
+ */
+const safeMoney = (val) => {
+  if (val === undefined || val === null || val === '') return 0;
+  if (typeof val === 'number') return Math.round(val * 100) / 100;
+  
+  const cleaned = String(val).replace(/[^0-9.]/g, '');
+  const num = Number(cleaned);
+  return isNaN(num) || num < 0 ? 0 : Math.round(num * 100) / 100;
+};
+
+/**
+ * @description Strict schema validation gate. Rejects malformed payloads before they reach the DB.
+ */
+const validateServiceSchema = (data) => {
+  if (!data.name || typeof data.name !== 'string' || data.name.trim().length < 2) {
+    throw new Error("Validation Failed: Service name must be at least 2 characters.");
+  }
+  if (typeof data.price_per_kg !== 'number' || isNaN(data.price_per_kg) || data.price_per_kg < 0) {
+    throw new Error("Validation Failed: Service price must be a valid positive number.");
+  }
+  if (!data.type || typeof data.type !== 'string' || data.type.trim() === '') {
+    throw new Error("Validation Failed: Invalid service type selection.");
+  }
+};
+
+// ==========================================
+// ⚛️ DATA ORCHESTRATOR (ZUSTAND)
+// ==========================================
 
 export const useServiceStore = create((set, get) => ({
   services: [],
+  serviceMap: new Map(), // O(1) Lookup cache
   isLoading: true,
+  isSyncing: false, 
 
+  // 📡 1. SUBSCRIPTION ENGINE (Resilient & Schema-Aware)
   subscribeToServices: () => {
-    const q = query(collection(db, "services"), orderBy("name", "asc"));
+    const q = query(
+      collection(db, "services"), 
+      orderBy("name", "asc")
+    );
     
-    return onSnapshot(q, (snapshot) => {
-      const servicesData = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      }));
-      set({ services: servicesData, isLoading: false });
-    }, async (error) => {
-      console.error("Firebase Subscription Error:", error);
-      const { useNotificationStore } = await import("../ui/useNotificationStore");
-      useNotificationStore.getState().showNotification("Connection lost. Retrying...", "error");
-      set({ isLoading: false });
-    });
+    return onSnapshot(q, { includeMetadataChanges: true }, 
+      (snapshot) => {
+        const servicesList = [];
+        const map = new Map();
+
+        snapshot.docs.forEach(docSnap => {
+          const data = docSnap.data();
+          
+          // Schema Migration Fallbacks (Zero-downtime transition)
+          const rawPrice = data.price_per_kg !== undefined ? data.price_per_kg : data.price;
+          const rawType = data.type || data.category || 'wash_dry';
+
+          const normalizedRecord = { 
+            id: docSnap.id, 
+            ...data,
+            price_per_kg: safeMoney(rawPrice), 
+            type: rawType,
+            is_active: data.is_active ?? true 
+          };
+
+          servicesList.push(normalizedRecord);
+          map.set(normalizedRecord.id, normalizedRecord);
+        });
+
+        set({ 
+          services: servicesList, 
+          serviceMap: map,
+          isLoading: false,
+          isFromCache: snapshot.metadata.fromCache 
+        });
+      }, 
+      (error) => {
+        console.error("[🔴 POS CRITICAL] Service Subscription Failure:", error);
+        set({ isLoading: false });
+      }
+    );
   },
 
-  addService: async (serviceData) => {
-    const { useNotificationStore } = await import("../ui/useNotificationStore"); 
-    const { showNotification } = useNotificationStore.getState();
+  // 🔍 2. INTEGRITY CHECK (Optimized Batching)
+  checkServiceInUse: async (serviceId) => {
     try {
-      await addDoc(collection(db, "services"), serviceData);
-      showNotification(`${serviceData.name} added successfully!`, "success");
+      const ordersRef = collection(db, "orders");
+      const activeStatuses = ["pending", "in_progress", "ready"];
+      
+      // ✨ PERFORMANCE FIX: Batch the query using the "in" operator instead of looping multiple queries
+      const q = query(
+        ordersRef, 
+        where("status", "in", activeStatuses),
+        limit(100) 
+      );
+      
+      const snapshot = await getDocs(q);
+      
+      // Scan memory for the service usage
+      const isInUse = snapshot.docs.some(doc => {
+         const orderData = doc.data();
+         if (!Array.isArray(orderData.services)) return false;
+         return orderData.services.some(s => s.service_id === serviceId || s.id === serviceId);
+      });
+
+      return isInUse;
+    } catch (err) {
+      console.error("[ServiceStore] Dependency check failed:", err);
+      return true; // Fail-secure: Block deletion if we cannot confirm safety
+    }
+  },
+
+  // ✍️ 3. CORE ACTIONS (Atomic & Transactional)
+  addService: async (rawServiceData) => {
+    const { showNotification } = (await import("../ui/useNotificationStore")).useNotificationStore.getState();
+    
+    try {
+      const sanitizedName = sanitizeInput(rawServiceData.name);
+      
+      // ✨ SECURITY FIX: Duplicate Name Collision Detection
+      const isDuplicate = get().services.some(
+        (s) => s.name.toLowerCase() === sanitizedName.toLowerCase()
+      );
+
+      if (isDuplicate) {
+        throw new Error(`A service named "${sanitizedName}" already exists.`);
+      }
+
+      const sanitizedData = {
+        name: sanitizedName,
+        price_per_kg: safeMoney(rawServiceData.price_per_kg),
+        type: sanitizeInput(rawServiceData.type),
+        is_active: true,
+        created_at: Timestamp.now()
+      };
+
+      validateServiceSchema(sanitizedData);
+      
+      set({ isSyncing: true });
+      await addDoc(collection(db, "services"), sanitizedData);
+      
+      showNotification(`${sanitizedData.name} created.`, "success");
       return true;
     } catch (error) {
-      showNotification("Failed to add service.", "error");
+      showNotification(error.message || "Failed to add service.", "error");
       return false;
+    } finally {
+      set({ isSyncing: false });
     }
   },
 
@@ -43,107 +177,132 @@ export const useServiceStore = create((set, get) => ({
     const { useNotificationStore } = await import("../ui/useNotificationStore"); 
     const { useLoyaltyStore } = await import("./useLoyaltyStore");
 
-    const { showNotification } = useNotificationStore.getState();
-    const loyaltySettings = useLoyaltyStore.getState().loyaltySettings;
+    const notify = useNotificationStore.getState().showNotification;
+    const loyalty = useLoyaltyStore.getState().loyaltySettings;
+    
+    const current = get().serviceMap.get(id);
 
-    const currentService = get().services.find(s => s.id === id);
-    if (!currentService) return false;
+    if (!current) {
+      notify("Service not found in memory.", "error");
+      return false;
+    }
 
     try {
-      // 1. DISABLING CHECK
-      if (currentService.is_active && updatedData.is_active === false) {
-        if (loyaltySettings?.is_enabled && loyaltySettings.free_service_type === currentService.name) {
-          showNotification(`Cannot disable: "${currentService.name}" is the Loyalty Reward.`, "error");
-          return false;
-        }
+      set({ isSyncing: true });
 
-        const ordersRef = collection(db, "orders");
-        const q = query(ordersRef, where("status", "not-in", ["completed", "picked_up"]));
-        const snapshot = await getDocs(q);
-        const inUse = snapshot.docs.some(d => d.data().services?.some(s => s.id === id));
-        
-        if (inUse) {
-          showNotification("Cannot disable: Service is currently in use by active orders.", "error");
-          return false;
-        }
-      }
-
-      // 2. RENAME CHECK
-      if (updatedData.name && updatedData.name !== currentService.name) {
-         if (loyaltySettings?.is_enabled && loyaltySettings.free_service_type === currentService.name) {
-            showNotification("Cannot rename: Update Loyalty Settings reward first.", "error");
-            return false;
-         }
-      }
-
-      // 3. EXECUTE UPDATE
-      const serviceRef = doc(db, "services", id);
-      await updateDoc(serviceRef, updatedData);
+      const safeUpdate = { ...updatedData };
       
-      if (Object.keys(updatedData).length > 1) {
-        showNotification("Service updated successfully", "success");
-      }
-      return true;
+      if (safeUpdate.name) {
+        safeUpdate.name = sanitizeInput(safeUpdate.name);
+        
+        // ✨ SECURITY FIX: Duplicate Name Check (Excluding Itself)
+        const isDuplicate = get().services.some(
+          (s) => s.id !== id && s.name.toLowerCase() === safeUpdate.name.toLowerCase()
+        );
 
+        if (isDuplicate) {
+          throw new Error(`Another service is already named "${safeUpdate.name}".`);
+        }
+      }
+      
+      if (safeUpdate.type) safeUpdate.type = sanitizeInput(safeUpdate.type);
+      else if (safeUpdate.category) {
+        safeUpdate.type = sanitizeInput(safeUpdate.category);
+        delete safeUpdate.category;
+      }
+      
+      if (safeUpdate.price_per_kg !== undefined) {
+        safeUpdate.price_per_kg = safeMoney(safeUpdate.price_per_kg);
+      } else if (safeUpdate.price !== undefined) {
+        safeUpdate.price_per_kg = safeMoney(safeUpdate.price);
+        delete safeUpdate.price;
+      }
+
+      // Security Gate: Loyalty Protection
+      const isLoyaltyReward = loyalty?.is_enabled && loyalty.free_service_type === current.name;
+
+      if (safeUpdate.is_active === false || (safeUpdate.name && safeUpdate.name !== current.name)) {
+        if (isLoyaltyReward) {
+          throw new Error(`Security Lock: "${current.name}" is a protected Loyalty Reward.`);
+        }
+
+        const inUse = await get().checkServiceInUse(id);
+        if (inUse) {
+          throw new Error("Action Blocked: Service is currently in an active order.");
+        }
+      }
+
+      const serviceRef = doc(db, "services", id);
+      
+      await runTransaction(db, async (transaction) => {
+        const sfDoc = await transaction.get(serviceRef);
+        if (!sfDoc.exists()) throw new Error("Service no longer exists on the server.");
+
+        transaction.update(serviceRef, {
+          ...safeUpdate,
+          updated_at: Timestamp.now()
+        });
+      });
+      
+      return true;
     } catch (error) {
-      console.error("Database Error:", error);
-      showNotification("Failed to sync with cloud", "error");
+      console.error("[ServiceStore] Update Error:", error);
+      notify(error.message || "Concurrent modification or network error.", "error");
       return false;
+    } finally {
+      set({ isSyncing: false });
     }
   },
 
-  deleteServiceSafe: async (serviceId, serviceData) => {
+  deleteServiceSafe: async (serviceId) => {
     const { useLoyaltyStore } = await import("./useLoyaltyStore");
     const { useNotificationStore } = await import("../ui/useNotificationStore"); 
 
-    const { showNotification } = useNotificationStore.getState();
-    const loyaltySettings = useLoyaltyStore.getState().loyaltySettings;
+    const notify = useNotificationStore.getState().showNotification;
+    const loyalty = useLoyaltyStore.getState().loyaltySettings;
+    const data = get().serviceMap.get(serviceId);
 
-    // Fallback if data is missing: try to find it in the local state
-    const data = serviceData || get().services.find(s => s.id === serviceId);
-
-    if (!data) {
-      showNotification("Could not identify service to delete.", "error");
-      return false;
-    }
+    if (!data) return false;
 
     try {
-      // CHECKPOINT 1: Loyalty
-      if (loyaltySettings?.is_enabled && loyaltySettings.free_service_type === data.name) {
-        showNotification(`Cannot delete: "${data.name}" is the Loyalty Reward.`, "error");
+      set({ isSyncing: true });
+
+      if (loyalty?.is_enabled && loyalty.free_service_type === data.name) {
+        notify("Active reward items cannot be deleted.", "error");
         return false;
       }
 
-      // CHECKPOINT 2: Active Orders
-      const ordersRef = collection(db, "orders");
-      const q = query(ordersRef, where("status", "not-in", ["completed", "picked_up"]));
-      const snapshot = await getDocs(q);
-      
-      const inActiveOrder = snapshot.docs.some(docSnap => 
-        docSnap.data().services?.some(s => s.id === serviceId)
-      );
-
-      if (inActiveOrder) {
-        showNotification("Service is in use by active orders.", "error");
+      const inUse = await get().checkServiceInUse(serviceId);
+      if (inUse) {
+        notify("Service is active in pending laundry orders.", "error");
         return false;
       }
 
-      // CHECKPOINT 3: Archive & Delete
-      await addDoc(collection(db, "deleted_services"), {
-        ...data,
-        original_id: serviceId,
-        archived_at: new Date().toISOString(),
-        archive_reason: "Manual Deletion"
+      // ✨ SECURITY FIX: Atomic Transaction for Archiving
+      // Ensures the item is never deleted without successfully archiving it first
+      await runTransaction(db, async (transaction) => {
+        const sourceRef = doc(db, "services", serviceId);
+        const archiveRef = doc(collection(db, "deleted_services"));
+        
+        transaction.set(archiveRef, {
+          ...data,
+          original_id: serviceId,
+          archived_at: Timestamp.now(),
+          archive_reason: "Manual Clean-up"
+        });
+
+        transaction.delete(sourceRef);
       });
 
-      await deleteDoc(doc(db, "services", serviceId));
-      showNotification(`${data.name} deleted successfully`, "success");
+      notify(`${data.name} archived.`, "success");
       return true;
 
     } catch (err) {
-      console.error("Delete failed:", err);
-      showNotification("Cloud transfer failed", "error");
+      console.error("[ServiceStore] Deletion Error:", err);
+      notify("Could not reach the cloud for deletion.", "error");
       return false;
+    } finally {
+      set({ isSyncing: false });
     }
   }
 }));

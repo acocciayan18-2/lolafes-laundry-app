@@ -1,10 +1,32 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useCustomerStore } from "../../store/customer/useCustomerStore";
 import { IconSearch, IconUserPlus, IconUsers } from "../icons";
 
 import "../../style/custom-scrollbar.css";
 
+// ==========================================
+// UTILITY HELPERS
+// ==========================================
+
+const sanitizeAndFormatPhone = (val) => {
+  if (typeof val !== 'string') return "";
+  let cleanVal = val;
+  if (cleanVal.startsWith('+63')) cleanVal = '0' + cleanVal.substring(3);
+  if (cleanVal.startsWith('63')) cleanVal = '0' + cleanVal.substring(2);
+  cleanVal = cleanVal.replace(/\D/g, ''); 
+  if (cleanVal.startsWith('9')) cleanVal = '0' + cleanVal; 
+  return cleanVal.substring(0, 11); 
+};
+
+const capitalizeWords = (val) => {
+  if (typeof val !== 'string') return "";
+  return val.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
 export const CustomerForm = ({
   customer,
   setCustomer,
@@ -12,299 +34,322 @@ export const CustomerForm = ({
   setSelectedCustomerId,
   Button,
   Input,
-  isSubmitting
+  isSubmitting,
+  isWalkInGuest, 
+  setIsWalkInGuest 
 }) => {
+  // --- LOCAL STATE ---
   const [showExistingCustomers, setShowExistingCustomers] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // --- GLOBAL STATE ---
   const { customers, subscribeToCustomers, isLoading } = useCustomerStore();
 
-  useEffect(() => {
-    const unsubscribe = subscribeToCustomers();
-    return () => unsubscribe();
-  }, [subscribeToCustomers]);
-
+  // --- REFS ---
   const phoneInputRef = useRef(null);
   const addressInputRef = useRef(null);
+  const isMounted = useRef(true);
 
-  // 2. Navigation Handlers
-  const handleNameKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault(); // Prevent form submission
-      phoneInputRef.current?.focus();
+  // --- LIFECYCLE ---
+  useEffect(() => {
+    isMounted.current = true;
+    let unsubscribe = () => {};
+
+    try {
+      unsubscribe = subscribeToCustomers();
+    } catch (error) {
+      console.error("[CustomerForm] Failed to subscribe to customers:", error);
     }
-  };
 
-  const handlePhoneKeyDown = (e) => {
+    return () => {
+      isMounted.current = false;
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [subscribeToCustomers]);
+
+  // --- DERIVED STATE (MEMOIZED) ---
+
+  const filteredCustomers = useMemo(() => {
+    if (!Array.isArray(customers)) return [];
+    
+    const safeCustomers = customers.filter(c => c && typeof c.name === 'string');
+    const safeTerm = (searchTerm || "").trim().toLowerCase();
+    let filtered = safeCustomers;
+    
+    if (safeTerm) {
+      filtered = safeCustomers.filter((c) => {
+        const cName = c.name.toLowerCase();
+        const cPhone = c.phone || "";
+        return cName.includes(safeTerm) || cPhone.includes(safeTerm);
+      });
+    }
+
+    return filtered.sort((a, b) => a.name.localeCompare(b.name));
+  }, [customers, searchTerm]);
+
+  // Validation Logic (Bypassed if Walk-In)
+  const phoneVal = customer?.phone || "";
+  const isPhoneIncomplete = !isWalkInGuest && phoneVal.length > 0 && phoneVal.length < 11;
+  const isPhoneValidFormat = phoneVal.length === 11 && phoneVal.startsWith("09");
+  
+  const duplicateCustomer = useMemo(() => {
+    if (isSubmitting || isWalkInGuest || phoneVal.length < 11 || !Array.isArray(customers)) return null;
+    
+    const inputPhoneClean = phoneVal.replace(/\D/g, "");
+    return customers.find(c => {
+      if (!c) return false;
+      const dbPhoneClean = String(c.phone || "").replace(/\D/g, "");
+      return dbPhoneClean === inputPhoneClean && c.id !== selectedCustomerId;
+    });
+  }, [customers, phoneVal, selectedCustomerId, isSubmitting, isWalkInGuest]);
+
+  const isPhoneDuplicate = !!duplicateCustomer;
+  const isPhoneInvalid = !isWalkInGuest && (isPhoneIncomplete || (phoneVal.length === 11 && !isPhoneValidFormat)) && !selectedCustomerId;
+
+  // --- HANDLERS ---
+
+  const handleNameKeyDown = useCallback((e) => {
+    if (e.key === "Enter") {
+      e.preventDefault(); 
+      if (!isWalkInGuest && phoneInputRef.current) {
+        phoneInputRef.current.focus();
+      } else if (isWalkInGuest && addressInputRef.current) {
+        addressInputRef.current.focus();
+      }
+    }
+  }, [isWalkInGuest]);
+
+  const handlePhoneKeyDown = useCallback((e) => {
     if (e.key === "Enter") {
       e.preventDefault();
       addressInputRef.current?.focus();
     }
-  };
+  }, []);
 
-  // ==========================================
-  // 1. PERFORMANCE: Memoized Search Filtering
-  // ==========================================
-  // Prevents the app from lagging when searching through thousands of customers
-  const filteredCustomers = useMemo(() => {
-    if (!customers) return [];
-    if (!searchTerm.trim()) return customers;
-    
-    const lowerSearch = searchTerm.toLowerCase();
-    return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(lowerSearch) ||
-        c.phone.includes(searchTerm)
-    );
-  }, [customers, searchTerm]);
+  const handlePhoneChange = useCallback((e) => {
+    const formattedPhone = sanitizeAndFormatPhone(e.target.value);
+    setCustomer(prev => ({ ...prev, phone: formattedPhone }));
+  }, [setCustomer]);
 
-  // ==========================================
-  // 2. VALIDATION & SECURITY LOGIC
-  // ==========================================
-  const isPhoneIncomplete = customer.phone.length > 0 && customer.phone.length < 11;
-  const isPhoneValidFormat = customer.phone.length === 11 && customer.phone.startsWith("09");
-  
-  const duplicateCustomer = useMemo(() => {
-    if (isSubmitting || customer.phone.length < 11) return null;
-    
-    return customers?.find(c => {
-      const dbPhoneClean = String(c.phone || "").replace(/\D/g, "");
-      const inputPhoneClean = String(customer.phone || "").replace(/\D/g, "");
-      return dbPhoneClean === inputPhoneClean && c.id !== selectedCustomerId;
-    });
-  }, [customers, customer.phone, selectedCustomerId, isSubmitting]);
+  const handleTextChange = useCallback((field, value) => {
+    const capitalized = capitalizeWords(value);
+    setCustomer(prev => ({ ...prev, [field]: capitalized }));
+  }, [setCustomer]);
 
-  const isPhoneDuplicate = !!duplicateCustomer;
-  const isPhoneInvalid = (isPhoneIncomplete || (customer.phone.length === 11 && !isPhoneValidFormat)) && !selectedCustomerId;
-
-  // ==========================================
-  // 3. CLEAN HANDLERS: Extracted from JSX
-  // ==========================================
-  const handlePhoneChange = (e) => {
-    let val = e.target.value;
-    
-    // SMART FEATURE: Auto-convert "+63" to "0" if they paste a copied PH number
-    if (val.startsWith('+63')) val = '0' + val.substring(3);
-    if (val.startsWith('63')) val = '0' + val.substring(2);
-    
-    val = val.replace(/\D/g, ''); // Strip non-digits
-    if (val.startsWith('9')) val = '0' + val; // Auto-prepend 0
-    if (val.length > 11) val = val.slice(0, 11); // Max 11 digits
-    
-    setCustomer({ ...customer, phone: val });
-  };
-
-  const handleTextChange = (field, value) => {
-    // Capitalize first letter of every word (Safer regex that doesn't mess up typing flow)
-    const capitalized = value.replace(/\b\w/g, (char) => char.toUpperCase());
-    setCustomer({ ...customer, [field]: capitalized });
-  };
-
-  const selectCustomer = (c) => {
-    setCustomer({ name: c.name, phone: c.phone, address: c.address || "" });
+  const selectCustomer = useCallback((c) => {
+    if (!c) return;
+    setCustomer({ name: c.name || "", phone: c.phone || "", address: c.address || "" });
     setSelectedCustomerId(c.id);
     setShowExistingCustomers(false);
-    setSearchTerm(""); // Clear search for next time
-  };
+    setSearchTerm(""); 
+  }, [setCustomer, setSelectedCustomerId]);
 
-  // UI Helpers
-  const getIconClasses = (isActive) => `w-4 h-4 mr-2 transition-colors duration-200 ${
-    isActive ? "!text-app-light !stroke-app-light" : "!text-app-dark !stroke-app-dark"
-  }`;
+  const handleAddNew = useCallback(() => {
+    setShowExistingCustomers(false);
+    setSelectedCustomerId(null);
+    setCustomer({ name: "", phone: "", address: "" });
+  }, [setCustomer, setSelectedCustomerId]);
 
-  const isExistingActive = showExistingCustomers || selectedCustomerId !== null;
-  const isAddNewActive = !showExistingCustomers && selectedCustomerId === null;
-  const focusClasses = "focus:outline-none focus:!ring-0 focus:!shadow-none focus:!border-app-dark/70 border-gray-300";
+  // ✨ HANDLER FIX: Do not auto-fill "Walk-In Guest". Force the cashier to ask for a name.
+  const handleWalkInToggle = useCallback((isNowWalkIn) => {
+    setIsWalkInGuest(isNowWalkIn);
+    setShowExistingCustomers(false);
+    setSelectedCustomerId(null);
+    setCustomer({ name: "", phone: "", address: "" });
+  }, [setCustomer, setSelectedCustomerId, setIsWalkInGuest]);
+
+  // --- UI HELPERS ---
+  const isExistingActive = !isWalkInGuest && (showExistingCustomers || selectedCustomerId !== null);
+  const isAddNewActive = !isWalkInGuest && (!showExistingCustomers && selectedCustomerId === null);
+  const focusClasses = "focus:outline-none focus-visible:ring-1 border-gray-300";
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-      <div className="p-4 pb-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="flex items-center gap-2 text-h3 font-bold text-text-dark">
-            <IconUsers className="w-6 h-6 !text-app-dark !stroke-app-dark" />
-            Customer Information
-          </h3>
-            
-          <AnimatePresence>
-            {selectedCustomerId && (
-              <motion.span 
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="px-3 py-1 rounded-full text-micro font-bold bg-emerald-100 text-emerald-800"
-              >
-                Existing Customers
-              </motion.span>
-            )}
-          </AnimatePresence>
+    <section className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden" aria-labelledby="customer-form-title">
+      <header className="p-4 pb-0">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          
+          <div className="flex items-center gap-2">
+            <h3 id="customer-form-title" className="flex items-center gap-2 text-h3 font-bold text-text-dark">
+              <IconUsers className="w-6 h-6 !text-app-dark !stroke-app-dark" aria-hidden="true" />
+              Customer
+            </h3>
+              
+            <AnimatePresence>
+              {selectedCustomerId && !isWalkInGuest && (
+                <motion.span 
+                  initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
+                  className="px-3 py-1 rounded-full text-micro font-bold bg-emerald-100 text-emerald-800 hidden sm:inline-block"
+                  role="status"
+                >
+                  Existing Customer
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className={`text-sm-text  transition-colors ${isWalkInGuest ? 'text-emerald-600' : 'text-gray-400'}`} aria-hidden="true">
+              Walk-In
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isWalkInGuest}
+              onClick={() => handleWalkInToggle(!isWalkInGuest)}
+              disabled={isSubmitting}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark focus-visible:ring-offset-2 ${
+                isWalkInGuest ? 'bg-emerald-500' : 'bg-gray-300'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              aria-label="Toggle Walk-In Guest Mode (Disables Loyalty)"
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  isWalkInGuest ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
         </div>
-      </div>
+      </header>
 
       <div className="p-4 space-y-2">
-        <div className="flex gap-2 pb-1">
-          <Button
-            variant={isExistingActive ? "default" : "outline"}
-            size="md"
-            onClick={() => setShowExistingCustomers(true)}
-            disabled={isSubmitting}
-            className="transition-all !px-4 text-sm-text"
-          >
-            <IconSearch className={getIconClasses(isExistingActive)} />
-            Select Existing
-          </Button>
+        <nav className="flex flex-wrap gap-2 pb-1" aria-label="Customer Entry Mode">
+  <Button
+    variant={isExistingActive ? "default" : "outline"}
+    size="md"
+    onClick={() => setShowExistingCustomers(true)}
+    disabled={isSubmitting || isWalkInGuest} 
+    aria-pressed={isExistingActive}
+    className="transition-all !px-4 text-sm-text outline-none"
+  >
+    <IconSearch className="w-4 h-4 mr-2" aria-hidden="true" />
+    Select Existing
+  </Button>
 
-          <Button
-            variant={isAddNewActive ? "default" : "outline"}
-            size="md"
-            onClick={() => {
-              setShowExistingCustomers(false);
-              setSelectedCustomerId(null);
-              setCustomer({ name: "", phone: "", address: "" });
-            }}
-            disabled={isSubmitting}
-            className="transition-all !px-4 text-sm-text"
-          >
-            <IconUserPlus className={getIconClasses(isAddNewActive)} />
-            Add New
-          </Button>
-        </div>
+  <Button
+    variant={isAddNewActive ? "default" : "outline"}
+    size="md"
+    onClick={handleAddNew}
+    disabled={isSubmitting || isWalkInGuest} 
+    aria-pressed={isAddNewActive}
+    className="transition-all !px-4 text-sm-text outline-none"
+  >
+    <IconUserPlus className="w-4 h-4 mr-2" aria-hidden="true" />
+    Add New
+  </Button>
+</nav>
 
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden mt-2">
           <AnimatePresence mode="wait">
-            {showExistingCustomers ? (
-              <motion.div 
-                key="existing"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-3"
-              >
-                <Input
-                  placeholder={isLoading ? "Loading customers..." : "Search by name or phone..."}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`text-sm-text ${focusClasses}`}
-                  disabled={isLoading || isSubmitting}
-                />
-
-                <div className="max-h-40 overflow-y-auto bg-gray-50/50 rounded-xl p-1 border border-gray-100 custom-scrollbar">
+            {showExistingCustomers && !isWalkInGuest ? (
+              <motion.div key="existing" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-3">
+                 <div className="relative">
+                  <Input id="customer-search" placeholder={isLoading ? "Loading customers..." : "Search by name or phone..."} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={`text-sm-text ${focusClasses}`} disabled={isLoading || isSubmitting} aria-busy={isLoading}/>
+                 </div>
+                 <div className="max-h-40 overflow-y-auto bg-gray-50/50 rounded-xl p-1 border border-gray-100 custom-scrollbar" role="listbox">
                   {filteredCustomers.length > 0 ? (
                     filteredCustomers.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => selectCustomer(c)}
-                        disabled={isSubmitting}
-                        className="w-full text-left p-3 rounded-lg transition-colors hover:bg-blue-50 group disabled:opacity-50"
-                      >
-                        <p className="text-sm-text font-bold text-text-dark group-hover:text-btn-primary transition-colors">{c.name}</p>
+                      <button key={c.id} role="option" aria-selected={selectedCustomerId === c.id} onClick={() => selectCustomer(c)} disabled={isSubmitting} className="w-full text-left p-3 rounded-lg transition-colors hover:bg-blue-50 group disabled:opacity-50">
+                        <p className="text-sm-text font-bold text-text-dark group-hover:text-btn-primary">{c.name}</p>
                         <p className="text-sm-text text-text-dark/70">{c.phone}</p>
                       </button>
                     ))
                   ) : (
-                    <motion.p 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-center text-micro text-gray-400 py-10 font-normal"
-                    >
-                      {isLoading ? "Fetching cloud data..." : "No customers found"}
-                    </motion.p>
+                    <motion.p className="text-center text-micro text-gray-400 py-10 font-normal">{isLoading ? "Fetching cloud data..." : "No customers found"}</motion.p>
                   )}
-                </div>
+                 </div>
               </motion.div>
             ) : (
-              <div className="space-y-4 pt-1">
-                <div className="grid md:grid-cols-2 gap-2">
-                 <Input
+              <fieldset className="space-y-1 m-0 p-0 border-none" disabled={isSubmitting}>
+                <legend className="sr-only">Customer Details Form</legend>
+                
+                <div className={`grid gap-2 h-fit ${isWalkInGuest ? "grid-cols-1" : "md:grid-cols-2"}`}>
+                  
+                  {/* ✨ FIX: Name Input is ALWAYS required now */}
+                  <Input
                     label="Customer Name *"
-                    value={customer.name}
+                    value={customer?.name || ""}
                     id="customer-name"
                     required={true}
-                    disabled={isSubmitting}
                     readOnly={!!selectedCustomerId}
                     onChange={(e) => handleTextChange('name', e.target.value)}
                     onKeyDown={handleNameKeyDown} 
-                      enterKeyHint="next"
-                    placeholder="Enter Customer Name "
+                    enterKeyHint="next"
+                    placeholder={isWalkInGuest ? "Enter Customer Name" : "Enter Customer Name"}
                     className={`text-sm-text ${
-                      selectedCustomerId 
+                      selectedCustomerId
                         ? "focus:outline-none bg-gray-50 cursor-not-allowed text-gray-700 border-gray-200" 
                         : focusClasses
                     }`}
                   />
-                  <div className="flex flex-col relative">
-                    <Input
-                    ref={phoneInputRef}
-                      type="tel"
-                      required={true}
-                      inputMode="numeric"
-                      label="Contact Number *"
-                      value={customer.phone}
-                      id="customer-phone"
-                      disabled={isSubmitting}
-                      readOnly={!!selectedCustomerId}
-                      onChange={handlePhoneChange}
-                      onKeyDown={handlePhoneKeyDown} 
-              enterKeyHint="next"
-                      placeholder="09XX XXX XXXX"
-                      className={`text-sm-text transition-all ${
-                        selectedCustomerId 
-                          ? "bg-gray-50 cursor-not-allowed" 
-                          : isPhoneInvalid || isPhoneDuplicate
-                            ? "!border-red-500 !text-red-600 !bg-red-50"
-                            : isPhoneValidFormat 
-                              ? "!border-emerald-500 !bg-emerald-50/30" 
-                              : focusClasses
-                      }`}
-                    />
-                    
-                    <div className=" mt-1">
-                      <AnimatePresence>
-                        {isPhoneDuplicate && (
-                          <motion.span initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                            className="font-medium text-red-600 text-micro ml-1 block">
-                            Number already exists!
-                          </motion.span>
-                        )}
-
-                        {!isPhoneDuplicate && isPhoneIncomplete && (
-                          <motion.span initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                            className="font-medium text-red-600 text-micro ml-1 block">
-                            Enter 11-digit number
-                          </motion.span>
-                        )}
-
-                        {!isPhoneDuplicate && customer.phone.length === 11 && !isPhoneValidFormat && (
-                          <motion.span initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                            className="font-medium text-red-600 text-micro ml-1 block">
-                           Invalid Format (09XX...)
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
+                  
+                  {/* Phone Input vanishes during Walk-In */}
+                  {!isWalkInGuest && (
+                    <div className="flex flex-col relative">
+                      <Input
+                        ref={phoneInputRef}
+                        type="tel"
+                        required={true}
+                        inputMode="numeric"
+                        label="Contact Number *"
+                        value={customer?.phone || ""}
+                        id="customer-phone"
+                        readOnly={!!selectedCustomerId}
+                        onChange={handlePhoneChange}
+                        onKeyDown={handlePhoneKeyDown} 
+                        enterKeyHint="next"
+                        placeholder="09XX XXX XXXX"
+                        aria-invalid={isPhoneInvalid || isPhoneDuplicate}
+                        className={`text-sm-text transition-all ${
+                          selectedCustomerId
+                            ? "bg-gray-50 cursor-not-allowed placeholder-transparent" 
+                            : isPhoneInvalid || isPhoneDuplicate
+                              ? "!border-rose-500 !text-rose-600 !bg-rose-50"
+                              : isPhoneValidFormat 
+                                ? "!border-emerald-500 !bg-emerald-50/30" 
+                                : focusClasses
+                        }`}
+                      />
+                      
+                      <div className="mt-1" aria-live="polite" aria-atomic="true">
+                        <AnimatePresence>
+                          {isPhoneDuplicate && (
+                            <motion.span initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className=" text-rose-600 text-micro ml-1 block" role="alert">Number already exists!</motion.span>
+                          )}
+                          {!isPhoneDuplicate && isPhoneIncomplete && (
+                            <motion.span initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className=" text-rose-600 text-micro ml-1 block" role="alert">Enter 11-digit number</motion.span>
+                          )}
+                          {!isPhoneDuplicate && phoneVal.length === 11 && !isPhoneValidFormat && (
+                            <motion.span initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className=" text-rose-600 text-micro ml-1 block" role="alert">Invalid Format (must start with 09)</motion.span>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
+                
+                {/* Address Input remains Optional */}
                 <Input
-                ref={addressInputRef}
+                  ref={addressInputRef}
                   label="Address"
                   id="customer-address"
-                  value={customer.address}
-                  disabled={isSubmitting}
+                  value={customer?.address || ""}
                   readOnly={!!selectedCustomerId}
                   onChange={(e) => handleTextChange('address', e.target.value)}
                   enterKeyHint="done"
-                  placeholder="Customer Address (Optional)"
-                  className={`text-sm-text${
-                    selectedCustomerId 
+                  placeholder="Customer Address"
+                  className={`text-sm-text ${
+                    selectedCustomerId
                       ? "capitalize focus:outline-none bg-gray-50 cursor-not-allowed text-gray-700 border-gray-200" 
                       : focusClasses
                   }`}
                 />
-              </div>
+              </fieldset>
             )}
           </AnimatePresence>
         </div>
       </div>
-    </div>
+    </section>
   );
 };

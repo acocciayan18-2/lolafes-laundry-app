@@ -1,7 +1,13 @@
-import { useEffect, useState } from 'react';
+/**
+ * @file Settings.jsx
+ * @description Enterprise Configuration Dashboard for Lola Fe's POS.
+ * Implements strict in-memory authentication gating and Atomic Store Selectors.
+ */
+
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSettingsStore } from '../store/settings/useSettingsStore';
 import SettingsPINLock from "../components/settings/SettingsPINLock";
-import { IconLock, IconDatabase} from '../components/icons'; 
+import { IconLock, IconDatabase } from '../components/icons'; 
 
 // Existing Imports
 import PrintTest from "../components/settings/PrintTest";
@@ -19,64 +25,78 @@ import CleanupRewardClaims from '../components/settings/CleanupRewardClaims';
 import CleanupActivityLogs from '../components/settings/CleanupActivityLogs';
 
 const Settings = () => {
-  // ✨ FIX: Grab the individual loading states directly
-  const { systemConfig, subscribeToSettings, isLoadingReceipt, isLoadingSystem } = useSettingsStore();
+  // ⚡ PERFORMANCE: Atomic Selectors.
+  // We extract exactly what we need using pure selectors to prevent the entire Settings 
+  // page from re-rendering if an unrelated value in the store changes.
+  const systemConfig = useSettingsStore(useCallback(state => state.systemConfig, []));
+  const subscribeToSettings = useSettingsStore(useCallback(state => state.subscribeToSettings, []));
+  const isLoadingReceipt = useSettingsStore(useCallback(state => state.isLoadingReceipt, []));
+  const isLoadingSystem = useSettingsStore(useCallback(state => state.isLoadingSystem, []));
   
-  // ✨ FIX: Calculate the combined loading state inside the component for guaranteed reactivity
-  const isLoading = isLoadingReceipt || isLoadingSystem;
+  // Combine loading states memoized
+  const isLoading = useMemo(() => isLoadingReceipt || isLoadingSystem, [isLoadingReceipt, isLoadingSystem]);
   
-  const [isUnlocked, setIsUnlocked] = useState(() => {
-    return localStorage.getItem('settings_unlocked') === 'true';
-  });
+  // 🛡️ SECURITY: Strict In-Memory State. 
+  // By removing localStorage, the system defaults to "Locked" every time the component unmounts, 
+  // the page is refreshed, or the tab is closed. No stale authorization tokens are left on the disk.
+  const [isUnlocked, setIsUnlocked] = useState(false);
 
+  // Safely handle real-time subscriptions
   useEffect(() => {
     const unsubscribe = subscribeToSettings();
-    return () => unsubscribe(); 
+    return () => {
+      // Defensive cleanup to prevent memory leaks if the store fails to return a function
+      if (typeof unsubscribe === 'function') unsubscribe(); 
+    };
   }, [subscribeToSettings]);
 
-  const handleToggleLock = (status) => {
+  const handleToggleLock = useCallback((status) => {
     setIsUnlocked(status);
-    localStorage.setItem('settings_unlocked', status);
-  };
+  }, []);
 
+  // Prevent UI flashing during initial data hydration
   if (isLoading) return null; 
 
+  // Security Gate
   if (!isUnlocked) {
-    return <SettingsPINLock 
-              onUnlock={() => handleToggleLock(true)} 
-              existingPIN={systemConfig?.ownerPIN} 
-           />;
+    return (
+      <SettingsPINLock 
+        onUnlock={() => handleToggleLock(true)} 
+        existingPIN={systemConfig?.ownerPIN} 
+      />
+    );
   }
 
   return (
-    <div className="min-h-screen bg-app-light p-2">
+    <main className="min-h-screen bg-app-light p-2" aria-label="Settings Dashboard">
       <div className="max-w-6xl mx-auto px-1 md:px-2 pb-10">
         
         {/* HEADER SECTION */}
-        <div className="flex items-center justify-between w-full mb-6">
+        <header className="flex items-center justify-between w-full mb-6">
           <div>
             <h1 className="text-h2 font-bold text-text-dark">Settings</h1>
-            <p className="text-sm-text text-gray-600 mt-0.5">
+            <p className="text-sm-text text-slate-500 mt-0.5">
               Manage your systems configurations
             </p>
           </div>
 
           <button 
             onClick={() => handleToggleLock(false)}
-            className="group flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-micro font-normal text-text-dark hover:text-rose-500 hover:border-rose-100 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+            aria-label="Lock settings dashboard"
+            className="group flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-micro font-medium text-text-dark hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 active:scale-95"
           >
-            <IconLock className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
+            <IconLock className="w-3.5 h-3.5 transition-transform group-hover:scale-110" aria-hidden="true" />
             Lock Settings
           </button>
-        </div>
+        </header>
 
         {/* PRIMARY SETTINGS (Full Width) */}
-        <div className="w-full mb-3">
+        <section className="w-full mb-3" aria-label="Store Operations">
           <StoreShiftSettings />
-        </div>
+        </section>
 
         {/* MASONRY GRID FOR CONFIGURATIONS */}
-        <div className="columns-1 md:columns-2 gap-3 space-y-3">
+        <section className="columns-1 md:columns-2 gap-3 space-y-3" aria-label="Hardware and Application Settings">
           <div className="break-inside-avoid">
             <ReceiptConfiguration />
           </div>
@@ -98,14 +118,18 @@ const Settings = () => {
           <div className="break-inside-avoid">
             <SessionSecurity />
           </div>
-        </div>
+        </section>
 
         {/* DATABASE MAINTENANCE SECTION */}
-        <div className="mt-8 pt-8 border-t border-slate-200">
+        <section className="mt-8 pt-8 border-t border-slate-200" aria-labelledby="maintenance-title">
           <div className="flex items-center gap-2 mb-4 px-1">
-            <IconDatabase className="w-5 h-5 text-text-dark" />
+            <div className="p-1.5 bg-white border border-slate-200 rounded-lg shadow-hollow">
+              <IconDatabase className="w-5 h-5 text-slate-600" aria-hidden="true" />
+            </div>
             <div>
-              <h3 className="text-base-text font-bold text-text-dark">Database Maintenance</h3>
+              <h3 id="maintenance-title" className="text-base-text font-bold text-text-dark">
+                Database Maintenance
+              </h3>
             </div>
           </div>
           
@@ -115,13 +139,13 @@ const Settings = () => {
             <CleanupActivityLogs />
           </div>
           
-          <p className="mt-2 px-2 text-micro text-text-dark/60 italic">
-            * Note: These actions are permanent and cannot be undone. Please ensure you have backed up any necessary data before clearing.
+          <p className="mt-3 px-2 text-micro font-medium text-rose-500/80 italic leading-relaxed">
+            * Note: These actions are permanent and cannot be undone. Please ensure you have exported and backed up any necessary data before clearing your ledgers.
           </p>
-        </div>
+        </section>
 
       </div>
-    </div>
+    </main>
   );
 };
 

@@ -14,16 +14,23 @@ const EMAILJS_CONFIG = {
   PUBLIC_KEY: process.env.REACT_APP_EMAILJS_PUBLIC_KEY,
 };
 
-// --- SECURITY UTILS ---
+// --- SECURITY UTILITIES ---
 
-// 1. Cryptographically secure RNG (Math.random is predictable and insecure for OTPs)
+/**
+ * Generates a cryptographically secure 6-digit OTP.
+ * @returns {string} 6-digit numeric string.
+ */
 const generateSecureOTP = () => {
   const array = new Uint32Array(1);
   window.crypto.getRandomValues(array);
-  return ((array[0] % 900000) + 100000).toString(); // Ensures exact 6 digits
+  return ((array[0] % 900000) + 100000).toString(); 
 };
 
-// 2. Client-side Hashing (Prevents reading the OTP from React DevTools/Memory)
+/**
+ * Hashes the OTP using SHA-256 so the raw value never sits in readable memory.
+ * @param {string} otp 
+ * @returns {Promise<string>} Hexadecimal hash.
+ */
 const hashOTP = async (otp) => {
   const msgBuffer = new TextEncoder().encode(otp);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -31,7 +38,10 @@ const hashOTP = async (otp) => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-// --- OOP CONCEPT: Service Abstraction ---
+/**
+ * @class SignupService
+ * @description Encapsulates external service interactions and error parsing.
+ */
 class SignupService {
   static parseError(error) {
     const errorMap = {
@@ -42,7 +52,7 @@ class SignupService {
       "auth/too-many-requests": "Too many attempts. Please try again later.",
       "auth/operation-not-allowed": "Operation not allowed. Please contact support.",
     };
-    return errorMap[error.code] || error.message || "An unexpected error occurred.";
+    return errorMap[error?.code] || error?.message || "An unexpected error occurred.";
   }
 
   static async getAdminEmail() {
@@ -53,7 +63,8 @@ class SignupService {
   }
 
   static isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!email || email.length > 254) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   }
 }
 
@@ -62,16 +73,17 @@ export const useSignupStore = create((set, get) => ({
   isLoading: false,
   isOtpSent: false,
   
-  // Security State (Replaced plain text 'generatedOtp' with secure parameters)
+  // Security State 
   otpHash: null,
   otpExpiresAt: null,
   otpCooldownUntil: null,
   
   // UI State
   popup: { message: "", type: "info" },
-  popupTimeoutId: null, // Used to prevent overlapping timeouts from clearing popups early
+  popupTimeoutId: null, 
 
   // --- ACTIONS ---
+
   triggerPopup: (message, type = "info") => {
     const { popupTimeoutId } = get();
     if (popupTimeoutId) clearTimeout(popupTimeoutId);
@@ -89,6 +101,9 @@ export const useSignupStore = create((set, get) => ({
     set({ popup: { message: "", type: "info" }, popupTimeoutId: null });
   },
 
+  /**
+   * Resets the entire signup flow. Crucial for cleanup on component unmount.
+   */
   resetFlow: () => set({ 
     isOtpSent: false, 
     otpHash: null, 
@@ -102,7 +117,6 @@ export const useSignupStore = create((set, get) => ({
 
     const cleanEmail = email?.trim() || "";
 
-    // Step 1: Pre-flight Validations
     if (!SignupService.isValidEmail(cleanEmail)) {
       state.triggerPopup("Please enter a valid email address.", "error");
       return false;
@@ -115,14 +129,13 @@ export const useSignupStore = create((set, get) => ({
     }
 
     if (!EMAILJS_CONFIG.SERVICE_ID || !EMAILJS_CONFIG.TEMPLATE_ID || !EMAILJS_CONFIG.PUBLIC_KEY) {
-      state.triggerPopup("Email service configuration is missing.", "error");
+      state.triggerPopup("System configuration error. Contact support.", "error");
       return false;
     }
 
     set({ isLoading: true });
 
     try {
-      // Step 2: Check Firebase (Handling Enumeration Protection)
       try {
         const methods = await fetchSignInMethodsForEmail(auth, cleanEmail);
         if (methods.length > 0) {
@@ -131,15 +144,12 @@ export const useSignupStore = create((set, get) => ({
           return false;
         }
       } catch (fetchErr) {
-        // Firebase projects default to blocking email enumeration. 
-        // If triggered, we gracefully ignore and allow the flow to proceed to maintain security UX.
         if (fetchErr.code !== 'auth/operation-not-allowed') throw fetchErr;
       }
 
-      // Step 3: Fetch Admin Email & Generate Secure OTP
       const adminEmail = await SignupService.getAdminEmail();
       const otp = generateSecureOTP();
-      const hashedOtp = await hashOTP(otp); // Hash immediately to keep memory safe
+      const hashedOtp = await hashOTP(otp); 
 
       await emailjs.send(
         EMAILJS_CONFIG.SERVICE_ID,
@@ -148,12 +158,11 @@ export const useSignupStore = create((set, get) => ({
         EMAILJS_CONFIG.PUBLIC_KEY
       );
 
-      // Apply Security Constraints: 10 min expiration, 60 sec cooldown
       set({ 
         isOtpSent: true, 
         otpHash: hashedOtp, 
-        otpExpiresAt: Date.now() + 10 * 60 * 1000, 
-        otpCooldownUntil: Date.now() + 60 * 1000,
+        otpExpiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes 
+        otpCooldownUntil: Date.now() + 60 * 1000,  // 60 seconds
         isLoading: false 
       });
       
@@ -161,7 +170,7 @@ export const useSignupStore = create((set, get) => ({
       return true;
 
     } catch (err) {
-      console.error("OTP Sending Error:", err);
+      console.error("OTP Error:", err.code || err.message);
       get().triggerPopup(`System Error: ${SignupService.parseError(err)}`, "error");
       set({ isLoading: false });
       return false;
@@ -174,14 +183,12 @@ export const useSignupStore = create((set, get) => ({
 
     set({ isLoading: true });
     try {
-      // Step 1: Verify Expiration
       if (!state.otpExpiresAt || Date.now() > state.otpExpiresAt) {
         get().triggerPopup("OTP has expired. Please request a new one.", "error");
-        set({ isLoading: false });
+        set({ isLoading: false, isOtpSent: false, otpHash: null });
         return false;
       }
 
-      // Step 2: Verify Cryptographic Hash Match
       const hashedInput = await hashOTP(enteredOtp);
       if (hashedInput !== state.otpHash) {
         get().triggerPopup("Invalid OTP. Please check the code and try again.", "error");
@@ -189,7 +196,6 @@ export const useSignupStore = create((set, get) => ({
         return false;
       }
 
-      // Step 3: Create User & Verify
       const cleanEmail = email.trim();
       const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
       await sendEmailVerification(userCredential.user);
@@ -197,12 +203,12 @@ export const useSignupStore = create((set, get) => ({
       get().triggerPopup("Signup successful! Verification email sent.", "success");
       get().resetFlow();
       
-      if (onSuccessCallback) onSuccessCallback();
+      if (typeof onSuccessCallback === 'function') onSuccessCallback();
       return true;
 
     } catch (error) {
-      console.error("Signup Process Error:", error);
-      get().triggerPopup(`❌ ${SignupService.parseError(error)}`, "error");
+      console.error("Signup Error:", error.code || error.message);
+      get().triggerPopup(`${SignupService.parseError(error)}`, "error");
       set({ isLoading: false });
       return false;
     }

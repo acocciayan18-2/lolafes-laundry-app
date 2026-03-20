@@ -6,51 +6,29 @@ const formatTimeAgo = (dateInput) => {
   if (!dateInput) return 'Unknown time';
   const date = new Date(dateInput);
   const now = new Date();
-  
-  // Guard against invalid dates
   if (isNaN(date.getTime())) return 'Unknown time';
 
   const diff = Math.floor((now - date) / 1000);
-  
   if (diff < 60) return 'Just now';
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
 };
 
-// PERFORMANCE: Isolated component prevents the entire list from re-rendering every 60s
 const TimeAgo = ({ timestamp, tick }) => {
   return <>{formatTimeAgo(timestamp)}</>;
 };
 
 export default function RecentActivity() {
-  const { 
-    activities, 
-    isFetching, 
-    hasMore, 
-    fetchActivities, 
-    clearHistory, 
-    cleanupExpiredActivities 
-  } = useActivityStore();
-
+  const { activities, isFetching, hasMore, fetchActivities } = useActivityStore();
   const [tick, setTick] = useState(0);
 
-  // Initialize once on mount. Reading directly from getState() avoids dependency loop traps.
   useEffect(() => {
-    let mounted = true;
-    
-    const init = async () => {
-      await cleanupExpiredActivities();
-      if (mounted && useActivityStore.getState().activities.length === 0) {
-        fetchActivities();
-      }
-    };
-    
-    init();
-    return () => { mounted = false; };
-  }, [cleanupExpiredActivities, fetchActivities]);
+    if (useActivityStore.getState().activities.length === 0) {
+      fetchActivities();
+    }
+  }, [fetchActivities]);
 
-  // Clock tick for relative times
   useEffect(() => {
     const interval = setInterval(() => setTick((t) => t + 1), 60000); 
     return () => clearInterval(interval);
@@ -65,6 +43,7 @@ export default function RecentActivity() {
 
   return (
     <div className="bg-white rounded-2xl border pb-3 border-app-dark/10 shadow-sm flex flex-col max-h-[450px] min-h-[300px] overflow-hidden">
+      {/* Header with Clear button removed */}
       <div className="px-5 py-3.5 border-b border-app-dark/5 flex justify-between items-center bg-white shrink-0">
         <div className="flex items-center gap-3 pl-2">
            <div className="p-1.5 bg-white border border-app-dark/10 rounded-lg text-text-dark shadow-hollow">
@@ -72,24 +51,13 @@ export default function RecentActivity() {
           </div>
           <h2 className="text-base-text font-bold text-text-dark">Recent Activity</h2>
         </div>
-
-        {activities.length > 0 && (
-          <button 
-            onClick={clearHistory}
-            className="text-micro text-text-dark/30 hover:text-rose-500 transition-colors px-2 py-1 outline-none focus:ring-2 focus:ring-rose-200 rounded"
-            aria-label="Clear activity history"
-          >
-            Clear
-          </button>
-        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 px-6 space-y-4 custom-scrollbar">
         {activities.length > 0 ? (
           <>
             {activities.map((item) => {
-              if (!item || !item.activity_id) return null; // Safe rendering guard
-              
+              if (!item || !item.activity_id) return null;
               const title = getActivityTitle(item);
               return (
                 <div key={item.activity_id} className="group border-l-2 border-slate-100 pl-4 hover:border-app-dark/20 transition-colors">

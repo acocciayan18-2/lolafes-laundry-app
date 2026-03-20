@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Confetti from "react-confetti";
 import { IconGift, IconStar, IconAward } from "../icons";
-// Ensure you have an IconLoading or use a simple text fallback
 import { useLoyaltyStore } from "../../store/services/useLoyaltyStore"; 
 
+/**
+ * @component LoyaltyStatus
+ * @description Enterprise-grade widget for displaying and applying customer loyalty rewards.
+ */
 export const LoyaltyStatus = ({
   customer,
   onApplyFreeService,
@@ -11,73 +14,120 @@ export const LoyaltyStatus = ({
   Button,
   Badge,
 }) => {
+  // --- GLOBAL STATE ---
   const { loyaltySettings } = useLoyaltyStore();
 
-  // 1. New states for async operations and error handling
+  // --- LOCAL STATE ---
   const [isApplying, setIsApplying] = useState(false);
   const [error, setError] = useState(null);
-
   const [windowDimension, setWindowDimension] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
   });
 
-  // 2. PERFORMANCE: Debounced Resize Listener
+  // --- REFS ---
+  const isMounted = useRef(false);
+
+  // --- DERIVED STATE & MEMOIZATION ---
+  
+  const isEnabled = loyaltySettings?.is_enabled === true;
+  const isValidCustomer = customer && typeof customer === 'object';
+
+  // Math Safety: Isolate calculation logic and properly export all required variables
+  const { availableRewards, progressToNext, neededForNext, required } = useMemo(() => {
+    // Determine the baseline requirement
+    const req = Math.max(1, Number(loyaltySettings?.orders_required) || 10); 
+
+    if (!isValidCustomer || !isEnabled) {
+      return { availableRewards: 0, progressToNext: 0, neededForNext: 1, required: req };
+    }
+
+    const currentPoints = Math.max(0, Number(customer.loyalty_points ?? customer.order_count) || 0);
+    
+    return {
+      availableRewards: Math.floor(currentPoints / req),
+      progressToNext: currentPoints % req,
+      neededForNext: req - (currentPoints % req),
+      required: req // ✨ FIX: Exporting the variable back to the main component scope
+    };
+  }, [customer, loyaltySettings?.orders_required, isValidCustomer, isEnabled]);
+
+  const isRewardInCart = useMemo(() => {
+    if (!Array.isArray(selectedServices)) return false;
+    return selectedServices.some((s) => s?.is_reward === true);
+  }, [selectedServices]);
+
+  const shouldShowConfetti = availableRewards > 0 && !isRewardInCart;
+
+  // --- LIFECYCLE ---
+  
   useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
+
+  // PERFORMANCE: Conditional & Debounced Resize Listener
+  useEffect(() => {
+    if (!shouldShowConfetti) return;
+
     let timeoutId;
     const detectSize = () => {
       clearTimeout(timeoutId);
-      // Wait 150ms after the user stops resizing before updating state
       timeoutId = setTimeout(() => {
-        setWindowDimension({ width: window.innerWidth, height: window.innerHeight });
+        if (isMounted.current) {
+          setWindowDimension({ width: window.innerWidth, height: window.innerHeight });
+        }
       }, 150);
     };
     
-    window.addEventListener("resize", detectSize);
+    window.addEventListener("resize", detectSize, { passive: true });
+    
     return () => {
       window.removeEventListener("resize", detectSize);
-      clearTimeout(timeoutId); // Cleanup to prevent memory leaks
+      clearTimeout(timeoutId);
     };
-  }, []);
+  }, [shouldShowConfetti]);
 
-  if (!loyaltySettings?.is_enabled || !customer) return null;
+  // --- HANDLERS ---
 
-  // 3. MATH SAFETY: Prevent negative numbers and Division by Zero
-  const currentPoints = Math.max(0, customer.loyalty_points !== undefined ? customer.loyalty_points : (customer.order_count || 0));
-  const required = Math.max(1, loyaltySettings.orders_required || 10); // Enforce minimum of 1
-  
-  const availableRewards = Math.floor(currentPoints / required);
-  const progressToNext = currentPoints % required;
-  const neededForNext = required - progressToNext;
-  const isRewardInCart = selectedServices?.some((s) => s.is_reward) || false;
-
-  // 4. SECURE HANDLER: Prevent double-clicks and handle backend errors
-  const handleApplyReward = async () => {
-    if (isApplying || isRewardInCart) return;
+  const handleApplyReward = useCallback(async () => {
+    if (isApplying || isRewardInCart || availableRewards <= 0) return;
 
     setIsApplying(true);
     setError(null);
 
     try {
-      if (onApplyFreeService) {
-        await onApplyFreeService(); // Wait for the store/backend to apply it
+      if (typeof onApplyFreeService !== 'function') {
+        throw new Error("System error: Reward handler configuration missing.");
       }
+      
+      await onApplyFreeService(); 
+      
     } catch (err) {
-      console.error("Reward Application Error:", err);
-      setError("Failed to apply reward. Try again.");
+      if (isMounted.current) {
+        console.error("[LoyaltyStatus] Reward Application Error:", err?.message || err);
+        setError(err?.message?.substring(0, 100) || "Failed to apply reward. Try again.");
+      }
     } finally {
-      setIsApplying(false);
+      if (isMounted.current) {
+        setIsApplying(false);
+      }
     }
-  };
+  }, [isApplying, isRewardInCart, availableRewards, onApplyFreeService]);
 
+
+  // --- EARLY RETURN ---
+  if (!isEnabled || !isValidCustomer) return null;
+
+  // --- RENDER ---
   return (
-    <>
-      {availableRewards > 0 && !isRewardInCart && (
-        <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+    <section aria-labelledby="loyalty-status-title" className="relative">
+      {shouldShowConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden" aria-hidden="true">
           <Confetti
             width={windowDimension.width}
             height={windowDimension.height}
-            recycle={false} // Prevents infinite loop memory leak
+            recycle={false}
             numberOfPieces={400}
             gravity={0.15}
             initialVelocityX={10}
@@ -89,6 +139,7 @@ export const LoyaltyStatus = ({
 
       <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden relative z-10">
         <div
+          aria-hidden="true"
           className={`absolute left-0 top-0 bottom-0 w-1 ${
             availableRewards > 0 ? "bg-amber-500" : "bg-blue-600"
           }`}
@@ -96,8 +147,10 @@ export const LoyaltyStatus = ({
 
         <div className="p-3">
           <div className="flex items-center justify-between mb-2">
+            
             <div className="flex items-center gap-2">
               <div
+                aria-hidden="true"
                 className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                   availableRewards > 0 ? "bg-amber-50" : "bg-blue-50"
                 }`}
@@ -109,10 +162,10 @@ export const LoyaltyStatus = ({
                 )}
               </div>
               <div>
-                <h3 className="text-nano font-medium uppercase  text-text-dark/40 leading-none">
+                <h3 id="loyalty-status-title" className="text-nano font-medium uppercase text-text-dark/40 leading-none">
                   {availableRewards > 0 ? `${availableRewards} Reward${availableRewards > 1 ? 's' : ''} Ready` : "Loyalty Progress"}
                 </h3>
-                <p className="text-sm-text font-medium text-text-dark mt-1">
+                <p className="text-sm-text font-medium text-text-dark mt-1" aria-live="polite">
                   {availableRewards > 0
                     ? isRewardInCart 
                         ? "Voucher applied to cart" 
@@ -123,6 +176,7 @@ export const LoyaltyStatus = ({
             </div>
 
             <Badge
+              aria-label={`Progress: ${progressToNext} out of ${required}`}
               className={`text-micro px-2 py-0.5 tracking-tighter ${
                 availableRewards > 0
                   ? "bg-amber-100 text-amber-800 border-amber-200"
@@ -133,9 +187,8 @@ export const LoyaltyStatus = ({
             </Badge>
           </div>
 
-          {/* ERROR MESSAGE DISPLAY */}
           {error && (
-            <div className="mt-1 mb-2 p-1.5 bg-red-50 text-red-500 text-nano rounded-md border border-red-100 text-center">
+            <div role="alert" className="mt-1 mb-2 p-1.5 bg-rose-50 text-rose-600 text-nano rounded-md border border-rose-100 text-center animate-fade-in">
               {error}
             </div>
           )}
@@ -144,8 +197,9 @@ export const LoyaltyStatus = ({
             <Button
               onClick={handleApplyReward}
               disabled={isRewardInCart || isApplying}
+              aria-busy={isApplying}
               size="sm"
-              className={`w-full mt-2 !h-9 text-micro font-bold shadow-sm border-none transition-all duration-200 tracking-widest flex justify-center items-center ${
+              className={`w-full mt-2 !h-9 text-micro font-bold shadow-sm border-none transition-all duration-200 tracking-widest flex justify-center items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1 ${
                 isRewardInCart || isApplying
                   ? "!bg-gray-100 !text-text-dark/70 cursor-not-allowed" 
                   : "!bg-amber-500 hover:!bg-amber-600 !text-white active:scale-95"
@@ -155,7 +209,7 @@ export const LoyaltyStatus = ({
                 "Applying..."
               ) : (
                 <>
-                  <IconAward className={`w-4 h-4 mr-1.5 ${isRewardInCart ? "!stroke-text-dark/70" : "!stroke-white"}`} />
+                  <IconAward aria-hidden="true" className={`w-4 h-4 mr-1.5 ${isRewardInCart ? "!stroke-text-dark/70" : "!stroke-white"}`} />
                   {isRewardInCart ? "Reward Applied" : "Apply Reward"}
                 </>
               )}
@@ -163,6 +217,6 @@ export const LoyaltyStatus = ({
           )}
         </div>
       </div>
-    </>
+    </section>
   );
 };

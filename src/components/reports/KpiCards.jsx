@@ -42,14 +42,14 @@ export default function KpiCards() {
   };
 
   const items = [
-    { label: "Total Sales", value: `₱${Math.round(totalRevenue).toLocaleString()}`, icon: <IconDollarSign />, trend: "Gross earnings" },
-    { label: "Orders Volume", value: totalOrders.toLocaleString(), icon: <IconPackage />, trend: "Total loads" },
-    { label: "Avg Order Value", value: `₱${Math.round(aov).toLocaleString()}`, icon: <IconTrendingUp />, trend: "Per customer" },
-    { label: "Avg Turnaround", value: formatDuration(avgTat), icon: <IconZap />, trend: "Processing speed" },
+    { label: "Total Sales", value: `₱${Math.round(totalRevenue).toLocaleString()}`, icon: <IconDollarSign className="text-emerald-600 stroke-emerald-600" />, trend: "Gross earnings" },
+    { label: "Orders Volume", value: totalOrders.toLocaleString(), icon: <IconPackage className="text-blue-600 stroke-blue-600" />, trend: "Total loads" },
+    { label: "Avg Order Value", value: `₱${Math.round(aov).toLocaleString()}`, icon: <IconTrendingUp className="text-amber-600 stroke-amber-600" />, trend: "Per customer" },
+    { label: "Avg Turnaround", value: formatDuration(avgTat), icon: <IconZap className="text-violet-600 stroke-violet-600" />, trend: "Processing speed" },
   ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 mt-2">
       <div className="flex justify-start items-center pt-2 gap-2">
         
         <div className="relative w-auto z-50">
@@ -57,7 +57,7 @@ export default function KpiCards() {
             {({ open }) => (
               <>
                 <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-10 text-[13px] font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none">
-                  <span className="block truncate font-medium">Last {selectedOption.label}</span>
+                  <span className="block truncate font-medium">{selectedOption.label}</span>
                   <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                     <svg className={`w-4 h-4 text-text-dark/50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
@@ -129,24 +129,22 @@ export default function KpiCards() {
         <div className="flex items-start justify-between gap-1">
           <div className="min-w-0 flex-1">
             {/* ✨ FIX: Added pb-0.5 to prevent bottom clipping */}
-            <p className="text-nano md:text-micro font-bold text-text-dark/70 mb-1 pb-0.5 truncate uppercase">
+            <p className="text-micro font-medium text-text-dark/70 mb-1 pb-0.5 truncate">
               {kpi.label}
             </p>
             
-            {/* ✨ FIX: Changed leading-none to leading-tight and added pb-1 */}
-            <p className="text-h2 md:text-h1 font-bold text-text-dark leading-tight pb-1 truncate tracking-tighter cursor-default" title={kpi.value}>
+            <p className="text-h1 md:text-h1 font-bold text-text-dark leading-tight pb-1 truncate tracking-tighter cursor-default" title={kpi.value}>
               {kpi.value}
             </p>
             
-            {/* ✨ FIX: Added pb-0.5 to prevent bottom clipping */}
-            <p className="text-nano md:text-micro font-medium text-text-dark/60 mt-2 pb-0.5 truncate">
+            <p className="text-micro font-medium text-text-dark/60 mt-2 pb-0.5 truncate">
               {kpi.trend}
             </p>
           </div>
           
           <div className="p-2 md:p-2.5 rounded-lg bg-transparent border border-app-dark/10 shadow-hollow shrink-0">
             {require('react').cloneElement(kpi.icon, { 
-              className: "w-4 h-4 md:w-5 md:h-5 text-text-dark stroke-text-dark" 
+              className: "w-4 h-4 md:w-5 md:h-5 " + kpi.icon.props.className
             })}
           </div>
         </div>

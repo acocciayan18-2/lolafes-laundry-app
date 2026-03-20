@@ -12,6 +12,28 @@ export const IconClock = ({ className }) => (
   </svg>
 );
 
+export const IconUserOff = ({ className = "w-6 h-6", ...props }) => (
+  <svg 
+    width="24" 
+    height="24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    strokeWidth="2" 
+    viewBox="0 0 24 24" 
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    {...props}
+  >
+    <path d="M8.172 8.164a4.01 4.01 0 0 0 2.62 2.65" />
+    <path d="M14.274 10.29A4 4 0 1 0 8.72 4.71" />
+    <path d="M17.832 17.848c.112.374.168.762.168 1.152v2" />
+    <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 1.147.167" />
+    <path d="m3 3 18 18" />
+  </svg>
+);
+
 export const IconInfo = ({ className, ...props }) => (
   <svg 
     fill="none" 

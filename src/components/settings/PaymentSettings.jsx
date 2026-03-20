@@ -1,171 +1,211 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePaymentSettingsStore } from '../../store/settings/usePaymentSettingsStore';
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
 import { useActivityStore } from '../../store/activities/useActivityStore';
-import { IconTrash, IconStar } from '../icons';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import Button from '../ui/Button';
+import DeletePaymentModal from './DeletePaymentModal';
+import PaymentMethodItem from './PaymentMethodItem';
+
+const MAX_NAME_LENGTH = 20;
+const NAME_REGEX = /^[a-zA-Z0-9 ]+$/;
+
+// 🛡️ PERFORMANCE: Static reference for empty arrays.
+// This ensures 'methods' always points to the same memory address when empty,
+// preventing hooks from re-triggering unnecessarily.
+const EMPTY_METHODS = Object.freeze([]);
 
 export default function PaymentSettings() {
-  const methods = usePaymentSettingsStore((state) => state.methods) || [];
-  const { 
-    fetchPaymentMethods, 
-    addMethod, 
-    deleteMethod, 
-    toggleMethodStatus, 
-    setDefaultMethod, 
-    isLoading 
-  } = usePaymentSettingsStore();
+  // --- ATOMIC STORE SELECTORS ---
+  // We move the fallback logic inside the selector or use the static constant
+  const methods = usePaymentSettingsStore((state) => state.methods || EMPTY_METHODS);
+  const isSyncing = usePaymentSettingsStore((state) => state.isLoading);
+  const fetchPaymentMethods = usePaymentSettingsStore((state) => state.fetchPaymentMethods);
+  const addMethod = usePaymentSettingsStore((state) => state.addMethod);
+  const deleteMethod = usePaymentSettingsStore((state) => state.deleteMethod);
+  const toggleMethodStatus = usePaymentSettingsStore((state) => state.toggleMethodStatus);
+  const setDefaultMethod = usePaymentSettingsStore((state) => state.setDefaultMethod);
   
   const showNotification = useNotificationStore((state) => state.showNotification);
-  const { logActivity } = useActivityStore();
+  const logActivity = useActivityStore((state) => state.logActivity);
 
+  // --- LOCAL STATE ---
   const [newMethodName, setNewMethodName] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
+  const [isActionPending, setIsActionPending] = useState(false);
+  const [methodToDelete, setMethodToDelete] = useState(null);
 
+  // --- SUBSCRIPTIONS ---
   useEffect(() => {
     const unsubscribe = fetchPaymentMethods();
-    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
+    return () => { 
+      if (typeof unsubscribe === 'function') unsubscribe(); 
+    };
   }, [fetchPaymentMethods]);
 
-  const handleAdd = async (e) => {
+  // --- MEMOIZED DATA ---
+  const sortedMethods = useMemo(() => {
+    // methods now has a stable reference, so this only runs when content actually changes
+    return [...methods].sort((a, b) => (b.isDefault === a.isDefault ? 0 : b.isDefault ? 1 : -1));
+  }, [methods]);
+
+  // --- HANDLERS ---
+  const handleCloseModal = useCallback(() => {
+    if (!isActionPending) {
+      setMethodToDelete(null);
+    }
+  }, [isActionPending]);
+
+  const handleAdd = useCallback(async (e) => {
     e.preventDefault();
-    if (!newMethodName.trim() || isAdding) return;
-    setIsAdding(true);
+    const sanitizedName = newMethodName.trim();
 
-    const success = await addMethod(newMethodName);
-    if (success) {
-      showNotification(`"${newMethodName}" added to payment options`, "success");
-      logActivity(`Settings: Added payment method "${newMethodName}"`);
-      setNewMethodName('');
-    } else {
-      showNotification("Failed to add payment method", "error");
-    }
-    setIsAdding(false);
-  };
-
-  const handleToggle = async (id, name, currentStatus) => {
-    const nextStatus = !currentStatus;
-    const success = await toggleMethodStatus(id, nextStatus);
+    if (!sanitizedName || isActionPending) return;
     
-    if (success) {
-      const statusText = nextStatus ? 'enabled' : 'disabled';
-      showNotification(`${name} is now ${statusText}`, nextStatus ? "success" : "info");
-      logActivity(`Settings: ${name} payment method ${statusText}`);
+    if (sanitizedName.length > MAX_NAME_LENGTH) {
+      return showNotification(`Name too long (Max ${MAX_NAME_LENGTH})`, "error");
     }
-  };
-
-  const handleSetDefault = async (id, name) => {
-    const success = await setDefaultMethod(id);
-    if (success) {
-      showNotification(`${name} set as default payment method`, "success");
-      logActivity(`Settings: Set ${name} as default payment method`);
+    if (!NAME_REGEX.test(sanitizedName)) {
+      return showNotification("Alphanumeric characters only", "error");
     }
-  };
+    
+    const isDuplicate = methods.some(m => 
+      m.name.toLowerCase().replace(/\s/g, '') === sanitizedName.toLowerCase().replace(/\s/g, '')
+    );
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`Are you sure you want to remove ${name}?`)) {
-      const success = await deleteMethod(id);
-      if (success) {
-        showNotification(`${name} has been removed`, "info");
-        logActivity(`Settings: Removed payment method "${name}"`);
+    if (isDuplicate) {
+      return showNotification(`"${sanitizedName}" already exists.`, "info");
+    }
+
+    setIsActionPending(true);
+    try {
+      const result = await addMethod(sanitizedName);
+      if (result !== false && result?.success !== false) {
+        showNotification(`"${sanitizedName}" added successfully`, "success");
+        logActivity(` Added payment method "${sanitizedName}"`);
+        setNewMethodName('');
       }
+    } catch (err) {
+      showNotification("Operation failed.", "error");
+    } finally {
+      setIsActionPending(false);
     }
-  };
+  }, [newMethodName, isActionPending, methods, addMethod, showNotification, logActivity]);
+
+  const handleToggle = useCallback(async (id, name, currentStatus) => {
+    if (isActionPending) return;
+    setIsActionPending(true);
+    try {
+      const nextStatus = !currentStatus;
+      const result = await toggleMethodStatus(id, nextStatus);
+      if (result !== false && result?.success !== false) {
+        showNotification(`${name} ${nextStatus ? 'enabled' : 'disabled'}`, "info");
+        logActivity(` Updated ${name} status`);
+      }
+    } catch (err) {
+      showNotification("Update failed.", "error");
+    } finally {
+      setIsActionPending(false);
+    }
+  }, [isActionPending, toggleMethodStatus, showNotification, logActivity]);
+
+  const handleSetDefault = useCallback(async (id, name) => {
+    if (isActionPending) return;
+    setIsActionPending(true);
+    try {
+      const result = await setDefaultMethod(id);
+      if (result !== false && result?.success !== false) {
+        showNotification(`${name} set as default`, "success");
+        logActivity(` Set ${name} as default method`);
+      }
+    } catch (err) {
+      showNotification("Update failed.", "error");
+    } finally {
+      setIsActionPending(false);
+    }
+  }, [isActionPending, setDefaultMethod, showNotification, logActivity]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!methodToDelete || isActionPending) return;
+    setIsActionPending(true);
+    try {
+      const result = await deleteMethod(methodToDelete.id);
+      if (result !== false && result?.success !== false) {
+        showNotification(`${methodToDelete.name} removed`, "success");
+        logActivity(` Deleted method "${methodToDelete.name}"`);
+        setMethodToDelete(null); 
+      }
+    } catch (err) {
+      showNotification("Deletion failed.", "error");
+    } finally {
+      setIsActionPending(false);
+    }
+  }, [methodToDelete, isActionPending, deleteMethod, showNotification, logActivity]);
 
   return (
-    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-6">
-      <div className="flex items-center gap-3">
-        <h2 className="font-bold  text-base-text text-app-dark">Payment Methods</h2>
-      </div>
+    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-6" role="region" aria-label="Payment Settings">
+      <header className="flex items-center gap-3">
+        <h2 className="font-bold text-base-text text-app-dark">Payment Methods</h2>
+      </header>
 
       <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <label className="absolute -top-2 left-5 bg-white px-2 text-micro font-medium text-text-dark/70 ">
+          <label htmlFor="method-name" className="absolute -top-2 left-5 bg-white px-2 text-micro font-medium text-text-dark/70">
             Method Name
           </label>
           <input
+            id="method-name"
             type="text"
+            autoComplete="off"
             placeholder="e.g. GCash"
             value={newMethodName}
-            disabled={isAdding}
+            disabled={isActionPending}
             onChange={(e) => setNewMethodName(e.target.value)}
-            className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:border-app-dark outline-none transition-all"
+            className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:border-app-dark outline-none transition-all disabled:opacity-50"
           />
         </div>
         <Button 
           type="submit" 
           variant="primary"
-          disabled={!newMethodName.trim()}
-          isLoading={isAdding}
+          disabled={!newMethodName.trim() || isActionPending}
+          isLoading={isActionPending}
           className="px-8 rounded-2xl"
         >
-          {isAdding ? "Adding..." : "Add"}
+          Add
         </Button>
       </form>
 
-      <div className="space-y-2">
+      <div className="space-y-4">
         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-widest">
-          Active Methods
+          Active Methods ({sortedMethods.length})
         </label>
         
         <div className="space-y-2">
-          {isLoading ? (
-            <div className="py-10 text-center text-slate-400">Loading...</div>
+          {isSyncing && sortedMethods.length === 0 ? (
+            <div className="py-10 text-center text-slate-400 animate-pulse">Syncing...</div>
           ) : (
-            <AnimatePresence mode="popLayout">
-              {methods.map((method) => (
-                <motion.div 
+            <AnimatePresence mode="popLayout" initial={false}>
+              {sortedMethods.map((method) => (
+                <PaymentMethodItem
                   key={method.id}
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                    method.isActive ? "bg-slate-50 border-slate-100" : "bg-gray-50 opacity-60 border-dashed"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => handleSetDefault(method.id, method.name)}
-                      disabled={!method.isActive || method.isDefault}
-                      className={`p-2 rounded-xl transition-all ${
-                        method.isDefault 
-                          ? 'bg-amber-100 text-amber-500 shadow-sm' 
-                          : 'text-slate-200 hover:text-amber-400 hover:bg-amber-50'
-                      } ${!method.isActive ? 'cursor-not-allowed opacity-30' : ''}`}
-                    >
-                      <IconStar className={`w-4 h-4 ${method.isDefault ? 'fill-current' : ''}`} />
-                    </button>
-                    
-                    <span className={`font-medium text-sm ${method.isActive ? 'text-app-dark' : 'text-slate-400 italic'}`}>
-                      {method.name}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleToggle(method.id, method.name, method.isActive)}
-                      className={`relative w-9 h-5 rounded-full transition-colors ${method.isActive ? 'bg-emerald-500' : 'bg-slate-200'}`}
-                    >
-                      <motion.div 
-                        animate={{ x: method.isActive ? 18 : 2 }}
-                        className="absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm"
-                      />
-                    </button>
-
-                    {!method.isDefault && (
-                      <button onClick={() => handleDelete(method.id, method.name)} className="p-2 text-slate-300 hover:text-rose-500">
-                        <IconTrash className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </motion.div>
+                  method={method}
+                  isDisabled={isActionPending}
+                  onToggle={handleToggle}
+                  onSetDefault={handleSetDefault}
+                  onDelete={setMethodToDelete}
+                />
               ))}
             </AnimatePresence>
           )}
         </div>
       </div>
+
+      <DeletePaymentModal
+        isOpen={!!methodToDelete}
+        onClose={handleCloseModal}
+        onConfirm={handleConfirmDelete}
+        itemName={methodToDelete?.name}
+        isLoading={isActionPending}
+      />
     </div>
   );
 }
