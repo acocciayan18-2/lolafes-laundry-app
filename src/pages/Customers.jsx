@@ -151,7 +151,7 @@ export default function Customers() {
           <header className="flex justify-between items-center mb-3">
             <div>
               <h1 className="text-h2 font-bold text-text-dark">Customers</h1>
-              <p className="text-sm-text text-gray-600 mt-0.5">Manage your customer database</p>
+              <p className="text-sm-text text-gray-600 mt-0.5 font-normal">Manage your customer database</p>
             </div>
           </header>
 
@@ -225,10 +225,10 @@ export default function Customers() {
                       <div className="flex justify-center mb-4" aria-hidden="true">
                         <IconUsers className="w-12 h-12 text-gray-200" />
                       </div>
-                      <h3 className="text-h3 font-medium text-text-dark/70 mb-1">
+                      <h3 className="text-h3  text-text-dark/70 mb-1">
                         {searchTerm ? "No customers found" : "No customers yet"}
                       </h3>
-                      <p className="text-sm-text font-medium text-text-dark/40">
+                      <p className="text-sm-text  text-text-dark/40">
                         {searchTerm ? "Try adjusting your search term" : "Customers will appear here when you create orders"}
                       </p>
                     </motion.div>

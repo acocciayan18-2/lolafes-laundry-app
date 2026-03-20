@@ -62,14 +62,14 @@ export default function CleanupActivityLogs() {
         >
           Activity Logs
         </h2>
-        <p className="text-micro font-medium text-text-dark/70">
+        <p className="text-micro  text-text-dark/70">
           Permanently clear the master log of all system activity.
         </p>
       </div>
 
       <Button
         variant="secondary"
-        className="!py-2 !px-4 !rounded-xl !text-micro !font-medium focus-visible:ring-2 focus-visible:ring-rose-500"
+        className="!py-2 !px-4 !rounded-xl !text-micro ! focus-visible:ring-2 focus-visible:ring-rose-500"
         onClick={handleOpenModal}
         disabled={isLoading}
         aria-haspopup="dialog"

@@ -84,7 +84,7 @@ const OrderCard = React.memo(({ order, isLocked, unclaimed, stuck, onClick }) =>
             <span className="text-nano text-text-dark/90 bg-gray-100 px-1.5 py-0.5 rounded leading-none align-middle">Walk-In</span>
           )}
         </div>
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-[4px] border uppercase shrink-0 ${cfg.theme}`}>
+        <span className={`text-nano font-bold px-2 py-0.5 rounded-[4px] border uppercase shrink-0 ${cfg.theme}`}>
           {isDelivered ? "Delivered" : cfg.label}
         </span>
       </div>
@@ -315,7 +315,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] focus:outline-none" 
+              className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90dvh] focus:outline-none" 
             >
               
               <header className="bg-slate-50/80 pt-5 pb-3 px-4 text-center relative border-b border-slate-100 shrink-0">
@@ -514,7 +514,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
                 </fieldset>
                 
                 {!selectedOrder.is_paid && (
-                  <p className="text-[11px] text-rose-500 font-bold text-center mt-3 uppercase tracking-wide" role="alert">
+                  <p className="text-micro text-rose-500 font-bold text-center mt-3 uppercase tracking-wide" role="alert">
                     Payment Required for Handover
                   </p>
                 )}

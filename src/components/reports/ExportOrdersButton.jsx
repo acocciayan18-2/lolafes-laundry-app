@@ -170,7 +170,7 @@ export default function ExportOrdersButton() {
         aria-label="Export laundry orders to Excel"
         aria-busy={isExporting}
         className={`
-          flex items-center gap-2 px-3 h-9 mt-1 border rounded-xl font-medium text-micro shadow-md transition-all
+          flex items-center gap-2 px-3 h-9 mt-1 border rounded-xl  text-micro shadow-md transition-all
           ${isDisabled
             ? "bg-slate-100 text-slate-400 cursor-not-allowed opacity-70 border-slate-200"
             : "bg-white text-text-dark hover:bg-slate-50 border-slate-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/50"

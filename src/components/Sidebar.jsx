@@ -80,7 +80,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             <div className="flex-1 overflow-y-auto no-scrollbar">
               <div className="p-3">
                 <div className={`transition-all duration-300 overflow-hidden ${isMinimized ? "lg:opacity-0 lg:h-0" : "opacity-100 h-9"}`}>
-                   <p className="text-[13px] font-medium text-text-dark/70 uppercase px-2 py-2 whitespace-nowrap">Main Menu</p>
+                   <p className="text-micro  text-text-dark/70 uppercase px-2 py-2 whitespace-nowrap">Main Menu</p>
                 </div>
                 <nav>
                   <ul className="space-y-2">
@@ -136,11 +136,11 @@ const MenuItem = ({ to, icon, text, closeSidebar, isMinimized }) => {
         `}
       >
         {/* ICON CONTAINER: Removed dynamic margins, keeping it locked to px-3 padding */}
-        <div className={`shrink-0 flex items-center justify-center transition-all duration-300 ${isMinimized ? "lg:ml-[-3px]" : ""}`}>
+        <div className={`shrink-0 flex  items-center justify-center transition-all duration-300 ${isMinimized ? "lg:ml-[-3px]" : ""}`}>
           {React.cloneElement(icon, {
             className: `${icon.props.className || ""} transition-colors duration-200 ${
               isActive
-                ? "text-text-light !stroke-text-light"
+                ? "text-text-light  !stroke-text-light"
                 : "text-text-dark stroke-text-dark group-hover:!text-dark/70 group-hover:!stroke-text-dark/70"
             }`
           })}
@@ -148,7 +148,7 @@ const MenuItem = ({ to, icon, text, closeSidebar, isMinimized }) => {
         
         {/* TEXT CONTAINER: Fading and collapsing width */}
         <div className={`transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${isMinimized ? "lg:opacity-0 lg:max-w-0 lg:pointer-events-none" : "opacity-100 max-w-[200px]"}`}>
-          <p className={`text-sm font-medium ${isActive ? "text-text-light" : "text-text-dark group-hover:text-text-dark/70"}`}>
+          <p className={`text-sm-text  ${isActive ? "text-text-light" : "text-text-dark group-hover:text-text-dark/70"}`}>
             {text}
           </p>
         </div>
@@ -171,8 +171,8 @@ const Logo = ({ isMinimized, setIsMinimized }) => (
         <img src="/images/lolafeslaundry-logo-transparent.png" alt="Logo" className="w-full h-full object-contain" />
       </div>
       <div className="flex flex-col items-start">
-        <h2 className="font-bold text-text-dark text-[15px] leading-tight">Lola Fe's Laundry</h2>
-        <p className="text-[11px] text-text-dark/60 font-medium tracking-wider">Manager System</p>
+        <h2 className="font-bold text-text-dark text-base-text leading-tight">Lola Fe's Laundry</h2>
+        <p className="text-micro text-text-dark/60  tracking-wider">Manager System</p>
       </div>
     </div>
 
@@ -193,8 +193,8 @@ const LogoutButton = ({ onClick, isMinimized }) => (
           <path d="M13 12v.01"></path><path d="M3 21h18"></path><path d="M17 13.5V21"></path><path d="M5 21V5a2 2 0 0 1 2-2h7.5"></path><path d="M21 7h-7"></path><path d="m18 4 3 3-3 3"></path>
         </svg>
       </div>
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${isMinimized ? "lg:opacity-0 lg:max-w-0 lg:pointer-events-none" : "opacity-100 max-w-[200px]"}`}>
-        <p className="text-xs font-medium text-text-dark/90">Log out</p>
+      <div className={`transition-all duration-300 ease-in-out pb-1 overflow-hidden whitespace-nowrap ${isMinimized ? "lg:opacity-0 lg:max-w-0 lg:pointer-events-none" : "opacity-100 max-w-[200px]"}`}>
+        <p className="text-micro  text-text-dark/90">Log out</p>
       </div>
     </div>
   </div>
@@ -209,12 +209,12 @@ const FooterCard = ({ isMinimized }) => (
     `}>
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 bg-app-dark rounded-full flex items-center justify-center  shrink-0">
-          <span className="text-text-light font-bold text-[10px]">LS</span>
+          <span className="text-text-light font-bold text-nano">LS</span>
         </div>
         <div className={`transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${isMinimized ? "lg:opacity-0 lg:max-w-0" : "opacity-100 max-w-[200px]"}`}>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-text-dark text-xs truncate">Main Branch</p>
-            <p className="text-[10px] text-text-dark/90 font-medium truncate">Taguig City, PH</p>
+            <p className="font-bold text-text-dark text-micro truncate">Main Branch</p>
+            <p className="text-nano text-text-dark/90  truncate">Taguig City, PH</p>
           </div>
         </div>
       </div>

@@ -106,7 +106,7 @@ const DropdownTimePicker = ({ isOpen, onClose, value, onSave }) => {
             className={`h-12 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 select-none ${
               selected === item 
                 ? 'text-text-dark font-bold text-xl bg-app-dark-50/50' 
-                : 'text-text-dark/60 font-medium text-sm hover:text-text-dark/80 hover:bg-slate-50'
+                : 'text-text-dark/60  text-sm-text hover:text-text-dark/80 hover:bg-slate-50'
             }`}
           >
             {item}
@@ -137,13 +137,13 @@ const DropdownTimePicker = ({ isOpen, onClose, value, onSave }) => {
       <div className="p-3 bg-slate-50 flex justify-end gap-1">
         <button 
           onClick={(e) => { e.stopPropagation(); onClose(); }} 
-          className="px-4 py-2 rounded-xl font-medium text-xs text-text-dark/70 "
+          className="px-4 py-2 rounded-xl  text-micro text-text-dark/70 "
         >
           Cancel
         </button>
         <button 
           onClick={handleApply} 
-          className="px-5 py-2 rounded-xl font-bold text-xs text-white bg-app-dark hover:bg-app-dark/90 transition-colors active:scale-95"
+          className="px-5 py-2 rounded-xl font-bold text-micro text-white bg-app-dark hover:bg-app-dark/90 transition-colors active:scale-95"
         >
           Apply
         </button>
@@ -245,7 +245,7 @@ export default function StoreShiftSettings() {
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 transition-all duration-500 ${!isEnabled ? 'opacity-40 grayscale pointer-events-none' : 'opacity-100'}`}>
         
         <div className="space-y-3 relative z-0">
-          <label className="text-sm-text font-medium text-text-dark/70 ml-1">Active Operating Dates</label>
+          <label className="text-sm-text  text-text-dark/70 ml-1">Active Operating Dates</label>
           <div className="p-3 bg-white rounded-3xl border border-slate-300 flex justify-center shadow-sm">
             <DayPicker mode="multiple" selected={selectedDays} onSelect={setSelectedDays} />
           </div>
@@ -262,7 +262,7 @@ export default function StoreShiftSettings() {
                   className={`group relative flex items-center justify-between w-full h-16 px-5 rounded-2xl border transition-all cursor-pointer ${activeDropdown === 'open' ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-500/20' : 'border-slate-200 bg-slate-50/50 hover:bg-white hover:border-emerald-300'}`}
                 >
                   <div className="flex flex-col items-start pointer-events-none">
-                    <label className={`text-micro font-medium transition-colors ${activeDropdown === 'open' ? 'text-emerald-600' : 'text-text-dark/70 group-hover:text-emerald-600'}`}>Shift Starts At:</label>
+                    <label className={`text-micro  transition-colors ${activeDropdown === 'open' ? 'text-emerald-600' : 'text-text-dark/70 group-hover:text-emerald-600'}`}>Shift Starts At:</label>
                     <span className="text-sm-text font-bold text-text-dark">{formatTo12Hr(openTime)}</span>
                   </div>
                   <IconClock className={`w-5 h-5 transition-colors pointer-events-none ${activeDropdown === 'open' ? 'text-emerald-500' : 'text-slate-300 group-hover:text-emerald-500'}`} />
@@ -287,7 +287,7 @@ export default function StoreShiftSettings() {
                   className={`group relative flex items-center justify-between w-full h-16 px-5 rounded-2xl border transition-all cursor-pointer ${activeDropdown === 'close' ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-500/20' : 'border-slate-200 bg-slate-50/50 hover:bg-white hover:border-emerald-300'}`}
                 >
                   <div className="flex flex-col items-start pointer-events-none">
-                    <label className={`text-micro font-medium transition-colors ${activeDropdown === 'close' ? 'text-emerald-600' : 'text-text-dark/70 group-hover:text-emerald-600'}`}>Shift Ends At:</label>
+                    <label className={`text-micro  transition-colors ${activeDropdown === 'close' ? 'text-emerald-600' : 'text-text-dark/70 group-hover:text-emerald-600'}`}>Shift Ends At:</label>
                     <span className="text-sm-text font-bold text-text-dark">{formatTo12Hr(closeTime)}</span>
                   </div>
                   <IconClock className={`w-5 h-5 transition-colors pointer-events-none ${activeDropdown === 'close' ? 'text-emerald-500' : 'text-slate-300 group-hover:text-emerald-500'}`} />
@@ -327,7 +327,7 @@ export default function StoreShiftSettings() {
           onClick={handleSave}
           disabled={isSaving}
           isLoading={isSaving}
-          className="w-full sm:w-[180px] !py-3 !rounded-2xl !text-sm shadow-lg shadow-slate-100 active:scale-95 transition-all"
+          className="w-full sm:w-[180px] !py-3 !rounded-2xl !text-sm-text shadow-lg shadow-slate-100 active:scale-95 transition-all"
         >
           {isSaving ? "Syncing..." : "Save Configuration"}
         </Button>

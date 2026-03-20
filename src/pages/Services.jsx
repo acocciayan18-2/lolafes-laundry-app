@@ -30,7 +30,7 @@ export const Button = ({ children, onClick, className = "", variant = "primary",
 
 export const Input = ({ className = "", ...props }) => (
   <input
-    className={`flex h-10 w-full rounded-lg border font-medium border-slate-200 bg-white px-3 py-2 text-sm-text placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-app-dark/70 transition-shadow ${className}`}
+    className={`flex h-10 w-full rounded-lg border  border-slate-200 bg-white px-3 py-2 text-sm-text placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-app-dark/70 transition-shadow ${className}`}
     {...props}
   />
 );
@@ -169,7 +169,7 @@ export default function Services() {
         <div className="flex justify-between items-center mb-3">
           <div> 
             <h1 className="text-h2 font-bold text-text-dark">Services</h1>
-            <p className="text-sm-text text-gray-600 mt-0.5">Manage your shop's offerings</p>
+            <p className="text-sm-text text-gray-600 mt-0.5 font-normal">Manage your shop's offerings</p>
           </div>
           <button 
             onClick={addNewService} 
@@ -188,7 +188,7 @@ export default function Services() {
             <div className="mb-4 relative z-[50]">
               <div className="flex items-center gap-2 mb-2 ml-1">
                 <div className="w-0.5 h-3 bg-app-dark/80 rounded-full" aria-hidden="true" />
-                <span className="text-sm-text font-medium text-text-dark/80">Add New Service</span>
+                <span className="text-sm-text  text-text-dark/80">Add New Service</span>
               </div>
               <ServiceCard 
                 service={tempData} 
@@ -235,7 +235,7 @@ export default function Services() {
             
             {sortedServices.length === 0 && editingId !== "new_draft" && (
                <div className="py-12 text-center border-1 border-dashed border-gray-200 rounded-2xl bg-white mt-4">
-                 <p className="text-sm-text font-medium text-gray-500">No services found.</p>
+                 <p className="text-sm-text  text-gray-500">No services found.</p>
                  <button onClick={addNewService} className="text-blue-600 font-bold text-sm-text hover:underline mt-1 outline-none">
                    Add your first service
                  </button>

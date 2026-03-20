@@ -155,7 +155,7 @@ export default function RushPulse() {
         <header className="flex items-start justify-between gap-1 mb-2 shrink-0">
           <div className="min-w-0 flex-1 relative" ref={infoRef}>
             <div className="flex items-center gap-1.5 mb-1">
-              <h2 id="rush-pulse-title" className="text-[13px] font-bold text-text-dark/70 truncate uppercase tracking-tight">
+              <h2 id="rush-pulse-title" className="text-sm-text font-bold text-text-dark/70 truncate uppercase tracking-tight">
                 Traffic Pulse
               </h2>
               <button 
@@ -176,7 +176,7 @@ export default function RushPulse() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="absolute left-0 top-7 w-64 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100]"
                   >
-                    <p className="text-[13px] text-text-dark/90 leading-relaxed font-normal">
+                    <p className="text-sm-text text-text-dark/90 leading-relaxed font-normal">
                       Monitors operational load per hour. Hover over the curve to see the total combined volume from every day of the week.
                     </p>
                   </motion.div>
@@ -190,15 +190,20 @@ export default function RushPulse() {
         </header>
 
         {/* HEADLESS UI DROPDOWN */}
-        <div className="relative w-32 mb-4 z-2" aria-label="Select day filter for traffic pulse chart">
-          <Listbox value={selectedDay} onChange={(val) => {
-            setSelectedDay(val);
-            setActiveIndex(null); 
-          }}>
+       {/* HEADLESS UI DROPDOWN */}
+        {/* ✨ FIX 1: Increased wrapper z-index to 50 to beat the chart below it */}
+        <div className="relative w-32 mb-4 z-50" aria-label="Select day filter for traffic pulse chart">
+          <Listbox 
+            value={selectedDay} 
+            onChange={(val) => {
+              setSelectedDay(val);
+              setActiveIndex(null); 
+            }}
+          >
             {({ open }) => (
               <>
-                <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-[13px] font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-app-dark/20">
-                  <span className="block truncate font-medium">{selectedDay.label}</span>
+                <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-sm-text font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-app-dark/20">
+                  <span className="block truncate">{selectedDay.label}</span>
                   <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                     <motion.svg 
                       animate={{ rotate: open ? 180 : 0 }}
@@ -220,20 +225,22 @@ export default function RushPulse() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -5 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute mt-1.5 max-h-60 w-full overflow-auto custom-scrollbar rounded-xl bg-white py-1 shadow-xl border border-slate-100 ring-1 ring-black ring-opacity-5 focus:outline-none"
+                      // ✨ FIX 2: Added z-[100] and forced bg-white to be totally opaque.
+                      className="absolute z-[100] mt-1.5 max-h-60 w-full overflow-auto custom-scrollbar rounded-xl bg-white py-1 shadow-2xl border border-slate-200 ring-1 ring-black/5 focus:outline-none isolate"
                     >
-                      {DAY_OPTIONS.map((f) => (
+                      {DAY_OPTIONS.map((f) => ( 
                         <ListboxOption
                           key={f.value}
                           value={f}
                           className={({ active }) =>
-                            `relative cursor-pointer select-none py-2.5 pl-3 pr-3 text-[13px] font-medium transition-colors ${
-                              active ? 'bg-app-dark/5 text-app-dark' : 'text-text-dark/80'
+                            // ✨ FIX 3: Removed conflicting background colors in the ternary
+                            `relative cursor-pointer select-none py-2.5 pl-3 pr-3 text-sm-text transition-colors ${
+                              active ? 'bg-slate-100 text-app-dark' : 'bg-white text-text-dark/80'
                             }`
                           }
                         >
                           {({ selected }) => (
-                            <span className={`block truncate ${selected ? 'font-bold text-app-dark' : 'font-medium'}`}>
+                            <span className={`block truncate  ${selected ? 'font-bold text-app-dark' : ''}`}>
                               {f.label}
                             </span>
                           )}
@@ -306,8 +313,8 @@ export default function RushPulse() {
                     aria-hidden="true"
                   >
                     <div className="bg-app-dark text-white shadow-sm rounded-md px-2.5 py-1.5 flex flex-col items-center">
-                      <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">{val} orders</span>
-                      <span className="text-[9px] text-white/60 lowercase mt-0.5 font-medium whitespace-nowrap">{formatTime(i)}</span>
+                      <span className="text-micro font-bold tracking-wide whitespace-nowrap">{val} orders</span>
+                      <span className="text-nano text-white/60 lowercase mt-0.5  whitespace-nowrap">{formatTime(i)}</span>
                     </div>
                     <div className="w-2 h-2 bg-app-dark rotate-45 mx-auto -mt-1" />
                   </div>
@@ -344,7 +351,7 @@ export default function RushPulse() {
           <p className="text-nano font-bold text-text-dark/50 mb-0.5 uppercase ">
             {selectedDay.value === 'all' ? 'Typical peak window' : `${selectedDay.label} peak window`}
           </p>
-          <p className="text-[15px] text-text-dark font-bold tracking-tight leading-none">
+          <p className="text-base-text text-text-dark font-bold tracking-tight leading-none">
             {busiestWindow}
           </p>
         </div>

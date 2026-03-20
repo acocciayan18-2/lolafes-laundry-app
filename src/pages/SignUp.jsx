@@ -14,7 +14,7 @@ export default function SignUp() {
     isOtpSent, 
     popup, 
     clearPopup, 
-    triggerPopup, // ✨ FIX: Imported triggerPopup for local validation feedback
+    triggerPopup, 
     sendOtp, 
     verifyAndSignup, 
     resetFlow 
@@ -113,7 +113,7 @@ export default function SignUp() {
         <form onSubmit={handleSubmit} noValidate aria-label="Sign up form">
           
           <div className="mb-3 text-start w-full">
-            <label htmlFor="email" className="block text-text-dark text-sm-text mb-1 font-medium">Admin Email</label>
+            <label htmlFor="email" className="block text-text-dark text-sm-text mb-1 ">Admin Email</label>
             <div className="relative flex items-center w-full">
               <span className="absolute left-3 text-text-dark" aria-hidden="true">
                 <IconAtSymbol className="w-4 h-4" />
@@ -136,7 +136,7 @@ export default function SignUp() {
           </div>
 
           <div className="mb-3 text-start w-full">
-            <label htmlFor="password" className="block text-text-dark text-sm-text mb-1 font-medium">Password</label>
+            <label htmlFor="password" className="block text-text-dark text-sm-text mb-1 ">Password</label>
             <div className="relative flex items-center w-full">
               <span className="absolute left-3 text-text-dark" aria-hidden="true">
                 <IconLock className="w-4 h-4" />
@@ -168,7 +168,7 @@ export default function SignUp() {
           </div>
 
           <div className="mb-3 text-start w-full">
-            <label htmlFor="confirmPassword" className="block text-text-dark text-sm-text mb-1 font-medium">Confirm Password</label>
+            <label htmlFor="confirmPassword" className="block text-text-dark text-sm-text mb-1 ">Confirm Password</label>
             <div className="relative flex items-center w-full">
               <span className="absolute left-3 text-text-dark" aria-hidden="true">
                 <IconLock className="w-4 h-4" />
@@ -249,7 +249,7 @@ export default function SignUp() {
           <button
             type="submit"
             disabled={!isPasswordValid || isLoading}
-            className={`w-full mb-2 bg-app-dark text-white font-medium text-sm-text px-4 py-3 rounded-lg cursor-pointer transition-all focus:outline-none focus:ring-4 focus:ring-app-dark/30 ${
+            className={`w-full mb-2 bg-app-dark text-white  text-sm-text px-4 py-3 rounded-lg cursor-pointer transition-all focus:outline-none focus:ring-4 focus:ring-app-dark/30 ${
               (!isPasswordValid || isLoading) ? "opacity-40 cursor-not-allowed" : "hover:opacity-90 shadow-md active:scale-95"
             }`}
           >

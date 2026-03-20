@@ -89,7 +89,7 @@ export default function CustomerMix({ range }) {
         <header className="flex items-start justify-between gap-1 mb-4">
           <div className="min-w-0 flex-1 relative">
             <div className="flex items-center gap-1.5 mb-1">
-              <h2 id="customer-mix-title" className="text-[13px] mb-1 font-bold text-text-dark/70 truncate uppercase tracking-tight">
+              <h2 id="customer-mix-title" className="text-sm-text mb-1 font-bold text-text-dark/70 truncate uppercase tracking-tight">
                 Customer Retention
               </h2>
               
@@ -110,10 +110,10 @@ export default function CustomerMix({ range }) {
                     role="tooltip"
                     className="absolute left-[-50px] top-full mt-2 w-56 p-3 bg-white border border-app-dark/10 shadow-xl rounded-xl z-[100] animate-in fade-in zoom-in-95 duration-200 text-left"
                   >
-                    <p className="text-[13px] text-text-dark/90 leading-relaxed font-normal">
+                    <p className="text-sm-text text-text-dark/90 leading-relaxed font-normal">
                       This chart visualizes the ratio of New vs. Returning clients.
                     </p>
-                    <p className="text-[11px] text-text-dark/70 mt-2 italic border-t border-slate-100 pt-2">
+                    <p className="text-micro text-text-dark/70 mt-2 italic border-t border-slate-100 pt-2">
                       Overall Retention Rate: <span className="font-bold">{retentionRate.toFixed(1)}%</span>
                     </p>
                   </div>
@@ -162,7 +162,7 @@ export default function CustomerMix({ range }) {
             {/* Inner text overlay */}
             <div className="absolute flex flex-col items-center justify-center text-center">
               <span className="text-h3 font-bold text-text-dark leading-none">{newCount + returningCount}</span>
-              <span className="text-[9px] uppercase font-bold text-text-dark/50 tracking-wider">Total</span>
+              <span className="text-nano uppercase font-bold text-text-dark/50 tracking-wider">Total</span>
             </div>
           </div>
           

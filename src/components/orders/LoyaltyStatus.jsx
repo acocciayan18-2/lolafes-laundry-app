@@ -162,10 +162,10 @@ export const LoyaltyStatus = ({
                 )}
               </div>
               <div>
-                <h3 id="loyalty-status-title" className="text-nano font-medium uppercase text-text-dark/40 leading-none">
+                <h3 id="loyalty-status-title" className="text-nano  uppercase text-text-dark/40 leading-none">
                   {availableRewards > 0 ? `${availableRewards} Reward${availableRewards > 1 ? 's' : ''} Ready` : "Loyalty Progress"}
                 </h3>
-                <p className="text-sm-text font-medium text-text-dark mt-1" aria-live="polite">
+                <p className="text-sm-text  text-text-dark mt-1" aria-live="polite">
                   {availableRewards > 0
                     ? isRewardInCart 
                         ? "Voucher applied to cart" 

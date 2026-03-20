@@ -36,9 +36,9 @@ const PaymentMethodItem = memo(({
           <IconStar className={`w-4 h-4 ${isDefault ? 'fill-current' : ''}`} />
         </button>
         
-        <span className={`font-medium text-sm ${isActive ? 'text-app-dark' : 'text-slate-400 italic'}`}>
+        <span className={` text-sm-text ${isActive ? 'text-app-dark' : 'text-slate-400 italic'}`}>
           {name}
-          {isDefault && <span className="ml-2 text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded-md uppercase tracking-tighter">Default</span>}
+          {isDefault && <span className="ml-2 text-nano bg-amber-500 text-white px-1.5 py-0.5 rounded-md uppercase tracking-tighter">Default</span>}
         </span>
       </div>
 

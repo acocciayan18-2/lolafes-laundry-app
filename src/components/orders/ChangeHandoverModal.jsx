@@ -179,7 +179,7 @@ export default function ChangeHandoverModal({
               <h3 id="handover-modal-title" className="text-lg font-bold text-text-dark">
                 Change to {isSwitchingToDelivery ? "Delivery" : "Pickup"}
               </h3>
-              <p className="text-sm text-text-dark/60 mt-1 px-4" aria-live="polite">
+              <p className="text-sm-text text-text-dark/60 mt-1 px-4" aria-live="polite">
                 {isSwitchingToDelivery 
                   ? "Enter the delivery fee to apply to this order." 
                   : `This will remove the ₱${parseMoney(currentFee).toLocaleString()} delivery fee.`}
@@ -193,7 +193,7 @@ export default function ChangeHandoverModal({
                   Delivery Fee (₱)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-blue-600" aria-hidden="true">₱</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm-text font-bold text-blue-600" aria-hidden="true">₱</span>
                   <input
                     id="delivery-fee-input"
                     type="text"
@@ -221,7 +221,7 @@ export default function ChangeHandoverModal({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="text-[11px] text-text-dark/90 text-center mb-2 italic"
+                  className="text-micro text-text-dark/90 text-center mb-2 italic"
                   role="alert"
                 >
                  <strong>Reminder:</strong> Please collect the added amount of ₱{fee} for delivery.
@@ -231,7 +231,7 @@ export default function ChangeHandoverModal({
 
             {/* Total Preview */}
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex justify-between items-center mb-2" aria-live="polite">
-              <span className="text-sm-text font-medium text-slate-500">New Total</span>
+              <span className="text-sm-text  text-slate-500">New Total</span>
               <span className="text-h3 font-bold text-text-dark">
                 ₱{calculatedTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>

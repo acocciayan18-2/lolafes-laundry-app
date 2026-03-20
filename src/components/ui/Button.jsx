@@ -11,7 +11,7 @@ export default function Button({
   ...props 
 }) {
   
-  const baseStyles = "px-4 py-2.5 md:text-sm text-sm-text rounded-lg transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none";
+  const baseStyles = "px-4 py-2.5 text-sm-text rounded-lg transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none";
 
   const variants = {
     primary: "bg-app-dark text-white border border-app-dark hover:bg-app-dark/90",

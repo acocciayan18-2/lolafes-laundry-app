@@ -149,7 +149,7 @@ export default function PaymentSettings() {
 
       <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <label htmlFor="method-name" className="absolute -top-2 left-5 bg-white px-2 text-micro font-medium text-text-dark/70">
+          <label htmlFor="method-name" className="absolute -top-2 left-5 bg-white px-2 text-micro  text-text-dark/70">
             Method Name
           </label>
           <input
@@ -160,7 +160,7 @@ export default function PaymentSettings() {
             value={newMethodName}
             disabled={isActionPending}
             onChange={(e) => setNewMethodName(e.target.value)}
-            className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:border-app-dark outline-none transition-all disabled:opacity-50"
+            className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm-text  focus:border-app-dark outline-none transition-all disabled:opacity-50"
           />
         </div>
         <Button 
@@ -175,7 +175,7 @@ export default function PaymentSettings() {
       </form>
 
       <div className="space-y-4">
-        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-widest">
+        <label className="text-nano font-bold text-slate-400 ml-1 uppercase tracking-widest">
           Active Methods ({sortedMethods.length})
         </label>
         

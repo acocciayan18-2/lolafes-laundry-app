@@ -129,7 +129,7 @@ const DeletePaymentModal = memo(({
 
               <p 
                 id="delete-modal-description"
-                className="mb-8 text-sm leading-relaxed text-slate-500 px-2"
+                className="mb-8 text-sm-text leading-relaxed text-slate-500 px-2"
               >
                 Are you sure you want to remove 
                 <span className="mx-1 font-semibold text-slate-800 break-all">

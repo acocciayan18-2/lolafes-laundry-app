@@ -128,7 +128,7 @@ export default function ExportPin({
 
           {lockout.isLocked ? (
             <div role="alert" className="bg-rose-50 p-4 rounded-2xl border border-rose-100 mb-6">
-              <p className="text-xs font-black text-rose-600 uppercase tracking-widest">Locked Out</p>
+              <p className="text-micro font-bold text-rose-600 uppercase tracking-widest">Locked Out</p>
               <p className="text-sm text-rose-500 mt-1">Try again in {lockout.remaining} minutes.</p>
             </div>
           ) : (
@@ -156,7 +156,7 @@ export default function ExportPin({
 
               {/* Error Region: Polished for screen readers */}
               <div className="h-4" aria-live="assertive">
-                {error && <p className="text-xs font-bold text-rose-500 uppercase tracking-wider">{error}</p>}
+                {error && <p className="text-micro font-bold text-rose-500 uppercase tracking-wider">{error}</p>}
               </div>
 
               <div className="flex flex-row gap-3">

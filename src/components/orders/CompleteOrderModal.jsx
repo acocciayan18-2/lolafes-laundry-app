@@ -170,7 +170,7 @@ useEffect(() => {
                     <p className="text-sm-text font-bold text-amber-900 leading-tight">
                       SMS Disabled
                     </p>
-                    <p className="text-xs text-amber-800/80 mt-1 leading-relaxed">
+                    <p className="text-micro text-amber-800/80 mt-1 leading-relaxed">
                       This is an anonymous walk-in order. No phone number is available for SMS notification.
                     </p>
                   </div>
@@ -195,10 +195,10 @@ useEffect(() => {
                   </div>
                   
                   <div className="flex-1">
-                    <p className="text-sm-text font-medium text-text-dark group-hover:text-text-dark transition-colors flex items-center gap-1.5">
+                    <p className="text-sm-text  text-text-dark group-hover:text-text-dark transition-colors flex items-center gap-1.5">
                       Notify Customer via SMS
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                    <p className="text-micro text-slate-500 mt-0.5 leading-relaxed">
                      This opens your messaging app to send a pre-written ready-for-pickup/delivery text.
                     </p>
                   </div>

@@ -53,11 +53,11 @@ const LiveClockHeader = React.memo(() => {
       <div>
         <div className="flex items-center justify-between text-white py-0.5 gap-2">
           {/* A11y: Use proper <time> semantics */}
-          <time dateTime={time.toISOString()} className="text-text-dark/80 text-micro font-medium ">
+          <time dateTime={time.toISOString()} className="text-text-dark/80 text-micro  ">
             {dateString}
           </time>
           <span className='text-micro text-text-dark/80 font-light select-none' aria-hidden="true"> | </span>
-          <time dateTime={time.toISOString()} className="text-text-dark/70 text-micro font-medium">
+          <time dateTime={time.toISOString()} className="text-text-dark/70 text-micro ">
             {timeString}
           </time>
         </div>
@@ -190,7 +190,7 @@ export default function Dashboard() {
   // UNHAPPY PATH: Network Failure Graceful Degradation
   if (connectionError) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-app-light text-rose-600 font-medium" role="alert">
+      <div className="flex items-center justify-center min-h-screen bg-app-light text-rose-600 " role="alert">
         <p>System connection issue. Please check your network and refresh.</p>
       </div>
     );
@@ -229,7 +229,7 @@ export default function Dashboard() {
                       <IconAlertTriangle className="w-4 h-4 text-rose-500" aria-hidden="true" />
                       <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping" />
                     </div>
-                    <span className="text-micro font-medium text-rose-500 ">
+                    <span className="text-micro  text-rose-500 ">
                       {safeUnclaimedOrders.length} Overdue Order{safeUnclaimedOrders.length !== 1 ? 's' : ''}
                     </span>
                   </button>

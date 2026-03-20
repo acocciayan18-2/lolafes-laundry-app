@@ -117,7 +117,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[600px] focus:outline-none" 
+          className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90dvh] focus:outline-none" 
         >
           <header className="bg-rose-50/50 pt-5 pb-3 px-4 text-center relative border-b border-rose-100/50 shrink-0">
             <button 
@@ -140,7 +140,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
             </h3>
             
             <div className="flex flex-wrap items-center justify-center mt-1 text-micro">
-              <span className="text-rose-500 font-medium capitalize">Cancelled Order</span>
+              <span className="text-rose-500  capitalize">Cancelled Order</span>
             </div>
           </header>
 
@@ -163,9 +163,9 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
               <div className="flex justify-between items-center pr-8">
                 <div className="flex items-center gap-2.5">
                   <IconPhone className="w-4 h-4 text-text-dark/70" aria-hidden="true" />
-                  <span className="text-sm-text font-medium text-text-dark/70">Phone</span>
+                  <span className="text-sm-text  text-text-dark/70">Phone</span>
                 </div>
-                <span className="text-sm-text font-medium text-text-dark" aria-live="polite">
+                <span className="text-sm-text  text-text-dark" aria-live="polite">
                   {/* ✨ FIX: Graceful Anonymous fallback */}
                   {order.is_walk_in ? (
                     <span className="italic opacity-70">Anonymous (No Phone)</span>
@@ -180,9 +180,9 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
               <div className="flex justify-between items-start pr-8">
                 <div className="flex items-center gap-2.5 mt-0.5">
                   <div className="w-4 flex justify-center" aria-hidden="true"><IconMapPin className="w-3.5 h-3.5 text-text-dark/70" /></div>
-                  <span className="text-sm-text font-medium text-text-dark/70">Address</span>
+                  <span className="text-sm-text  text-text-dark/70">Address</span>
                 </div>
-                <span className="text-sm-text font-medium text-text-dark text-right pl-2 leading-snug" aria-live="polite">
+                <span className="text-sm-text  text-text-dark text-right pl-2 leading-snug" aria-live="polite">
                   {isPiiRevealed ? (order.customer_address || "N/A") : maskAddress(order.customer_address)}
                 </span>
               </div>
@@ -191,10 +191,10 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
             {/* Logistics Summary */}
             <div className="px-2 space-y-2.5">
                <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm-text font-medium text-text-dark/70 ">Order No.</span>
-                    <span className="text-sm-text font-medium text-text-dark">#{order.order_number || "---"}</span>
+                    <span className="text-sm-text  text-text-dark/70 ">Order No.</span>
+                    <span className="text-sm-text  text-text-dark">#{order.order_number || "---"}</span>
                   </div>
-                <div className="flex justify-between items-center text-sm-text font-medium text-text-dark/70">
+                <div className="flex justify-between items-center text-sm-text  text-text-dark/70">
                                     <div className="flex items-center gap-2">
                                       {order.handover_method === 'delivery' ? <IconDelivery className="w-4 h-4" aria-hidden="true"/> : <IconHandover className="w-4 h-4" aria-hidden="true"/>}
                                       <span>Handover</span>
@@ -205,7 +205,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
               
 
               <div className="flex justify-between items-start gap-4">
-                <span className="text-sm-text font-medium text-text-dark/70 mt-0.5 whitespace-nowrap">
+                <span className="text-sm-text  text-text-dark/70 mt-0.5 whitespace-nowrap">
                   Services
                 </span>
                 
@@ -215,13 +215,13 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
                       <span 
                         key={idx} 
                         role="listitem" 
-                        className="text-sm-text font-medium text-text-dark bg-slate-50 px-2 py-1 rounded-md border border-slate-200"
+                        className="text-sm-text  text-text-dark bg-slate-50 px-2 py-1 rounded-md border border-slate-200"
                       >
                         {svc.quantity || 1}x {svc.service_name || "Unknown"}
                       </span>
                     ))
                   ) : (
-                    <span className="text-sm-text font-medium text-text-dark/70 italic">
+                    <span className="text-sm-text  text-text-dark/70 italic">
                       No services listed
                     </span>
                   )}
@@ -233,7 +233,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
 
             {hasDeliveryFee && (
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-micro font-medium text-rose-600/60">Includes Delivery</span>
+                  <span className="text-micro  text-rose-600/60">Includes Delivery</span>
                   <span className="text-micro font-bold text-blue-600">
                     + ₱{deliveryFee.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
@@ -241,7 +241,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
               )}
 
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm-text font-medium text-rose-600/70">Total Loss</span>
+                <span className="text-sm-text  text-rose-600/70">Total Loss</span>
                 <span className="text-h3 font-bold text-rose-700 tracking-tight">
                   ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
@@ -250,9 +250,9 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
               
 
               <div className="flex justify-between items-center">
-                <span className="text-sm-text font-medium text-rose-600/70">Payment Status</span>
+                <span className="text-sm-text  text-rose-600/70">Payment Status</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-bold tracking-wider text-rose-600 uppercase">
+                  <span className="text-micro font-bold tracking-wider text-rose-600 uppercase">
                     {order.is_paid ? `Paid ${order.payment_method ? `(${order.payment_method})` : ''}` : "Unpaid"}
                   </span>
                 </div>
@@ -262,13 +262,13 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
               {showCashDetails && (
                 <div className="mt-3 pt-3 border-t border-rose-200/60 space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm-text font-medium text-rose-800/70">Tendered</span>
+                    <span className="text-sm-text  text-rose-800/70">Tendered</span>
                     <span className="text-sm-text font-bold text-text-dark">
                       ₱{tenderedAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm-text font-medium text-rose-800/70">Change Due</span>
+                    <span className="text-sm-text  text-rose-800/70">Change Due</span>
                     <span className="text-sm-text font-bold text-rose-600">
                       ₱{changeDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
@@ -281,10 +281,10 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
             <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-2xl space-y-3">
               <div className="text-center pb-2 border-b border-slate-200">
                 <h4 className="text-micro font-bold text-text-dark/40 mb-1">Cancellation Reason</h4>
-                <p className="text-sm-text font-medium text-rose-600 italic">"{order.cancellation_reason || "No reason recorded"}"</p>
+                <p className="text-sm-text  text-rose-600 italic">"{order.cancellation_reason || "No reason recorded"}"</p>
               </div>
               
-              <div className="grid grid-cols-1 gap-1.5 text-micro font-medium tracking-tight text-text-dark/60">
+              <div className="grid grid-cols-1 gap-1.5 text-micro  tracking-tight text-text-dark/60">
                 <div className="flex justify-between">
                   <span>Created:</span>
                   <span className="text-text-dark font-bold">{createdDateTime || "N/A"}</span>
@@ -298,7 +298,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
 
             {/* Notes */}
             {order.notes && (
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 text-[11px] text-amber-800 italic">
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 text-micro text-amber-800 italic">
                 <span className="font-bold text-micro uppercase block mb-1 not-italic tracking-tighter opacity-70">Order Notes</span>
                 {order.notes}
               </div>
@@ -308,7 +308,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
           <footer className="p-4 border-t border-slate-100 bg-white">
             <button 
               onClick={onClose} 
-              className="w-full py-3 bg-app-dark text-white font-medium text-sm-text  rounded-xl hover:opacity-90 transition-opacity active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-app-dark"
+              className="w-full py-3 bg-app-dark text-white  text-sm-text  rounded-xl hover:opacity-90 transition-opacity active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-app-dark"
             >
               Close Archive
             </button>
@@ -375,7 +375,7 @@ const CancelledOrderCard = React.memo(({ order, onOpenDetail }) => {
           )}
         </div>
         <div className="shrink-0 flex items-center px-1">
-          <span className="text-nano font-medium text-rose-600 uppercase py-0.5">
+          <span className="text-nano  text-rose-600 uppercase py-0.5">
             {timeString}
           </span>
         </div>
@@ -383,7 +383,7 @@ const CancelledOrderCard = React.memo(({ order, onOpenDetail }) => {
 
       <div className="flex items-end justify-between pl-1.5 ">
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2 text-micro font-medium text-text-dark/70">
+          <div className="flex items-center gap-2 text-micro  text-text-dark/70">
             <span>#{order.order_number || "---"}</span>
             <span aria-hidden="true">•</span>
             <span className="uppercase">{order.handover_method || "pickup"}</span>
@@ -438,7 +438,7 @@ export const CancelledOrdersList = ({ cancelledOrders, totalLost }) => {
           <header className="flex items-start justify-between">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-[13px] font-bold text-text-dark/70 uppercase tracking-tight">
+                <h2 className="text-sm-text font-bold text-text-dark/70 uppercase tracking-tight">
                   Cancelled Orders
                 </h2>
                 
@@ -459,7 +459,7 @@ export const CancelledOrdersList = ({ cancelledOrders, totalLost }) => {
                         role="tooltip"
                         className="absolute left-[-50px] top-7 w-52 p-3 bg-white border border-app-dark/10 shadow-xl rounded-xl z-[50]"
                       > 
-                        <p className="text-[13px] text-text-dark/90 leading-relaxed font-normal">
+                        <p className="text-sm-text text-text-dark/90 leading-relaxed font-normal">
                           Use this archive to analyze Revenue Leakage from cancelled orders. Click any record for a detailed Audit Trail.
                         </p>
                       </motion.div>
@@ -470,7 +470,7 @@ export const CancelledOrdersList = ({ cancelledOrders, totalLost }) => {
 
               <div className="mt-1 mb-3">
                 <div className="inline-flex flex-col py-1.5 rounded-lg">
-                  <p className="text-sm-text font-medium text-rose-600 leading-none mb-1.5 ">
+                  <p className="text-sm-text  text-rose-600 leading-none mb-1.5 ">
                     Total Revenue Lost
                   </p>
                   <p className="text-base-text font-bold text-rose-700 leading-none">
@@ -487,7 +487,7 @@ export const CancelledOrdersList = ({ cancelledOrders, totalLost }) => {
 
           <div className="flex-1 overflow-y-auto max-h-[200px] custom-scrollbar pr-1" role="list">
             {safeCancelledOrders.length === 0 ? (
-              <div className="py-10 text-center opacity-30 italic text-[11px] uppercase font-bold tracking-widest" role="status">
+              <div className="py-10 text-center opacity-30 italic text-micro uppercase font-bold tracking-widest" role="status">
                 No archives found
               </div>
             ) : (
@@ -508,7 +508,7 @@ export const CancelledOrdersList = ({ cancelledOrders, totalLost }) => {
             )}
           </div>
 
-          <footer className="mt-2 border-t border-slate-50 pt-2 flex justify-between items-center text-[9px] font-bold text-text-dark/40 uppercase">
+          <footer className="mt-2 border-t border-slate-50 pt-2 flex justify-between items-center text-nano font-bold text-text-dark/40 uppercase">
             <span>Audit Trail Logs</span>
             {safeCancelledOrders.length > 0 && <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" aria-hidden="true" />}
           </footer>

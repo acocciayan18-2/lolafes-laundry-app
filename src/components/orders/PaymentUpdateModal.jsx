@@ -189,7 +189,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()} 
-            className="relative bg-white rounded-3xl p-4 shadow-2xl w-full max-w-[380px] max-h-[90vh] h-fit overflow-hidden focus:outline-none flex flex-col"
+            className="relative bg-white rounded-3xl p-4 shadow-2xl w-full max-w-[380px] max-h-[90dvh] h-fit overflow-hidden focus:outline-none flex flex-col"
           >
             {/* Header */}
             <header className="p-4 text-center relative">
@@ -202,7 +202,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                 <IconClose className="w-5 h-5" aria-hidden="true" />
               </button>
 
-              <h3 id="payment-modal-title" className="text-sm-text font-medium text-text-dark/70 mb-1">
+              <h3 id="payment-modal-title" className="text-sm-text  text-text-dark/70 mb-1">
                 Collect Payment
               </h3>
               <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -220,11 +220,11 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
               
               {/* ✨ MODIFIED: Unconditional Render of Amount Received */}
               <div>
-                <label htmlFor="tendered-input" className="block text-sm-text text-text-dark/60 font-medium mb-1.5">
+                <label htmlFor="tendered-input" className="block text-sm-text text-text-dark/60  mb-1.5">
                   Amount Received 
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-text-dark/40">₱</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm-text  text-text-dark/40">₱</span>
                   <input
                     id="tendered-input"
                     ref={inputRef} 
@@ -239,10 +239,10 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                 
                 <div className="mt-2 mb-2 flex items-center justify-between px-1" aria-live="polite">
                   {isInsufficient ? (
-                    <span className="text-rose-500 text-micro font-medium">Amount is less than total.</span>
+                    <span className="text-rose-500 text-micro ">Amount is less than total.</span>
                   ) : changeDue > 0 ? (
                     <>
-                      <span className="text-micro font-medium text-text-dark/50 ">Change Due:</span>
+                      <span className="text-micro  text-text-dark/50 ">Change Due:</span>
                       <span className="font-bold text-emerald-600 text-sm-text">₱{formatSafeMoney(changeDue)}</span>
                     </>
                   ) : (
@@ -251,10 +251,10 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                 </div>
 
                 <div className="flex gap-1.5 mt-1.5">
-                  <button onClick={() => handleQuickDenomination(totalAmount)} className="flex-1 py-2 bg-emerald-50 text-emerald-700 text-micro font-medium rounded-md hover:bg-emerald-100 border border-emerald-100 active:scale-95 transition-all">Exact</button>
-                  <button onClick={() => handleQuickDenomination(100)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro font-medium rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱100</button>
-                  <button onClick={() => handleQuickDenomination(500)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro font-medium rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱500</button>
-                  <button onClick={() => handleQuickDenomination(1000)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro font-medium rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱1000</button>
+                  <button onClick={() => handleQuickDenomination(totalAmount)} className="flex-1 py-2 bg-emerald-50 text-emerald-700 text-micro  rounded-md hover:bg-emerald-100 border border-emerald-100 active:scale-95 transition-all">Exact</button>
+                  <button onClick={() => handleQuickDenomination(100)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro  rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱100</button>
+                  <button onClick={() => handleQuickDenomination(500)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro  rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱500</button>
+                  <button onClick={() => handleQuickDenomination(1000)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro  rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱1000</button>
                 </div>
               </div>
 
@@ -265,7 +265,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                     animate={{ opacity: 1, height: 'auto', marginBottom: 12 }} 
                     exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                     role="alert"
-                    className="p-2.5 bg-rose-50 text-rose-600 text-micro font-medium rounded-lg border border-rose-100 text-center"
+                    className="p-2.5 bg-rose-50 text-rose-600 text-micro  rounded-lg border border-rose-100 text-center"
                   >
                     {errorMessage}
                   </motion.div>
@@ -274,7 +274,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
 
               {/* Stacked Payment Methods */}
               <div className="pt-1.5 border-t border-slate-100">
-                <p className="text-sm-text text-text-dark/70 font-medium mb-2">
+                <p className="text-sm-text text-text-dark/70  mb-2">
                   Select Payment Method
                 </p>
                 <div className="flex flex-col gap-1.5 max-h-fit overflow-y-auto pr-1 custom-scrollbar" role="radiogroup" aria-label="Select Payment Method">
@@ -298,7 +298,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                             <div className="w-8 h-8 rounded-full flex items-center justify-center m" aria-hidden="true">
                               {getPaymentIcon(method.name)}
                             </div>
-                            <span className={`block font-medium text-sm-text transition-colors ${isSelected ? 'text-emerald-800' : 'text-text-dark'}`}>
+                            <span className={`block  text-sm-text transition-colors ${isSelected ? 'text-emerald-800' : 'text-text-dark'}`}>
                               {method.name}
                             </span>
                           </div>
@@ -314,7 +314,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                       );
                     })
                   ) : (
-                    <div className="py-4 text-center text-micro text-text-dark/40 font-medium border border-dashed border-slate-200 rounded-lg">
+                    <div className="py-4 text-center text-micro text-text-dark/40  border border-dashed border-slate-200 rounded-lg">
                       No active payment methods.
                     </div>
                   )}
@@ -327,7 +327,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                   variant="success"
                   onClick={handleConfirmSubmit}
                   disabled={isUpdating || isInsufficient} 
-                  className="flex-1 order-1 py-2.5 text-sm shadow-sm active:scale-95"
+                  className="flex-1 order-1 py-2.5 text-sm-text shadow-sm active:scale-95"
                 >
                   {isUpdating ? "Processing..." : "Confirm Payment"}
                 </Button>
@@ -336,7 +336,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                   variant="secondary"
                   onClick={handleClose}
                   disabled={isUpdating}
-                  className="flex-1 order-2 py-2.5 text-sm active:scale-95"
+                  className="flex-1 order-2 py-2.5 text-sm-text active:scale-95"
                 >
                   Cancel
                 </Button>

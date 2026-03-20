@@ -56,8 +56,8 @@ export default function KpiCards() {
           <Listbox value={selectedOption} onChange={setSelectedOption}>
             {({ open }) => (
               <>
-                <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-10 text-[13px] font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none">
-                  <span className="block truncate font-medium">{selectedOption.label}</span>
+                <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-10 text-sm-text font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none">
+                  <span className="block truncate ">{selectedOption.label}</span>
                   <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                     <svg className={`w-4 h-4 text-text-dark/50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
@@ -80,14 +80,14 @@ export default function KpiCards() {
                         <ListboxOption
                           key={opt.value}
                           className={({ active }) =>
-                            `relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm-text font-medium transition-colors ${
+                            `relative cursor-pointer select-none py-2.5 pl-4 pr-4 text-sm-text  transition-colors ${
                               active ? 'bg-app-dark/5 text-app-dark' : 'text-text-dark/80'
                             }`
                           }
                           value={opt}
                         >
                           {({ selected }) => (
-                            <span className={`block truncate ${selected ? 'font-bold text-app-dark' : 'font-medium'}`}>
+                            <span className={`block truncate ${selected ? 'font-bold text-app-dark' : ''}`}>
                               {opt.label}
                             </span>
                           )}
@@ -113,7 +113,7 @@ export default function KpiCards() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="absolute left-0 top-9 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100]"
               >
-                <p className="text-[13px] text-text-dark/90 leading-relaxed">
+                <p className="text-sm-text text-text-dark/90 leading-relaxed">
                   Summarized shop health metrics including revenue, load volume, and speed.
                 </p>
               </motion.div>
@@ -129,7 +129,7 @@ export default function KpiCards() {
         <div className="flex items-start justify-between gap-1">
           <div className="min-w-0 flex-1">
             {/* ✨ FIX: Added pb-0.5 to prevent bottom clipping */}
-            <p className="text-micro font-medium text-text-dark/70 mb-1 pb-0.5 truncate">
+            <p className="text-micro  text-text-dark/70 mb-1 pb-0.5 truncate">
               {kpi.label}
             </p>
             
@@ -137,7 +137,7 @@ export default function KpiCards() {
               {kpi.value}
             </p>
             
-            <p className="text-micro font-medium text-text-dark/60 mt-2 pb-0.5 truncate">
+            <p className="text-micro  text-text-dark/60 mt-2 pb-0.5 truncate">
               {kpi.trend}
             </p>
           </div>

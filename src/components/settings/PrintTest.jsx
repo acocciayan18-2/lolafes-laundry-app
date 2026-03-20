@@ -112,7 +112,7 @@ const PrintTest = () => {
           {isPrinting ? (
             <>
               <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span className="text-[10px]">Sending...</span>
+              <span className="text-nano">Sending...</span>
             </>
           ) : (
             `Print via ${connectionType === 'usb' ? 'USB' : connectionType === 'bluetooth' ? 'BT' : 'PDF'}`

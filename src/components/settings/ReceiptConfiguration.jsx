@@ -150,14 +150,14 @@ export default function ReceiptConfiguration() {
           </div>
 
           <div className="relative group mb-3">
-            <label htmlFor="footerMessage" className="text-micro font-medium text-text-dark/70 ml-4 mb-2 block">
+            <label htmlFor="footerMessage" className="text-micro  text-text-dark/70 ml-4 mb-2 block">
               Footer Message
             </label>
             <textarea 
               id="footerMessage"
               value={formData.footerMessage}
               onChange={(e) => handleUpdateField('footerMessage', e.target.value)}
-              className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-3xl text-sm-text font-medium text-text-dark outline-none focus:bg-white focus:border-emerald-200 transition-all h-14 custom-scrollbar resize-none shadow-inner"
+              className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-3xl text-sm-text  text-text-dark outline-none focus:bg-white focus:border-emerald-200 transition-all h-14 custom-scrollbar resize-none shadow-inner"
               placeholder="Thank you message..."
             />
           </div>
@@ -184,7 +184,7 @@ export default function ReceiptConfiguration() {
 const InputField = memo(({ id, label, value, onChange, placeholder, type = "text" }) => {
   return (
     <div className="relative">
-      <label htmlFor={id} className="absolute -top-2 left-5 bg-white px-2 text-micro font-medium text-text-dark/70 z-10">
+      <label htmlFor={id} className="absolute -top-2 left-5 bg-white px-2 text-micro  text-text-dark/70 z-10">
         {label}
       </label>
       <input 
@@ -192,7 +192,7 @@ const InputField = memo(({ id, label, value, onChange, placeholder, type = "text
         type={type}
         value={value || ''}
         onChange={(e) => onChange(id, e.target.value)}
-        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm-text font-medium text-text-dark focus:ring-1 focus:ring-emerald-100 outline-none transition-all placeholder:text-slate-200"
+        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm-text  text-text-dark focus:ring-1 focus:ring-emerald-100 outline-none transition-all placeholder:text-slate-200"
         placeholder={placeholder}
       />
     </div>
@@ -214,7 +214,7 @@ const ToggleField = memo(({ id, label, icon, checked, onChange }) => {
         <div className={`p-2 rounded-xl transition-all duration-300 ${checked ? 'text-emerald-600' : 'text-slate-400'}`}>
           {icon}
         </div>
-        <span className={`text-[11px] font-bold tracking-tight transition-colors duration-300 ${checked ? 'text-text-dark' : 'text-slate-400'}`}>
+        <span className={`text-micro font-bold tracking-tight transition-colors duration-300 ${checked ? 'text-text-dark' : 'text-slate-400'}`}>
           {label}
         </span>
       </div>

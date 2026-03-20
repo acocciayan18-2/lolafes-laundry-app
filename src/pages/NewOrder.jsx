@@ -75,13 +75,13 @@ const Button = React.memo(({ children, variant = "primary", size = "md", classNa
     ghost: "text-red-500 hover:bg-red-50",
     warning: "bg-amber-500 text-white hover:bg-amber-600"
   };
-  const sizes = { sm: "px-3 py-1 text-xs", md: "px-4 py-2 text-sm", icon: "p-2" };
+  const sizes = { sm: "px-3 py-1 text-micro", md: "px-4 py-2 text-sm-text", icon: "p-2" };
   
   return (
     <button 
       disabled={disabled || isLoading}
       aria-busy={isLoading}
-      className={`rounded-lg font-medium transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${variants[variant]} ${sizes[size]} ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'} ${className}`} 
+      className={`rounded-lg  transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${variants[variant]} ${sizes[size]} ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'} ${className}`} 
       {...props}
     >
       {isLoading ? "Processing..." : children}
@@ -93,7 +93,7 @@ Button.displayName = "Button";
 const Input = forwardRef(({ label, id, className = "", disabled, ...props }, ref) => (
   <div className="w-full space-y-1">
     {label && (
-      <label htmlFor={id} className={`text-sm-text font-medium ml-1 ${disabled ? "text-text-dark/40" : "text-text-dark"}`}>
+      <label htmlFor={id} className={`text-sm-text  ml-1 ${disabled ? "text-text-dark/40" : "text-text-dark"}`}>
         {label}
       </label>
     )}
@@ -103,7 +103,7 @@ const Input = forwardRef(({ label, id, className = "", disabled, ...props }, ref
       disabled={disabled}
       className={`
         w-full h-11 px-4 rounded-xl border border-gray-300 transition-all
-        text-sm-text text-text-dark font-medium
+        text-sm-text text-text-dark 
         outline-none focus:outline-none focus:ring-0 focus:ring-transparent
         focus:border-gray-500 placeholder:text-text-dark/40
         ${disabled ? "bg-slate-50 cursor-not-allowed opacity-70" : "bg-white"}
@@ -116,7 +116,7 @@ const Input = forwardRef(({ label, id, className = "", disabled, ...props }, ref
 Input.displayName = "Input";
 
 const Badge = React.memo(({ children, className = "" }) => (
-  <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${className}`}>{children}</span>
+  <span className={`px-2 py-0.5 rounded-full text-micro font-bold border ${className}`}>{children}</span>
 ));
 Badge.displayName = "Badge";
 
@@ -446,7 +446,7 @@ export default function NewOrder() {
         <header className="flex justify-between items-center mb-3">
           <div className="flex flex-col">
             <h1 className="text-h2 text-text-dark">New Order</h1>
-            <p className="text-sm-text text-gray-600 mt-0.5">Create a new laundry order</p>
+            <p className="text-sm-text text-gray-600 font-normal mt-0.5">Create a new laundry order</p>
           </div>
         </header>
 

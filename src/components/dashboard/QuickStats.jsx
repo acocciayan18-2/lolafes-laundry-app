@@ -23,7 +23,7 @@ export default function QuickStats({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             {/* KPI Label */}
-            <p className="text-micro  font-medium text-text-dark/70 mb-1 pb-0.5 truncate ">
+            <p className="text-micro   text-text-dark/70 mb-1 pb-0.5 truncate ">
               {safeTitle}
             </p>
             
@@ -37,7 +37,7 @@ export default function QuickStats({
             
             {/* KPI Footer / Trend */}
             {safeTrend && (
-              <p className="text-micro  font-medium text-text-dark/60 mt-2 pb-0.5 truncate">
+              <p className="text-micro   text-text-dark/60 mt-2 pb-0.5 truncate">
                 {safeTrend}
               </p>
             )}

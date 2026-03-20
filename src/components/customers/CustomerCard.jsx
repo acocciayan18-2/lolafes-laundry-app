@@ -171,7 +171,7 @@ const CustomerCard = ({ customer, onEdit }) => {
         <div className="flex items-center gap-4">
           
           <div
-            className="w-11 h-11 shrink-0 rounded-full bg-white flex items-center justify-center text-text-dark font-medium text-h3 border border-app-dark/30 shadow-sm select-none"
+            className="w-11 h-11 shrink-0 rounded-full bg-white flex items-center justify-center text-text-dark  text-h3 border border-app-dark/30 shadow-sm select-none"
             aria-hidden="true"
           >
             {firstLetter}
@@ -185,14 +185,14 @@ const CustomerCard = ({ customer, onEdit }) => {
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
               <div className="flex items-center gap-1 text-emerald-600 shrink-0" aria-label={`${customer.order_count || 0} Orders`}>
                 <IconShirt className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                <span className="text-[12px] font-bold">
+                <span className="text-micro font-bold">
                   {customer.order_count || 0} Orders
                 </span>
               </div>
 
               <div className="flex items-center gap-1 text-gray-500 shrink-0" aria-label={customer.phone ? `Phone: ${customer.phone}` : "No contact number provided"}>
                 <IconPhone className="w-3 h-3 text-gray-400 shrink-0" aria-hidden="true" />
-                <span className="text-[12px] font-medium">
+                <span className="text-micro ">
                   {customer.phone || "No contact"}
                 </span>
               </div>
@@ -200,7 +200,7 @@ const CustomerCard = ({ customer, onEdit }) => {
               {customer.address && (
                 <div className="flex items-start md:items-center gap-1 text-gray-500 min-w-0" aria-label={`Address: ${customer.address}`}>
                   <IconMapPin className="w-3 h-3 text-gray-400 shrink-0 mt-0.5 md:mt-0" aria-hidden="true" />
-                  <span className="text-[12px] font-medium truncate" title={customer.address}>
+                  <span className="text-micro  truncate" title={customer.address}>
                     {customer.address}
                   </span>
                 </div>
@@ -236,14 +236,14 @@ const CustomerCard = ({ customer, onEdit }) => {
                   <button
                     role="menuitem"
                     onClick={handleEditClick}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm-text font-medium text-text-dark hover:bg-gray-50 transition-colors border-b border-gray-100 focus:outline-none focus-visible:bg-gray-100"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm-text  text-text-dark hover:bg-gray-50 transition-colors border-b border-gray-100 focus:outline-none focus-visible:bg-gray-100"
                   >
                     <IconEdit className="w-4 h-4 text-gray-400" aria-hidden="true" /> Edit Details
                   </button>
                   <button
                     role="menuitem"
                     onClick={handleInitiateDelete}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm-text font-medium text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus-visible:bg-red-50"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm-text  text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus-visible:bg-red-50"
                   >
                     <IconTrash className="w-4 h-4 text-red-400" aria-hidden="true" /> Remove Customer
                   </button>

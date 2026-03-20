@@ -154,7 +154,7 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
           </button>
         </div>
 
-        {isSetupMode && <p className="text-[10px] text-amber-600 font-bold bg-amber-50 py-2 rounded-lg mt-2">Do not forget this PIN</p>}
+        {isSetupMode && <p className="text-nano text-amber-600 font-bold bg-amber-50 py-2 rounded-lg mt-2">Do not forget this PIN</p>}
       </motion.div>
     </div>
   );

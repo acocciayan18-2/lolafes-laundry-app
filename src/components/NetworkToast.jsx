@@ -103,8 +103,8 @@ export const NetworkToast = () => {
               <IconWifiOff className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium leading-none">Connection Lost</p>
-              <p className="text-[10px] opacity-80 mt-1">Reconnecting</p>
+              <p className="text-sm  leading-none">Connection Lost</p>
+              <p className="text-nano opacity-80 mt-1">Reconnecting</p>
             </div>
           </motion.div>
         )}
@@ -124,8 +124,8 @@ export const NetworkToast = () => {
               <IconWifiOn className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium leading-none">Back Online</p>
-              <p className="text-[10px] opacity-80 mt-1">Restored successfully</p>
+              <p className="text-sm  leading-none">Back Online</p>
+              <p className="text-nano opacity-80 mt-1">Restored successfully</p>
             </div>
           </motion.div>
         )}

@@ -149,7 +149,7 @@ export default function PopularServices({ range: initialRange }) {
         <header className="flex items-start justify-between mb-4 shrink-0">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <h2 id="popular-services-title" className="text-[13px] mb-1 font-bold text-text-dark/70 truncate uppercase tracking-tight">
+              <h2 id="popular-services-title" className="text-sm-text mb-1 font-bold text-text-dark/70 truncate uppercase tracking-tight">
                 Service Distribution
               </h2>
               
@@ -168,7 +168,7 @@ export default function PopularServices({ range: initialRange }) {
                       role="tooltip"
                       className="absolute left-[-50px] top-7 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200"
                     > 
-                      <p className="text-[13px] text-text-dark/90 leading-relaxed">
+                      <p className="text-sm-text text-text-dark/90 leading-relaxed">
                         Visualizes the market share of your services. Slices represent the percentage of total orders processed.
                       </p>
                     </div>
@@ -182,8 +182,8 @@ export default function PopularServices({ range: initialRange }) {
               <Listbox value={selectedRangeOption} onChange={(opt) => setActiveRange(opt.id)}>
                 {({ open }) => (
                   <>
-                    <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-[13px] font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-app-dark/20">
-                      <span className="block truncate font-medium text-sm-text capitalize">{selectedRangeOption.name}</span>
+                    <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-sm-text font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-app-dark/20">
+                      <span className="block truncate  text-sm-text capitalize">{selectedRangeOption.name}</span>
                       <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                         <motion.svg 
                           animate={{ rotate: open ? 180 : 0 }}
@@ -212,13 +212,13 @@ export default function PopularServices({ range: initialRange }) {
                               key={option.id}
                               value={option}
                               className={({ active }) =>
-                                `relative cursor-pointer select-none py-2.5 pl-3 pr-3 text-[13px] font-medium transition-colors ${
+                                `relative cursor-pointer select-none py-2.5 pl-3 pr-3 text-sm-text  transition-colors ${
                                   active ? 'bg-app-dark/5 text-app-dark' : 'text-text-dark/80'
                                 }`
                               }
                             >
                               {({ selected }) => (
-                                <span className={`block truncate ${selected ? 'font-bold text-app-dark' : 'font-medium'}`}>
+                                <span className={`block truncate ${selected ? 'font-bold text-app-dark' : ''}`}>
                                   {option.name}
                                 </span>
                               )}
@@ -269,10 +269,10 @@ export default function PopularServices({ range: initialRange }) {
                   <div key={service.name} role="listitem" className="flex items-center gap-2 min-w-0">
                     <span className={`w-3 h-3 rounded-sm shrink-0 shadow-sm ${service.colorTheme.bg}`} aria-hidden="true" />
                     <div className="flex flex-col min-w-0">
-                       <span className="text-[11px] font-bold text-text-dark truncate leading-tight" title={service.name}>
+                       <span className="text-micro font-bold text-text-dark truncate leading-tight" title={service.name}>
                          {service.name}
                        </span>
-                       <span className="text-[10px] font-medium text-text-dark/60 shrink-0">
+                       <span className="text-nano  text-text-dark/60 shrink-0">
                          {service.share.toFixed(1)}% ({service.count})
                        </span>
                     </div>
@@ -292,14 +292,9 @@ export default function PopularServices({ range: initialRange }) {
 
       {/* FOOTER METADATA */}
       <footer className="mx-5 mb-4 mt-auto border-t border-slate-50 pt-3 flex justify-between items-center">
-        <p className="text-[9px] font-bold text-text-dark/40 uppercase">
+        <p className="text-nano font-bold text-text-dark/40 uppercase">
           {activeRange === 'year' ? 'Annual Overview' : `Insights from last ${activeRange} days`}
         </p>
-        {pieSegments.length > 0 && (
-           <p className="text-[10px] font-bold text-text-dark/60 uppercase tracking-tight">
-             {totalOrdersProcessed.toLocaleString()} Total Orders
-           </p>
-        )}
       </footer>
     </section>
   );

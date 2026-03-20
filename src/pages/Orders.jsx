@@ -223,7 +223,7 @@ export default function Orders() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm-text text-gray-600 mt-0.5" aria-hidden="true">Manage and track orders</p>
+                    <p className="text-sm-text text-gray-600 mt-0.5 font-normal" aria-hidden="true">Manage and track orders</p>
                     {isOffline && (
                       <span role="alert" className="text-micro font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full animate-pulse">
                         Offline Mode
@@ -286,7 +286,7 @@ export default function Orders() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={() => setDisplayLimit(prev => prev + PAGE_SIZE)}
-                    className="w-full mt-2 text-text-dark/70 font-medium text-micro hover:text-text-dark py-3 active:scale-[0.98] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark rounded-lg"
+                    className="w-full mt-2 text-text-dark/70  text-micro hover:text-text-dark py-3 active:scale-[0.98] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark rounded-lg"
                   >
                     Load More Orders
                   </motion.button>
@@ -305,8 +305,8 @@ export default function Orders() {
                     <div className="w-20 h-20 flex items-center justify-center" aria-hidden="true">
                       <IconShirt className="w-10 h-10 text-text-dark/10" />
                     </div>
-                    <h3 className="text-h3 font-medium text-text-dark/70">No orders found</h3>
-                    <p className="text-sm-text font-medium text-text-dark/50 mt-1">Try adjusting your filters or search term</p>
+                    <h3 className="text-h3  text-text-dark/70">No orders found</h3>
+                    <p className="text-sm-text  text-text-dark/50 mt-1">Try adjusting your filters or search term</p>
                   </motion.div>
                 )}
 

@@ -33,7 +33,7 @@ const TermsModal = ({ isOpen, onClose }) => {
             <h2 id="terms-title" className="text-base-text font-bold text-text-dark leading-none">
               Terms & Privacy Policy
             </h2>
-            <p className="text-[10px] text-text-dark/40 uppercase mt-1.5 font-medium">
+            <p className="text-nano text-text-dark/40 uppercase mt-1.5 ">
               Last Updated: {TERMS_AND_POLICY.lastUpdated}
             </p>
           </div>
@@ -49,7 +49,7 @@ const TermsModal = ({ isOpen, onClose }) => {
         <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar text-left" tabIndex={0}>
           {TERMS_AND_POLICY.sections.map(s => (
             <div key={s.id}>
-              <h4 className="text-[11px] font-bold text-text-dark uppercase mb-1 flex items-center gap-2">
+              <h4 className="text-micro font-bold text-text-dark uppercase mb-1 flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-app-dark" aria-hidden="true" />
                 {s.title}
               </h4>
@@ -146,7 +146,7 @@ export default function Login() {
 
         <form onSubmit={handleLogin} noValidate aria-label="Login form">
           <div className="mb-3 text-start">
-            <label htmlFor="login-email" className="block text-text-dark text-sm-text mb-1 font-medium">Email</label>
+            <label htmlFor="login-email" className="block text-text-dark text-sm-text mb-1 ">Email</label>
             <div className="relative flex items-center w-full mb-3 text-start">
               <span className="absolute left-3 text-text-dark" aria-hidden="true">
                 <IconAtSymbol className="w-4 h-4" />
@@ -169,7 +169,7 @@ export default function Login() {
           </div>
 
           <div className="mb-3 text-start">
-            <label htmlFor="login-password" className="block text-text-dark text-sm-text mb-1 font-medium">Password</label>
+            <label htmlFor="login-password" className="block text-text-dark text-sm-text mb-1 ">Password</label>
             <div className="relative w-full flex items-center">
               <span className="absolute left-3 text-text-dark" aria-hidden="true">
                 <IconLock className="w-4 h-4" />
@@ -204,7 +204,7 @@ export default function Login() {
                 type="button"
                 onClick={() => setShowForgotPopup(true)}
                 disabled={isLoginLoading}
-                className="text-nano text-blue-600 hover:text-blue-800 focus:text-blue-800 transition-colors font-medium outline-none rounded focus:ring-1 focus:ring-blue-200 disabled:opacity-50"
+                className="text-nano text-blue-600 hover:text-blue-800 focus:text-blue-800 transition-colors  outline-none rounded focus:ring-1 focus:ring-blue-200 disabled:opacity-50"
               >
                 Forgot Password?
               </button>
@@ -214,7 +214,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoginLoading || !isFormValid}
-            className={`w-full bg-app-dark text-white font-medium text-sm-text px-4 py-3 rounded-lg shadow cursor-pointer transition-all focus:outline-none focus:ring-4 focus:ring-app-dark/30 ${
+            className={`w-full bg-app-dark text-white  text-sm-text px-4 py-3 rounded-lg shadow cursor-pointer transition-all focus:outline-none focus:ring-4 focus:ring-app-dark/30 ${
               (isLoginLoading || !isFormValid) ? "opacity-40 cursor-not-allowed" : "hover:opacity-90 shadow-md active:scale-95"
             }`}
             aria-live="polite"
@@ -224,7 +224,7 @@ export default function Login() {
         </form>
 
         <div className="mt-4 text-center">
-          <p className="text-[10px] text-text-dark/50 leading-relaxed max-w-[280px] mx-auto">
+          <p className="text-nano text-text-dark/50 leading-relaxed max-w-[280px] mx-auto">
             By logging in or creating an account, you agree to our{" "}
             <button 
               onClick={() => setShowTermsModal(true)}

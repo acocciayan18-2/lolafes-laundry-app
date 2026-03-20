@@ -63,10 +63,10 @@ export default function RecentActivity() {
                 <div key={item.activity_id} className="group border-l-2 border-slate-100 pl-4 hover:border-app-dark/20 transition-colors">
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline gap-x-2">
-                      <p className="text-sm-text text-text-dark capitalize font-medium truncate">
+                      <p className="text-sm-text text-text-dark capitalize  truncate">
                         {title}
                       </p>
-                      <p className="text-nano text-text-dark/40 font-medium whitespace-nowrap">
+                      <p className="text-nano text-text-dark/40  whitespace-nowrap">
                         <TimeAgo timestamp={item.timestamp} tick={tick} />
                       </p>
                     </div>
@@ -90,7 +90,7 @@ export default function RecentActivity() {
                 <button
                   disabled={isFetching}
                   onClick={() => fetchActivities(true)}
-                  className="w-full py-1 text-micro font-medium text-text-dark/40 hover:text-text-dark/70 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-1 text-micro  text-text-dark/40 hover:text-text-dark/70 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isFetching ? (
                     <>
@@ -106,7 +106,7 @@ export default function RecentActivity() {
           </>
         ) : (
           <div className="h-full flex flex-col items-center justify-center py-20 opacity-30">
-            <p className="text-sm-text text-text-dark font-medium ">
+            <p className="text-sm-text text-text-dark  ">
               {isFetching ? "Retrieving history..." : "No Activity"}
             </p>
           </div>

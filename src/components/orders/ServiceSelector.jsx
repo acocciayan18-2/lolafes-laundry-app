@@ -175,7 +175,7 @@ export const ServiceSelector = ({
             Services
           </h3>
           {isCustomerIncomplete && (
-            <span role="alert" className="text-micro bg-amber-50 text-amber-600 px-2 py-1 rounded-md border border-amber-100 w-fit font-medium">
+            <span role="alert" className="text-micro text-amber-600 px-2 py-1 w-fit ">
              Provide customer info first
             </span>
           )}
@@ -223,7 +223,7 @@ export const ServiceSelector = ({
                           aria-label={`Decrease quantity of ${service.name}`}
                           className="w-8 h-8 flex items-center justify-center rounded-md transition-all active:scale-90 hover:bg-gray-100 disabled:opacity-20 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark"
                         >
-                          <span className="text-h3 font-medium text-gray-800 leading-none" aria-hidden="true">–</span>
+                          <span className="text-h3  text-gray-800 leading-none" aria-hidden="true">–</span>
                         </button>
                         
                         <div 
@@ -246,7 +246,7 @@ export const ServiceSelector = ({
                               : "bg-btn-primary text-white hover:bg-btn-primary/80 shadow-sm"
                           }`}
                         >
-                          <span className="text-h3 font-medium leading-none" aria-hidden="true">+</span>
+                          <span className="text-h3  leading-none" aria-hidden="true">+</span>
                         </button>
                       </div>
                     </article>
@@ -277,7 +277,7 @@ export const ServiceSelector = ({
                   >
                     <div className="flex items-center gap-4 min-w-0">
                       <div className="flex flex-row items-center justify-center shrink-0" aria-label={`Quantity: ${service.quantity}`}>
-                         <span className="text-micro font-medium text-text-dark/70 leading-none" aria-hidden="true">x</span>
+                         <span className="text-micro  text-text-dark/70 leading-none" aria-hidden="true">x</span>
                          <span className="text-sm-text font-bold text-text-dark/70 leading-none">{service.quantity}</span>
                       </div>
 

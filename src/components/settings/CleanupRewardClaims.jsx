@@ -73,14 +73,14 @@ export default function CleanupRewardClaims() {
         <h2 id="cleanup-reward-title" className="font-bold text-base-text text-slate-900">
           Reward History
         </h2>
-        <p id="cleanup-reward-desc" className="text-micro font-medium text-text-dark/70">
+        <p id="cleanup-reward-desc" className="text-micro  text-text-dark/70">
           Permanently wipe the history of all claimed rewards. This action is irreversible.
         </p>
       </div>
 
      <Button
   variant="secondary"
-  className="!py-2 !px-4 !rounded-xl !text-micro !font-medium focus-visible:ring-2 focus-visible:ring-rose-500"
+  className="!py-2 !px-4 !rounded-xl !text-micro ! focus-visible:ring-2 focus-visible:ring-rose-500"
   onClick={() => handleToggleModal(true)}
   disabled={isLoading}
   aria-haspopup="dialog"

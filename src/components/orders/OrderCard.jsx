@@ -351,7 +351,7 @@ export default function OrderCard({ order, tick }) {
                     )}
                   </h3>
                   
-                  <div className="flex flex-wrap justify-center gap-x-1 shrink min-w-[70px] text-[9px] leading-[1.2] font-bold text-text-dark/40 uppercase card-trigger-area">
+                  <div className="flex flex-wrap justify-center gap-x-1 shrink min-w-[70px] text-nano leading-[1.2] font-bold text-text-dark/40 uppercase card-trigger-area">
                     <time dateTime={createdDate.toISOString()} className="whitespace-nowrap">
                       {createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </time>
@@ -367,7 +367,7 @@ export default function OrderCard({ order, tick }) {
                     }} 
                     aria-label={`Change Handover Method. Current: ${order.handover_method}`}
                     disabled={isLocked}
-                    className={`shrink-0 text-nano font-medium uppercase px-1.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${
+                    className={`shrink-0 text-nano  uppercase px-1.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${
                       isLocked ? 'cursor-default opacity-80' : 'hover:scale-105 active:scale-95'
                     } ${
                       order.handover_method === 'delivery' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
@@ -435,7 +435,7 @@ export default function OrderCard({ order, tick }) {
                     disabled={isLocked} 
                     aria-haspopup="menu"
                     aria-expanded={isOpen}
-                    className={`h-8 px-3 text-sm-text font-medium rounded-lg border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${isLocked ? "bg-slate-100 text-slate-400" : isOpen ? "bg-app-dark/5 " : "bg-white text-text-dark border-app-dark/20"}`}
+                    className={`h-8 px-3 text-sm-text  rounded-lg border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${isLocked ? "bg-slate-100 text-slate-400" : isOpen ? "bg-app-dark/5 " : "bg-white text-text-dark border-app-dark/20"}`}
                   >
                     Update
                   </button>
@@ -478,7 +478,7 @@ export default function OrderCard({ order, tick }) {
                     aria-label={`Advance status to ${statusLabels[status.nextStatus]}`}
                     className="bg-btn-primary hover:bg-btn-primary/90 text-white pl-4 pr-3 py-1.5 rounded-lg shadow-md active:scale-95 flex items-center gap-1.5 transition-all group shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-btn-primary"
                   >
-                    <span className="text-sm-text font-medium">Next</span>
+                    <span className="text-sm-text ">Next</span>
                     <IconArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
                   </button>
                 )}
@@ -498,7 +498,7 @@ export default function OrderCard({ order, tick }) {
                     <ul className="flex flex-wrap gap-1.5 list-none p-0 mt-2">
                       {Array.isArray(order.services) && order.services.map((s, idx) => (
                         <li key={s.id || idx} className="bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-lg flex items-center">
-                          <span className="text-sm-text font-medium">{s.service_name}</span>
+                          <span className="text-sm-text ">{s.service_name}</span>
                           <span className="ml-2 text-micro font-bold text-btn-primary">x{s.quantity || s.weight_kg}</span>
                         </li>
                       ))}
@@ -537,7 +537,7 @@ export default function OrderCard({ order, tick }) {
 
                 <div className="space-y-2">
                   <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5"><IconInfo className="w-3.5 h-3.5" aria-hidden="true"/> Contact Details</h4>
-                  <address className="space-y-1.5 text-sm-text font-medium text-text-dark not-italic">
+                  <address className="space-y-1.5 text-sm-text  text-text-dark not-italic">
                     <div className="flex items-center gap-2">
                       <IconPhone className="w-3.5 h-3.5 opacity-60" aria-hidden="true"/> 
                       {/* ✨ FIX: Anonymous fallback for phone number UI */}
@@ -574,7 +574,7 @@ export default function OrderCard({ order, tick }) {
                           onBlur={handleSaveNotes} 
                           disabled={isSavingNotes}
                           onKeyDown={(e) => { if (e.key === 'Escape') handleCancelNotesEdit(e); }}
-                          className={`w-full text-sm-text font-medium !text-amber-700 leading-snug italic bg-amber-50 p-2.5 rounded-xl border border-amber-400 focus:border-amber-50 outline-none resize-none min-h-[80px] transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-amber-500 ${isSavingNotes ? 'opacity-50 cursor-wait' : ''}`}
+                          className={`w-full text-sm-text  !text-amber-700 leading-snug italic bg-amber-50 p-2.5 rounded-xl border border-amber-400 focus:border-amber-50 outline-none resize-none min-h-[80px] transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-amber-500 ${isSavingNotes ? 'opacity-50 cursor-wait' : ''}`}
                           placeholder="Add notes or special instructions..."
                         />
                         {isSavingNotes && (
@@ -596,7 +596,7 @@ export default function OrderCard({ order, tick }) {
                             setIsEditingNotes(true);
                           }
                         }}
-                        className={`text-sm-text font-medium !text-amber-700 leading-snug italic bg-amber-50/50 p-2.5 rounded-xl border transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500
+                        className={`text-sm-text  !text-amber-700 leading-snug italic bg-amber-50/50 p-2.5 rounded-xl border transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500
                           ${(!order.special_instructions && !order.notes) ? 'opacity-30 border-dashed border-amber-200 hover:opacity-100 cursor-text' : 'border-amber-100/50 hover:border-amber-300 cursor-text'}`}
                       >
                         {order.special_instructions || order.notes || "No notes provided."}
@@ -610,7 +610,7 @@ export default function OrderCard({ order, tick }) {
                         onClick={handleManualPrint}
                         disabled={isPrinting} 
                         aria-busy={isPrinting}
-                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-micro font-medium transition-all focus:outline-none focus:ring-0  ${isPrinting ? "bg-slate-50 text-slate-400" : "bg-white border-slate-200 shadow-sm hover:bg-slate-50"}`} 
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-micro  transition-all focus:outline-none focus:ring-0  ${isPrinting ? "bg-slate-50 text-slate-400" : "bg-white border-slate-200 shadow-sm hover:bg-slate-50"}`} 
                       >
                         {isPrinting ? <IconLoading className="w-3.5 h-3.5 animate-spin" aria-hidden="true" /> : <IconReceipt className="w-3.5 h-3.5 opacity-60" aria-hidden="true" />}
                         <span>{isPrinting ? "Printing..." : "Print"}</span>
@@ -619,7 +619,7 @@ export default function OrderCard({ order, tick }) {
                     {order.status === 'pending' && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); setShowCancelModal(true); }} 
-                        className="flex items-center gap-1.5 px-3 py-2 text-micro font-medium text-red-500 hover:bg-red-50 rounded-xl border border-red-100 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                        className="flex items-center gap-1.5 px-3 py-2 text-micro  text-red-500 hover:bg-red-50 rounded-xl border border-red-100 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                       >
                         <IconBan className="w-3.5 h-3.5 opacity-60 text-red-500  stroke-red-500" aria-hidden="true" />
                         <p>Cancel</p>

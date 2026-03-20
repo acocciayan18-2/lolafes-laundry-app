@@ -41,7 +41,7 @@ const StatCard = React.memo(({ value, label, colorClass, className }) => (
     <div className={`text-h2 font-bold ${colorClass} leading-tight`} aria-hidden="true">
       {value.toLocaleString()}
     </div>
-    <h3 className="text-micro font-medium text-text-dark/70 mt-1" aria-hidden="true">
+    <h3 className="text-micro  text-text-dark/70 mt-1" aria-hidden="true">
       {label}
     </h3>
   </article>

@@ -64,7 +64,7 @@ const ChartRow = React.memo(({ rank, name, count, maxOrders }) => {
     >
       {/* Y-Axis Label (Left Side) */}
       <div className="w-28 sm:w-32 pr-3 shrink-0 flex items-center justify-end border-r-2 border-slate-100 h-full z-10">
-        <span className={`text-[10px] sm:text-[11px] truncate text-right w-full ${isPodium ? nameColor : 'font-medium text-text-dark/60 group-hover:text-text-dark transition-colors'}`} title={name}>
+        <span className={`text-nano sm:text-micro truncate text-right w-full ${isPodium ? nameColor : ' text-text-dark/60 group-hover:text-text-dark transition-colors'}`} title={name}>
           {name}
         </span>
       </div>
@@ -85,7 +85,7 @@ const ChartRow = React.memo(({ rank, name, count, maxOrders }) => {
 
            {/* The Value Label ✨ FIX: Pinned to the far left inside the bar */}
            <motion.span 
-              className="absolute left-2 text-[10px] font-black tabular-nums transition-colors drop-shadow-sm text-white"
+              className="absolute left-2 text-nano font-bold tabular-nums transition-colors drop-shadow-sm text-white"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4, delay: (rank * 0.05) + 0.5 }}
@@ -174,7 +174,7 @@ export default function TopCustomers({ range }) {
         <header className="flex items-start justify-between gap-1 shrink-0 mb-4">
           <div className="min-w-0 flex-1 relative" ref={infoRef}>
             <div className="flex items-center gap-1.5 mb-1">
-              <h2 id="top-customers-title" className="text-[13px] font-bold text-text-dark/70 truncate uppercase tracking-tight">
+              <h2 id="top-customers-title" className="text-sm-text font-bold text-text-dark/70 truncate uppercase tracking-tight">
                 Top Customers
               </h2>
               <button 
@@ -195,7 +195,7 @@ export default function TopCustomers({ range }) {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="absolute left-0 top-7 w-64 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100]"
                   >
-                    <p className="text-[13px] text-text-dark/90 leading-relaxed font-normal">
+                    <p className="text-sm-text text-text-dark/90 leading-relaxed font-normal">
                       A horizontal bar graph visualizing the order volume of your top 10 most frequent visitors.
                     </p>
                   </motion.div>

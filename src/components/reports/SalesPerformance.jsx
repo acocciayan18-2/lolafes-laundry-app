@@ -99,7 +99,7 @@ const ChartBar = React.memo(({ data, maxVal, isActive, isPeak, onHover, onLeave,
         aria-hidden="true"
       >
         <div className="bg-app-dark text-white shadow-xl rounded-md px-2.5 py-1.5 whitespace-nowrap">
-          <p className="text-[11px] font-bold tracking-wide">₱{formatSmartMoney(data.value)}</p>
+          <p className="text-micro font-bold tracking-wide">₱{formatSmartMoney(data.value)}</p>
         </div>
         {/* Tooltip Arrow */}
         <div className="w-2.5 h-2.5 bg-app-dark rotate-45 -mt-1.5" />
@@ -116,8 +116,8 @@ const ChartBar = React.memo(({ data, maxVal, isActive, isPeak, onHover, onLeave,
       
       {/* X-AXIS LABEL */}
       <span 
-        className={`absolute -bottom-6 text-[10px] uppercase whitespace-nowrap w-full text-center px-0.5 transition-colors
-        ${isActive === true ? 'text-app-dark font-bold' : isPeak ? 'text-emerald-700 font-bold' : 'text-text-dark/60 font-medium'}`}
+        className={`absolute -bottom-6 text-nano uppercase whitespace-nowrap w-full text-center px-0.5 transition-colors
+        ${isActive === true ? 'text-app-dark font-bold' : isPeak ? 'text-emerald-700 font-bold' : 'text-text-dark/60 '}`}
         aria-hidden="true"
       >
         {data.formattedLabel}
@@ -232,7 +232,7 @@ export default function SalesPerformance() {
         <header className="flex justify-between items-start gap-1 mb-2 shrink-0">
           <div className="min-w-0 flex-1 relative" ref={infoRef}>
             <div className="flex items-center gap-2">
-              <h2 id="sales-performance-title" className="text-[13px] font-bold text-text-dark/70 truncate uppercase tracking-tight">
+              <h2 id="sales-performance-title" className="text-sm-text font-bold text-text-dark/70 truncate uppercase tracking-tight">
                 Revenue Analysis
               </h2>
               <button 
@@ -253,7 +253,7 @@ export default function SalesPerformance() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="absolute left-0 top-7 w-56 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100]"
                   >
-                    <p className="text-[13px] text-text-dark/90 leading-relaxed font-normal">
+                    <p className="text-sm-text text-text-dark/90 leading-relaxed font-normal">
                       View revenue trends across different timeframes. The <span className="text-emerald-600 font-bold">green bar</span> indicates your peak earning period.
                     </p>
                   </motion.div>
@@ -272,8 +272,8 @@ export default function SalesPerformance() {
               >
                 {({ open }) => (
                   <>
-                    <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-[13px] font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-app-dark/20">
-                      <span className="block truncate font-medium text-sm-text">{selectedFilter.label}</span>
+                    <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-sm-text font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-app-dark/20">
+                      <span className="block truncate  text-sm-text">{selectedFilter.label}</span>
                       <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                         <motion.svg 
                           animate={{ rotate: open ? 180 : 0 }}
@@ -302,13 +302,13 @@ export default function SalesPerformance() {
                               key={f.value}
                               value={f}
                               className={({ active }) =>
-                                `relative cursor-pointer select-none py-2.5 pl-3 pr-3 text-[13px] font-medium transition-colors ${
+                                `relative cursor-pointer select-none py-2.5 pl-3 pr-3 text-sm-text  transition-colors ${
                                   active ? 'bg-app-dark/5 text-app-dark' : 'text-text-dark/80'
                                 }`
                               }
                             >
                               {({ selected }) => (
-                                <span className={`block truncate ${selected ? 'font-bold text-app-dark' : 'font-medium'}`}>
+                                <span className={`block truncate ${selected ? 'font-bold text-app-dark' : ''}`}>
                                   {f.label}
                                 </span>
                               )}
@@ -337,7 +337,7 @@ export default function SalesPerformance() {
         >
           
           {/* Y-Axis Labels */}
-          <div className="flex flex-col justify-between h-[160px] pb-6 text-sm-text text-text-dark/50 font-medium text-right min-w-[45px] pr-2 mt-12" aria-hidden="true">
+          <div className="flex flex-col justify-between h-[160px] pb-6 text-sm-text text-text-dark/50  text-right min-w-[45px] pr-2 mt-12" aria-hidden="true">
             <span>₱{formatSmartMoney(maxVal)}</span>
             <span>₱{formatSmartMoney(maxVal / 2)}</span>
             <span>0</span>
@@ -386,7 +386,7 @@ export default function SalesPerformance() {
       {/* FOOTER METADATA */}
       <footer className="mx-5 mb-4 mt-auto border-t border-app-dark/5 pt-3 flex justify-between items-center">
         <div className="flex flex-col">
-          <p className="text-[10px] text-text-dark/50 uppercase  font-bold mb-0.5">
+          <p className="text-nano text-text-dark/50 uppercase  font-bold mb-0.5">
             Total {selectedFilter.label} Revenue
           </p>
           <p className="text-xl text-text-dark font-bold tracking-tight leading-none">

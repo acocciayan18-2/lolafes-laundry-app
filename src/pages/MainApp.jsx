@@ -125,8 +125,8 @@ export default function MainApp() {
                 />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-text-dark text-sm leading-none tracking-tight">Lola Fe's Laundry</span>
-              <span className="text-[11px] text-text-dark/70 font-medium">Laundry Shop</span>
+              <span className="font-bold text-text-dark text-sm-text leading-none tracking-tight">Lola Fe's Laundry</span>
+              <span className="text-micro text-text-dark/70 ">Laundry Shop</span>
             </div>
           </div>
           

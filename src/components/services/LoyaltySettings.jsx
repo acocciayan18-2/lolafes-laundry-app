@@ -10,7 +10,7 @@ import Button from '../ui/Button';
 
 
 const Label = React.memo(({ htmlFor, children }) => (
-  <label htmlFor={htmlFor} className="text-micro font-medium text-text-dark/60 block mb-1.5 ml-1">
+  <label htmlFor={htmlFor} className="text-micro  text-text-dark/60 block mb-1.5 ml-1">
     {children}
   </label>
 ));
@@ -25,7 +25,7 @@ const Input = React.memo(({ id, type = "text", value, onChange, disabled, classN
     disabled={disabled}
     placeholder={placeholder}
     inputMode={inputMode}
-    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text font-medium focus:outline-none focus:ring-1 focus:ring-app-dark/90  disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
+    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text  focus:outline-none focus:ring-1 focus:ring-app-dark/90  disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
   />
 ));
 Input.displayName = "Input";
@@ -60,7 +60,7 @@ const HeadlessSelect = React.memo(({ id, value, onChange, options, disabled }) =
           <>
             <ListboxButton 
               id={id}
-              className={`flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm-text font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark transition-colors
+              className={`flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm-text  focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark transition-colors
                 ${open ? "bg-white border-app-dark" : "border-slate-200 hover:border-gray-300 bg-white"}
                 ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50 hover:border-slate-200" : "cursor-pointer"}
               `}
@@ -87,7 +87,7 @@ const HeadlessSelect = React.memo(({ id, value, onChange, options, disabled }) =
                       <ListboxOption
                         key={option.id}
                         className={({ active }) =>
-                          `relative cursor-pointer select-none py-2.5 px-3 text-sm-text font-medium transition-colors flex items-center justify-between ${
+                          `relative cursor-pointer select-none py-2.5 px-3 text-sm-text  transition-colors flex items-center justify-between ${
                             active ? 'bg-gray-50 text-text-dark' : 'text-text-dark'
                           }`
                         }
@@ -95,7 +95,7 @@ const HeadlessSelect = React.memo(({ id, value, onChange, options, disabled }) =
                       >
                         {({ selected }) => (
                           <>
-                            <span className={`block truncate ${selected ? 'font-bold' : 'font-medium'}`}>
+                            <span className={`block truncate ${selected ? 'font-bold' : ''}`}>
                               {option.name}
                             </span>
                             {selected && (
@@ -300,7 +300,7 @@ export default function LoyaltySettings() {
                 className="!h-auto flex-col !items-center !p-3"
               >
                 <span className="font-bold text-sm-text">Pause Progress</span>
-                <span className="text-[11px] font-normal text-text-dark/70">Keep customer points saved</span>
+                <span className="text-micro font-normal text-text-dark/70">Keep customer points saved</span>
               </Button>
               <Button 
                 variant="danger" 
@@ -309,7 +309,7 @@ export default function LoyaltySettings() {
                 className="!h-auto flex-col !items-center !p-3"
               >
                 <span className="font-bold text-sm-text text-white">Reset Everything</span>
-                <span className="text-[11px] font-normal text-white/80">Clear all points to zero</span>
+                <span className="text-micro font-normal text-white/80">Clear all points to zero</span>
               </Button>
             </div>
             <button 
@@ -386,7 +386,7 @@ export default function LoyaltySettings() {
                     {localSettings?.free_service_type || "No Service"}
                   </div>
                   <div className="h-px bg-slate-100 my-2" aria-hidden="true" />
-                  <p className="text-micro text-slate-500 font-medium">After {localSettings?.orders_required || 0} visits</p>
+                  <p className="text-micro text-slate-500 ">After {localSettings?.orders_required || 0} visits</p>
                 </div>
               </div>
 

@@ -51,7 +51,7 @@ const SwipeToConfirm = memo(({ onConfirm, onOpenPaymentModal, isDisabled, isUpda
       <button 
         onClick={onOpenPaymentModal}
         disabled={isUpdating}
-        className="relative h-12 w-full rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors flex items-center justify-center text-base-text font-medium text-app-dark shadow-sm active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-50"
+        className="relative h-12 w-full rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors flex items-center justify-center text-base-text  text-app-dark shadow-sm active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-50"
       >
         {isUpdating ? "Processing..." : "Process Payment First"}
       </button>
@@ -251,10 +251,9 @@ const UnclaimedOrders = () => {
           </div>
           <div>
             <h2 className="text-base-text font-bold text-text-dark">Overdue Orders</h2>
-            <p className="text-micro font-normal text-rose-500">Requires Immediate Action</p>
           </div>
         </div>
-        <span className="bg-app-dark/5 text-text-dark text-micro font-medium px-2 py-0.5 rounded-full" aria-label={`${safeUnclaimedOrders.length} overdue orders`}>
+        <span className="bg-app-dark/5 text-text-dark text-micro  px-2 py-0.5 rounded-full" aria-label={`${safeUnclaimedOrders.length} overdue orders`}>
           {safeUnclaimedOrders.length}
         </span>
       </div>
@@ -292,7 +291,7 @@ const UnclaimedOrders = () => {
                       )}
                     </div>
                     <div className="shrink-0 flex items-center px-1">
-                      <span className="text-micro font-medium text-rose-500">
+                      <span className="text-micro  text-rose-500">
                         {overdueLabel}
                       </span>
                     </div>
@@ -300,7 +299,7 @@ const UnclaimedOrders = () => {
 
                   <div className="flex items-end justify-between pl-1.5">
                     <div className="flex flex-col gap-1.5">
-                       <div className="flex items-center gap-2 text-micro font-medium text-text-dark/70">
+                       <div className="flex items-center gap-2 text-micro  text-text-dark/70">
                         <span>#{order.order_number || "---"}</span>
                         <span aria-hidden="true">•</span>
                         <span className="uppercase">{order.handover_method || "pickup"}</span>
@@ -337,7 +336,7 @@ const UnclaimedOrders = () => {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-white rounded-3xl overflow-hidden max-h-[90vh] relative flex flex-col shadow-2xl"
+              className="w-full max-w-md bg-white rounded-3xl overflow-hidden max-h-[90dvh] relative flex flex-col shadow-2xl"
             >
               <div className="bg-rose-50/50 pt-4 pb-3 px-3 text-center relative border-b border-rose-100/50">
                 <button 
@@ -359,7 +358,7 @@ const UnclaimedOrders = () => {
                     <span className="text-nano text-text-dark/90 bg-gray-100 px-1.5 py-0.5 rounded leading-none align-middle">Walk-In</span>
                   )}
                 </h3>
-                <p className="text-micro font-medium text-rose-500 mt-1">
+                <p className="text-micro  text-rose-500 mt-1">
                   Unclaimed Order
                 </p>
               </div>
@@ -382,10 +381,10 @@ const UnclaimedOrders = () => {
                   <div className="flex justify-between items-center pr-8">
                     <div className="flex items-center gap-2.5">
                       <IconPhone className="w-4 h-4 text-text-dark/70" aria-hidden="true" />
-                      <span className="text-sm-text font-medium text-text-dark/70">Phone</span>
+                      <span className="text-sm-text  text-text-dark/70">Phone</span>
                     </div>
                     {/* ✨ FIX: Anonymous Masking Logic */}
-                    <span className="text-sm-text font-medium text-text-dark">
+                    <span className="text-sm-text  text-text-dark">
                       {selectedOrder.is_walk_in ? (
                         <span className="italic opacity-70">Anonymous (No Phone)</span>
                       ) : isPiiRevealed ? (
@@ -398,9 +397,9 @@ const UnclaimedOrders = () => {
                   <div className="flex justify-between items-start pr-8">
                     <div className="flex items-center gap-2.5 mt-0.5">
                       <div className="w-4 flex justify-center"><IconHash className="w-3.5 h-3.5 text-text-dark/70" aria-hidden="true" /></div>
-                      <span className="text-sm-text font-medium text-text-dark/70">Address</span>
+                      <span className="text-sm-text  text-text-dark/70">Address</span>
                     </div>
-                    <span className="text-sm-text font-medium text-text-dark text-right pl-2 leading-snug">
+                    <span className="text-sm-text  text-text-dark text-right pl-2 leading-snug">
                       {isPiiRevealed ? (selectedOrder.customer_address || "N/A") : maskAddress(selectedOrder.customer_address)}
                     </span>
                   </div>
@@ -408,12 +407,12 @@ const UnclaimedOrders = () => {
 
                 <div className="px-2 space-y-3">
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm-text font-medium text-text-dark/70 ">Order No.</span>
-                    <span className="text-sm-text font-medium text-text-dark">#{selectedOrder.order_number || "---"}</span>
+                    <span className="text-sm-text  text-text-dark/70 ">Order No.</span>
+                    <span className="text-sm-text  text-text-dark">#{selectedOrder.order_number || "---"}</span>
                   </div>
                   <div className="flex justify-between items-start">
-                    <span className="text-sm-text font-medium text-text-dark/70 mt-0.5">Completed Since</span>
-                    <span className="text-sm-text font-medium text-text-dark text-right max-w-[170px] leading-snug">
+                    <span className="text-sm-text  text-text-dark/70 mt-0.5">Completed Since</span>
+                    <span className="text-sm-text  text-text-dark text-right max-w-[170px] leading-snug">
                       {getSafeDate(selectedOrder.updated_at || selectedOrder.created_date).toLocaleString('en-US', {
                         weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
                         hour: 'numeric', minute: '2-digit', hour12: true
@@ -422,7 +421,7 @@ const UnclaimedOrders = () => {
                   </div>
 
                  <div className="flex justify-between items-start gap-4">
-                  <span className="text-sm-text font-medium text-text-dark/70 mt-0.5 whitespace-nowrap">
+                  <span className="text-sm-text  text-text-dark/70 mt-0.5 whitespace-nowrap">
                     Services
                   </span>
                   
@@ -432,13 +431,13 @@ const UnclaimedOrders = () => {
                         <span 
                           key={idx} 
                           role="listitem" 
-                          className="text-sm-text font-medium text-text-dark bg-slate-50  px-2 py-1 rounded-md border border-slate-200"
+                          className="text-sm-text  text-text-dark bg-slate-50  px-2 py-1 rounded-md border border-slate-200"
                         >
                           {svc.quantity || 1}x {svc.service_name}
                         </span>
                       ))
                     ) : (
-                      <span className="text-sm-text font-medium text-text-dark/70 italic">
+                      <span className="text-sm-text  text-text-dark/70 italic">
                         No services listed
                       </span>
                     )}
@@ -450,7 +449,7 @@ const UnclaimedOrders = () => {
                   
                   {Number(selectedOrder?.delivery_fee) > 0 && (
                     <div className="flex justify-between items-center mb-2 ">
-                       <span className="text-micro font-medium text-text-dark/60">Includes Delivery</span>
+                       <span className="text-micro  text-text-dark/60">Includes Delivery</span>
                         <span className="text-micro font-bold text-blue-600">
                         + ₱{Number(selectedOrder.delivery_fee).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
@@ -459,7 +458,7 @@ const UnclaimedOrders = () => {
 
                   {/* Row 1: Total Amount */}
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-slate-500">Total Amount</span>
+                    <span className="text-sm  text-slate-500">Total Amount</span>
                     <span className="text-h3 font-bold text-text-dark tracking-tight">
                       ₱{Number(selectedOrder.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
@@ -467,7 +466,7 @@ const UnclaimedOrders = () => {
 
                   {/* Row 2: Status */}
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-slate-500">Payment Status</span>
+                    <span className="text-sm  text-slate-500">Payment Status</span>
                     <div className="flex items-center gap-1.5">
                       
                       <span className={`text-micro font-bold uppercase tracking-wider ${selectedOrder.is_paid ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -488,14 +487,14 @@ const UnclaimedOrders = () => {
                         <div className="mt-3 pt-3 border-t border-emerald-200/60 space-y-2">
                           
                           <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-emerald-700/80">Tendered</span>
+                            <span className="text-sm  text-emerald-700/80">Tendered</span>
                             <span className="text-base font-bold text-slate-800">
                               ₱{Number(selectedOrder.amount_tendered).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </span>
                           </div>
                           
                           <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-emerald-700/80">Change Due</span>
+                            <span className="text-sm  text-emerald-700/80">Change Due</span>
                             <span className="text-sm font-bold text-emerald-600">
                               ₱{Math.max(0, Number(selectedOrder.amount_tendered) - Number(selectedOrder.total_amount)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </span>

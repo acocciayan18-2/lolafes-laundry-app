@@ -142,7 +142,7 @@ export default function RewardRecipients() {
           </div>
         </div>
         <span 
-          className="bg-app-dark/5 text-text-dark text-micro font-medium px-2 py-0.5 rounded-full" 
+          className="bg-app-dark/5 text-text-dark text-micro  px-2 py-0.5 rounded-full" 
           aria-label={`${enrichedLogs.length} rewards claimed`}
         >
           {enrichedLogs.length}
@@ -176,7 +176,7 @@ export default function RewardRecipients() {
                       </h3>
                     </div>
                     <div className="shrink-0 flex items-center px-1">
-                      <span className="text-micro font-medium pb-1 text-amber-600 truncate max-w-[120px]">
+                      <span className="text-micro  pb-1 text-amber-600 truncate max-w-[120px]">
                         {log.reward_name}
                       </span>
                     </div>
@@ -184,13 +184,13 @@ export default function RewardRecipients() {
 
                   <div className="flex items-end justify-between pl-1.5">
                     <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2 text-micro font-medium text-text-dark/70">
+                      <div className="flex items-center gap-2 text-micro  text-text-dark/70">
                         <span>#{log.order_number || "---"}</span>
                       </div>
                     </div>
                     
                     <div className="flex flex-col items-end">
-                      <span className="text-micro font-medium text-text-dark">
+                      <span className="text-micro  text-text-dark">
                         {log.loyalty_points_to_deduct > 0 ? `-${log.loyalty_points_to_deduct} pts` : "Free"}
                       </span>
                     </div>
@@ -217,7 +217,7 @@ export default function RewardRecipients() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-white rounded-3xl overflow-hidden max-h-[90vh] relative flex flex-col shadow-2xl"
+              className="w-full max-w-md bg-white rounded-3xl overflow-hidden max-h-[90dvh] relative flex flex-col shadow-2xl"
             >
               
               {/* Modal Header */}
@@ -236,7 +236,7 @@ export default function RewardRecipients() {
                 <h3 id="modal-customer-name" className="text-h3 font-bold text-text-dark leading-tight truncate px-8">
                   {selectedLog.customer_name || "Unknown"}
                 </h3>
-                <p className="text-micro font-medium text-amber-600 mt-1">
+                <p className="text-micro  text-amber-600 mt-1">
                   Reward Claimed
                 </p>
               </div>
@@ -258,18 +258,18 @@ export default function RewardRecipients() {
                   <div className="flex justify-between items-center pr-8">
                     <div className="flex items-center gap-2.5">
                       <IconPhone className="w-4 h-4 text-text-dark/70" aria-hidden="true" />
-                      <span className="text-sm-text font-medium text-text-dark/70">Phone</span>
+                      <span className="text-sm-text  text-text-dark/70">Phone</span>
                     </div>
-                    <span className="text-sm-text font-medium text-text-dark">
+                    <span className="text-sm-text  text-text-dark">
                       {isPiiRevealed ? (selectedLog.customer_phone || "N/A") : maskPhone(selectedLog.customer_phone)}
                     </span>
                   </div>
                   <div className="flex justify-between items-start pr-8">
                     <div className="flex items-center gap-2.5 mt-0.5">
                       <div className="w-4 flex justify-center"><IconHash className="w-3.5 h-3.5 text-text-dark/70" aria-hidden="true" /></div>
-                      <span className="text-sm-text font-medium text-text-dark/70">Address</span>
+                      <span className="text-sm-text  text-text-dark/70">Address</span>
                     </div>
-                    <span className="text-sm-text font-medium text-text-dark text-right pl-2 leading-snug">
+                    <span className="text-sm-text  text-text-dark text-right pl-2 leading-snug">
                       {isPiiRevealed ? (selectedLog.customer_address || "N/A") : maskAddress(selectedLog.customer_address)}
                     </span>
                   </div>
@@ -278,12 +278,12 @@ export default function RewardRecipients() {
                 {/* Reference Details */}
                 <div className="px-2 space-y-3">
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm-text font-medium text-text-dark/70">Order No.</span>
-                    <span className="text-sm-text font-medium text-text-dark">#{selectedLog.order_number || "---"}</span>
+                    <span className="text-sm-text  text-text-dark/70">Order No.</span>
+                    <span className="text-sm-text  text-text-dark">#{selectedLog.order_number || "---"}</span>
                   </div>
                   <div className="flex justify-between items-start">
-                    <span className="text-sm-text font-medium text-text-dark/70 mt-0.5">Date Claimed</span>
-                    <span className="text-sm-text font-medium text-text-dark text-right max-w-[170px] leading-snug">
+                    <span className="text-sm-text  text-text-dark/70 mt-0.5">Date Claimed</span>
+                    <span className="text-sm-text  text-text-dark text-right max-w-[170px] leading-snug">
                       {formatDateTime(selectedLog.date || selectedLog.created_at)}
                     </span>
                   </div>
@@ -292,14 +292,14 @@ export default function RewardRecipients() {
                 {/* Reward Receipt Block */}
                 <div className="mt-3 p-4 rounded-xl border transition-colors bg-amber-50/40 border-amber-200/60">
                   <div className="flex justify-between items-center mb-2 pb-2 border-b border-amber-200/60">
-                    <span className="text-sm font-medium text-slate-500">Reward Item</span>
+                    <span className="text-sm  text-slate-500">Reward Item</span>
                     <span className="text-sm-text font-bold text-slate-800 text-right max-w-[200px] truncate">
                       {selectedLog.reward_name || "N/A"}
                     </span>
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-slate-500">Points Deducted</span>
+                    <span className="text-sm  text-slate-500">Points Deducted</span>
                     <div className="flex items-center gap-1.5">
                      
                       <span className="text-micro font-bold tracking-wider text-amber-600 uppercase">

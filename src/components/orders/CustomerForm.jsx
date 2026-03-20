@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useCustomerStore } from "../../store/customer/useCustomerStore";
-import { IconSearch, IconUserPlus, IconUsers } from "../icons";
+import { IconSearch, IconUserPlus, IconUsers, IconUserOff } from "../icons";
 
 import "../../style/custom-scrollbar.css";
 
@@ -188,6 +188,7 @@ export const CustomerForm = ({
           </div>
 
           <div className="flex items-center gap-2">
+            <IconUserOff className={` w-4 h-4 !mr-[-4px] transition-colors ${isWalkInGuest ? 'text-emerald-600' : 'text-gray-400'}`} aria-hidden="true"/>
             <span className={`text-sm-text  transition-colors ${isWalkInGuest ? 'text-emerald-600' : 'text-gray-400'}`} aria-hidden="true">
               Walk-In
             </span>

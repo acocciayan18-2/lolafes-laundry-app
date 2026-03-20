@@ -75,7 +75,7 @@ const Settings = () => {
         <header className="flex items-center justify-between w-full mb-6">
           <div>
             <h1 className="text-h2 font-bold text-text-dark">Settings</h1>
-            <p className="text-sm-text text-slate-500 mt-0.5">
+            <p className="text-sm-text text-slate-500 mt-0.5 font-normal">
               Manage your systems configurations
             </p>
           </div>
@@ -83,7 +83,7 @@ const Settings = () => {
           <button 
             onClick={() => handleToggleLock(false)}
             aria-label="Lock settings dashboard"
-            className="group flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-micro font-medium text-text-dark hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 active:scale-95"
+            className="group flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-micro  text-text-dark hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 active:scale-95"
           >
             <IconLock className="w-3.5 h-3.5 transition-transform group-hover:scale-110" aria-hidden="true" />
             Lock Settings
@@ -139,7 +139,7 @@ const Settings = () => {
             <CleanupActivityLogs />
           </div>
           
-          <p className="mt-3 px-2 text-micro font-medium text-rose-500/80 italic leading-relaxed">
+          <p className="mt-3 px-2 text-micro  text-rose-500/80 italic leading-relaxed">
             * Note: These actions are permanent and cannot be undone. Please ensure you have exported and backed up any necessary data before clearing your ledgers.
           </p>
         </section>

@@ -174,7 +174,7 @@ export default function StoreGuard({ children }) {
           <div className="max-w-sm w-full space-y-4">
             <div>
               <h2 className="text-h1 font-bold text-text-dark tracking-tight mb-2">System Paused</h2>
-              <p className="text-base-text font-medium text-text-dark/70 ">Operating Hours Restricted</p>
+              <p className="text-base-text  text-text-dark/70 ">Operating Hours Restricted</p>
             </div>
             
             <div className="p-6 bg-white rounded-[2rem] border border-slate-100 space-y-4 shadow-sm w-full">
@@ -248,13 +248,13 @@ export default function StoreGuard({ children }) {
                   <h3 className="text-xl font-bold text-text-dark uppercase tracking-tight">
                     {isCritical ? 'Locking Imminently' : 'Store Closing Soon'}
                   </h3>
-                  <p className={`text-sm font-medium mt-1 ${isCritical ? 'text-rose-600 font-bold' : 'text-amber-600'}`}>
+                  <p className={`text-sm-text  mt-1 ${isCritical ? 'text-rose-600 font-bold' : 'text-amber-600'}`}>
                     System locks in {minutesLeft} minute{minutesLeft !== 1 ? 's' : ''}
                   </p>
                 </div>
 
                 <div className="bg-slate-50 rounded-xl p-4 text-center border border-slate-100 mb-6">
-                  <p className="text-xs font-medium text-slate-600 leading-relaxed">
+                  <p className="text-micro  text-slate-600 leading-relaxed">
                     {isCritical 
                       ? "Immediate action required. Please conclude all pending transactions and secure your current session now."
                       : "Please begin finalizing active operations, processing remaining transactions, and preparing for system closure."}

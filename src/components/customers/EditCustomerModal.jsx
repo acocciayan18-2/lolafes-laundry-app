@@ -17,7 +17,7 @@ import Button from '../ui/Button';
  */
 const FormField = React.memo(({ label, id, error, icon: Icon, children }) => (
   <div className="space-y-1">
-    <label htmlFor={id} className="text-micro font-medium text-text-dark/80 ml-1">
+    <label htmlFor={id} className="text-micro  text-text-dark/80 ml-1">
       {label}
     </label>
     <div className="relative">
@@ -211,7 +211,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
 
   // --- RENDER ---
   const inputClass = (err) => `
-    w-full pl-10 pr-4 py-3 border font-medium rounded-xl text-sm-text focus:outline-none focus-visible:ring-none transition-all
+    w-full pl-10 pr-4 py-3 border  rounded-xl text-sm-text focus:outline-none focus-visible:ring-none transition-all
     ${err ? 'border-red-500 focus:border-red-600 focus-visible:ring-red-500/50 bg-red-50/30' : 'border-app-dark/20 focus:border-app-dark/90 focus-visible:ring-app-dark/50 bg-white'}
   `;
 
@@ -245,7 +245,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
         {/* HEADER */}
         <header className="p-5 border-b border-slate-50 pb-0">
           <h3 id="edit-customer-title" className="text-xl font-bold text-text-dark">Edit Customer</h3>
-          <p className="text-sm text-slate-500 truncate" title={originalName}>Update {originalName} details</p>
+          <p className="text-sm-text text-slate-500 truncate" title={originalName}>Update {originalName} details</p>
         </header>
 
         {/* FORM */}

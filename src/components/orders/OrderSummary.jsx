@@ -290,14 +290,14 @@ export const OrderSummary = ({
         
         {/* CUSTOMER CARD */}
         <article>
-          <h4 className="text-sm-text font-medium text-text-dark/50 !mb-1">Customer Details</h4>
+          <h4 className="text-sm-text  text-text-dark/50 !mb-1">Customer Details</h4>
           <div className={`p-3 rounded-xl overflow-hidden border transition-colors ${!isCustomerValid && customer?.name ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
             {customer?.name ? (
               <div className="space-y-1">
                 <p className="text-base-text font-bold text-gray-900 leading-tight">
                   {customer.name} {isWalkInGuest && <span className="text-nano text-text-dark/90 bg-gray-100 px-1.5 py-0.5 rounded leading-none align-middle">Walk-In</span>}
                 </p>
-                <p className={`text-sm-text font-medium flex items-center gap-1 ${!isWalkInGuest && (!isPhoneValid || isPhoneDuplicate) ? 'text-red-600 font-bold' : 'text-text-dark'}`}>
+                <p className={`text-sm-text  flex items-center gap-1 ${!isWalkInGuest && (!isPhoneValid || isPhoneDuplicate) ? 'text-red-600 font-bold' : 'text-text-dark'}`}>
                   {isWalkInGuest ? "Anonymous (No Phone)" : (customer.phone || "No contact number")}
                 </p>
                 <p className="text-sm-text text-gray-600 leading-snug truncate" title={customer.address}>
@@ -305,20 +305,20 @@ export const OrderSummary = ({
                 </p>
               </div>
             ) : (
-              <p className="text-sm-text font-medium text-text-dark/70 italic">No customer selected</p>
+              <p className="text-sm-text  text-text-dark/70 italic">No customer selected</p>
             )}
           </div>
         </article>
 
         {/* SERVICES LIST */}
         <article>
-          <h4 className="text-sm-text font-medium text-text-dark/70 mb-2">
+          <h4 className="text-sm-text  text-text-dark/70 mb-2">
             Services ({Array.isArray(selectedServices) ? selectedServices.length : 0})
           </h4>
           <div className="max-h-32 overflow-y-auto custom-scrollbar space-y-2 pr-1" role="list">
             {Array.isArray(selectedServices) && selectedServices.map((service, index) => (
               <div key={service.id || index} role="listitem" className="flex justify-between items-start">
-                <p className="text-base-text font-medium text-text-dark tracking-tight truncate max-w-[150px]" title={service.service_name}>
+                <p className="text-base-text  text-text-dark tracking-tight truncate max-w-[150px]" title={service.service_name}>
                   {service.service_name}
                 </p>
                 <p className={`text-base-text font-bold tracking-tight ${service.is_reward ? "text-emerald-700" : "text-text-dark"}`}>
@@ -338,7 +338,7 @@ export const OrderSummary = ({
 
         {/* NOTES SECTION */}
         <div className="space-y-1 !mt-1">
-          <label htmlFor="order-notes" className="text-sm-text font-medium text-text-dark/70 ml-1">Special Instructions</label>
+          <label htmlFor="order-notes" className="text-sm-text  text-text-dark/70 ml-1">Special Instructions</label>
           <textarea
             id="order-notes"
             value={notes || ""}
@@ -351,7 +351,7 @@ export const OrderSummary = ({
 
         {/* HANDOVER METHOD */}
         <fieldset className="flex flex-col gap-2 !mt-1 border-none p-0 m-0">
-          <legend className="text-sm-text font-medium text-text-dark/70 ml-1">Handover Method</legend>
+          <legend className="text-sm-text  text-text-dark/70 ml-1">Handover Method</legend>
           <div className="flex bg-slate-100 p-1 rounded-xl w-full max-w-[220px]" role="radiogroup">
             <label className="flex-1 relative cursor-pointer">
               <input 
@@ -386,11 +386,11 @@ export const OrderSummary = ({
             {handoverMethod === 'delivery' && (
               <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="mt-1 flex items-center justify-between">
                 <div className="flex flex-col min-w-0 ml-1"> 
-                  <label htmlFor="delivery-fee" className="text-sm-text font-medium text-text-dark/80">
+                  <label htmlFor="delivery-fee" className="text-sm-text  text-text-dark/80">
                     Delivery Fee (₱)
                   </label>
                   <span 
-                    className="text-micro text-emerald-600 font-medium pb-1 capitalize truncate block w-full" 
+                    className="text-micro text-emerald-600  pb-1 capitalize truncate block w-full" 
                     title={customer?.address || "No address provided"}
                   >
                     To: {customer?.address || "N/A"}
@@ -406,7 +406,7 @@ export const OrderSummary = ({
                     value={deliveryFee === 0 ? "" : deliveryFee}
                     placeholder="0"
                     onChange={handleDeliveryFeeChange}
-                    className="w-12 text-right bg-transparent outline-none font-bold text-app-dark/90 text-sm"
+                    className="w-12 text-right bg-transparent outline-none font-bold text-app-dark/90 text-sm-text"
                   />
                 </div>
               </motion.div>
@@ -418,7 +418,7 @@ export const OrderSummary = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between px-1">
             <div className="flex flex-col">
-              <span id="payment-status-label" className="text-sm-text font-medium text-text-dark/70 mb-1">Payment Status</span>
+              <span id="payment-status-label" className="text-sm-text  text-text-dark/70 mb-1">Payment Status</span>
               <span className={`text-base-text font-bold tracking-tight ${isPaid ? 'text-emerald-700' : 'text-red-600'}`} aria-live="polite">
                 {isPaid ? "Paid in Full" : "Unpaid"}
               </span>
@@ -446,7 +446,7 @@ export const OrderSummary = ({
               >
                 {/* Payment Method Dropdown */}
                 <div className="space-y-1 mb-4" ref={dropdownRef}>
-                  <label id="payment-method-label" className="text-sm-text font-medium text-text-dark/70 ml-1">
+                  <label id="payment-method-label" className="text-sm-text  text-text-dark/70 ml-1">
                     Payment Method <span className="text-red-500" aria-hidden="true">*</span>
                   </label>
                   <div className="relative">
@@ -456,7 +456,7 @@ export const OrderSummary = ({
                       aria-haspopup="listbox"
                       aria-expanded={isDropdownOpen}
                       aria-labelledby="payment-method-label"
-                      className={`w-full h-11 px-3 flex items-center justify-between bg-white border transition-all rounded-xl text-base-text font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark ${
+                      className={`w-full h-11 px-3 flex items-center justify-between bg-white border transition-all rounded-xl text-base-text  focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark ${
                         isDropdownOpen ? "border-gray-900 ring-0" : "border-gray-300"
                       }`}
                     >
@@ -492,7 +492,7 @@ export const OrderSummary = ({
                               >
                                 <div className="flex items-center gap-3">
                                   <div className="w-5 flex justify-center">{getPaymentIcon(method.name)}</div>
-                                  <p className="truncate font-medium">{method.name}</p>
+                                  <p className="truncate ">{method.name}</p>
                                 </div>
                                 {isSelected && <IconCheckBlack className="h-3.5 w-3.5 text-text-dark" aria-hidden="true" />}
                               </button>
@@ -506,10 +506,10 @@ export const OrderSummary = ({
 
                 <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-100/50">
                   <div className="flex items-center justify-between mb-2">
-                    <label htmlFor="cash-received" className="text-sm-text font-medium text-emerald-800">
+                    <label htmlFor="cash-received" className="text-sm-text  text-emerald-800">
                       Amount Received
                     </label>
-                    <span className={`text-sm-text font-medium ${isAmountInsufficient ? 'text-red-500 animate-pulse' : 'text-emerald-600'}`} aria-live="polite">
+                    <span className={`text-sm-text  ${isAmountInsufficient ? 'text-red-500 animate-pulse' : 'text-emerald-600'}`} aria-live="polite">
                       {isAmountInsufficient ? "Insufficient" : changeDue > 0 ? `Change: ₱${changeDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "No change"}
                     </span>
                   </div>
@@ -534,7 +534,7 @@ export const OrderSummary = ({
                     <button 
                       type="button"
                       onClick={() => handleQuickDenomination(finalTotal)}
-                      className="flex-1 py-2 bg-white border border-emerald-200 text-emerald-700 text-micro font-medium rounded-md hover:bg-emerald-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 active:scale-95"
+                      className="flex-1 py-2 bg-white border border-emerald-200 text-emerald-700 text-micro  rounded-md hover:bg-emerald-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 active:scale-95"
                     >
                       Exact
                     </button>
@@ -543,7 +543,7 @@ export const OrderSummary = ({
                         key={amount}
                         type="button"
                         onClick={() => handleQuickDenomination(amount)}
-                        className="flex-1 py-2 bg-white border border-emerald-200 text-emerald-700 text-micro font-medium rounded-md hover:bg-emerald-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 active:scale-95"
+                        className="flex-1 py-2 bg-white border border-emerald-200 text-emerald-700 text-micro  rounded-md hover:bg-emerald-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 active:scale-95"
                       >
                         ₱{amount}
                       </button>
@@ -560,7 +560,7 @@ export const OrderSummary = ({
             onClick={onSubmit}
             disabled={isOrderInvalid} 
             aria-busy={isProcessing}
-            className={`w-full h-12 text-base-text !font-medium shadow-md border-0 rounded-lg mt-2 transition-all text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark focus-visible:ring-offset-2 ${
+            className={`w-full h-12 text-base-text ! shadow-md border-0 rounded-lg mt-2 transition-all text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark focus-visible:ring-offset-2 ${
               isOrderInvalid ? "bg-gray-300 cursor-not-allowed opacity-80" : "bg-emerald-700 hover:bg-emerald-600 active:scale-95"
             }`}
           >
