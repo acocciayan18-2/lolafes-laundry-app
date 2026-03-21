@@ -1,14 +1,18 @@
 /**
  * @file App.jsx
- * @description Root Application Entry Point.
- * Handles Global Routing, Authentication Provider Injection, and Root Listeners.
+ * @version 1.2.0
+ * @description Root Application Entry Point for POS Staff Portal.
+ * Updated: Removed Public Tracking Portal (Migrated to Customer Site).
  */
 
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import Login from "./pages/Login";
 import MainApp from "./pages/MainApp";
 import SignUp from "./pages/SignUp";
+
+// 🛡️ SECURITY: Removed OrderTrackingPage import as it now lives on the Customer Site.
+
 import { AuthProvider } from "./security/AuthContext";
 import ProtectedRoute from "./security/ProtectedRoute";
 
@@ -18,14 +22,11 @@ import { useNotificationStore } from "./store/ui/useNotificationStore";
 import { useSettingsStore } from "./store/settings/useSettingsStore"; 
 
 function App() {
-  const message = useNotificationStore(useCallback((state) => state.message, []));
-  const type = useNotificationStore(useCallback((state) => state.type, []));
-  const hideNotification = useNotificationStore(useCallback((state) => state.hideNotification, []));
+  const message = useNotificationStore((state) => state.message);
+  const type = useNotificationStore((state) => state.type);
+  const hideNotification = useNotificationStore((state) => state.hideNotification);
+  const subscribeToSettings = useSettingsStore((state) => state.subscribeToSettings);
 
-  const subscribeToSettings = useSettingsStore(useCallback((state) => state.subscribeToSettings, []));
-
-  
- 
   useEffect(() => {
     const unsubscribe = subscribeToSettings(); 
     return () => {
@@ -50,15 +51,20 @@ function App() {
         )}
 
         <Routes>
-          {/* Public Routes */}
+          {/* 🌐 AUTH ROUTES */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
 
-          {/* 🔒 Protected Business Routes */}
+          {/* 🔒 PROTECTED BUSINESS ROUTES (Staff Only) */}
           <Route element={<ProtectedRoute />}>
             <Route path="/main/*" element={<MainApp />} />
           </Route>
 
+          {/* 
+             ✨ CATCH-ALL REDIRECT
+             Redirects any unknown routes (including old /track links) 
+             back to the login screen for staff security.
+          */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>

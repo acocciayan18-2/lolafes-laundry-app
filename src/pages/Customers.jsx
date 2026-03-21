@@ -27,7 +27,7 @@ const MAX_SEARCH_LENGTH = 100;
 const Input = React.memo(React.forwardRef(({ className, ...props }, ref) => (
   <input 
     ref={ref}
-    className={`flex h-12 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm-text placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${className}`} 
+    className={`flex h-12 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm-text font-normal placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${className}`} 
     {...props} 
   />
 )));
@@ -156,28 +156,44 @@ export default function Customers() {
           </header>
 
           {/* Search */}
+          {/* Search */}
           <section className="relative w-full mb-3 group" aria-label="Customer Search">
+            {/* Scoped style tag to forcefully hide native clear buttons on mobile/safari */}
+            <style dangerouslySetInnerHTML={{__html: `
+              #customer-search-input::-webkit-search-decoration,
+              #customer-search-input::-webkit-search-cancel-button,
+              #customer-search-input::-webkit-search-results-button,
+              #customer-search-input::-webkit-search-results-decoration { display: none; }
+              #customer-search-input::-ms-clear,
+              #customer-search-input::-ms-reveal { display: none; width: 0; height: 0; }
+            `}} />
+
             <label htmlFor="customer-search-input" className="sr-only">Search name, phone, or address</label>
             <IconSearch aria-hidden="true" className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-gray-900 pointer-events-none z-10 transition-colors" />
+            
             <Input
               id="customer-search-input"
               ref={searchInputRef}
-              type="search"
+              // ✨ FIX 1: Changed to type="text"
+              type="text" 
               maxLength={MAX_SEARCH_LENGTH}
               placeholder="Search name, phone, or address..."
               value={searchTerm}
               onChange={handleSearchChange}
-              className="!pl-10 !pr-10 bg-white rounded-xl shadow-sm border-slate-200 focus:!border-gray-900 focus:!ring-0 w-full focus-visible:ring-2 focus-visible:ring-app-dark"
+              // ✨ FIX 2: Added arbitrary variants to hide native browser X
+              className="!pl-10 !pr-10 bg-white rounded-xl border-slate-200 focus:!border-gray-900 focus:!ring-0 w-full focus-visible:ring-2 focus-visible:ring-app-dark [&::-webkit-search-cancel-button]:appearance-none [&::-ms-clear]:hidden"
             />
             
             <AnimatePresence>
               {searchTerm && (
                 <motion.button 
+                  // ✨ FIX 3: Explicitly set type="button"
+                  type="button"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   onClick={handleClearSearch}
-                  className="absolute right-2 top-1 bottom-1 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50"
+                  className="absolute right-2 top-1 bottom-1 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-rose-500 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50"
                   aria-label="Clear search"
                 >
                   <IconClose className="w-4 h-4" aria-hidden="true" />
@@ -225,7 +241,7 @@ export default function Customers() {
                       <div className="flex justify-center mb-4" aria-hidden="true">
                         <IconUsers className="w-12 h-12 text-gray-200" />
                       </div>
-                      <h3 className="text-h3  text-text-dark/70 mb-1">
+                      <h3 className="text-base-text  text-text-dark/70 mb-1">
                         {searchTerm ? "No customers found" : "No customers yet"}
                       </h3>
                       <p className="text-sm-text  text-text-dark/40">

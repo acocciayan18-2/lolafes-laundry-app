@@ -123,7 +123,7 @@ export default function CustomerMix({ range }) {
             
             <p className={`text-3xl font-bold leading-none truncate ${heatmap.text}`}>
               {retentionRate.toFixed(0)}%
-              <span className="text-sm-text text-text-dark/50 font-normal ml-1 ">Retention</span>
+              <span className="text-micro text-text-dark/50 ml-1 ">Retention</span>
             </p>
           </div>
           
@@ -134,37 +134,43 @@ export default function CustomerMix({ range }) {
 
         {/* ANALYTICS VISUALIZATION */}
         <div className="flex flex-col items-center justify-center flex-1 py-2">
-          <div className="relative flex items-center justify-center w-28 h-28 drop-shadow-sm" aria-hidden="true">
-            {/* SVG Progress Circle */}
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-              {/* Background Ring (New Clients - Gray) */}
-              <circle 
-                cx="50" cy="50" r={radius}
-                fill="transparent" 
-                className="text-slate-100" 
-                stroke="currentColor" 
-                strokeWidth="12" 
-              />
-              {/* Overlay Progress Ring (Returning Clients) */}
-              {newCount + returningCount > 0 && (
-                <circle 
-                  cx="50" cy="50" r={radius} 
-                  fill="transparent" 
-                  className={`${heatmap.stroke} transition-all duration-1000 ease-out`} 
-                  stroke="currentColor" 
-                  strokeWidth="12" 
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                />
-              )}
-            </svg>
-            {/* Inner text overlay */}
-            <div className="absolute flex flex-col items-center justify-center text-center">
-              <span className="text-h3 font-bold text-text-dark leading-none">{newCount + returningCount}</span>
-              <span className="text-nano uppercase font-bold text-text-dark/50 tracking-wider">Total</span>
-            </div>
-          </div>
+         <div className="relative flex items-center justify-center w-28 h-28 drop-shadow-sm" aria-hidden="true">
+  {/* SVG Progress Circle */}
+  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+    {/* Background Ring (New Clients - Gray) */}
+    <circle 
+      cx="50" cy="50" r={radius}
+      fill="transparent" 
+      className="text-slate-100" 
+      stroke="currentColor" 
+      strokeWidth="12" 
+    />
+    {/* Overlay Progress Ring (Returning Clients) */}
+    {newCount + returningCount > 0 && (
+      <circle 
+        cx="50" cy="50" r={radius} 
+        fill="transparent" 
+        className={`${heatmap.stroke} transition-all duration-1000 ease-out`} 
+        stroke="currentColor" 
+        strokeWidth="12" 
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={strokeDashoffset}
+      />
+    )}
+  </svg>
+
+  {/* Inner text overlay */}
+  <div className="absolute flex flex-col items-center justify-center text-center w-full px-4">
+    <span 
+      className="text-sm-text  text-text-dark leading-none truncate max-w-[60px] block"
+      title={newCount + returningCount} 
+    >
+      {newCount + returningCount}
+    </span>
+    <span className="text-micro  text-text-dark/50 ">Total</span>
+  </div>
+</div>
           
           {/* LEGEND / DATA GRID */}          
           <div className="grid grid-cols-2 w-full mt-6 gap-2">
@@ -173,7 +179,7 @@ export default function CustomerMix({ range }) {
                 <span className="w-2 h-2 rounded-full bg-slate-300" aria-hidden="true" />
                 <p className="text-sm-text text-text-dark/70">New</p>
               </div>
-              <p className="text-base-text text-text-dark font-bold leading-tight">
+              <p className="text-sm-text text-text-dark font-bold leading-tight">
                 {newCount.toLocaleString()}
               </p>
             </div>
@@ -183,7 +189,7 @@ export default function CustomerMix({ range }) {
                 <span className={`w-2 h-2 rounded-full ${heatmap.bg}`} aria-hidden="true" />
                 <p className="text-sm-text text-text-dark/70">Return</p>
               </div>
-              <p className="text-base-text text-text-dark font-bold leading-tight">
+              <p className="text-sm-text text-text-dark font-bold leading-tight">
                 {returningCount.toLocaleString()}
               </p>
             </div>

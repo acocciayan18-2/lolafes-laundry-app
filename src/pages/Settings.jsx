@@ -19,6 +19,9 @@ import PaymentSettings from "../components/settings/PaymentSettings";
 import StoreShiftSettings from "../components/settings/StoreShiftSettings"; 
 import ConfirmCompletionToggle from '../components/settings/ConfirmCompletionToggle';
 
+// ✨ NEW: Order Tracking Component
+import { OrderTrackingToggle } from '../components/settings/OrderTrackingToggle';
+
 // Cleanup Imports
 import CleanupCancelledOrders from '../components/settings/CleanupCancelledOrders';
 import CleanupRewardClaims from '../components/settings/CleanupRewardClaims';
@@ -26,26 +29,18 @@ import CleanupActivityLogs from '../components/settings/CleanupActivityLogs';
 
 const Settings = () => {
   // ⚡ PERFORMANCE: Atomic Selectors.
-  // We extract exactly what we need using pure selectors to prevent the entire Settings 
-  // page from re-rendering if an unrelated value in the store changes.
   const systemConfig = useSettingsStore(useCallback(state => state.systemConfig, []));
   const subscribeToSettings = useSettingsStore(useCallback(state => state.subscribeToSettings, []));
   const isLoadingReceipt = useSettingsStore(useCallback(state => state.isLoadingReceipt, []));
   const isLoadingSystem = useSettingsStore(useCallback(state => state.isLoadingSystem, []));
   
-  // Combine loading states memoized
   const isLoading = useMemo(() => isLoadingReceipt || isLoadingSystem, [isLoadingReceipt, isLoadingSystem]);
   
-  // 🛡️ SECURITY: Strict In-Memory State. 
-  // By removing localStorage, the system defaults to "Locked" every time the component unmounts, 
-  // the page is refreshed, or the tab is closed. No stale authorization tokens are left on the disk.
   const [isUnlocked, setIsUnlocked] = useState(false);
 
-  // Safely handle real-time subscriptions
   useEffect(() => {
     const unsubscribe = subscribeToSettings();
     return () => {
-      // Defensive cleanup to prevent memory leaks if the store fails to return a function
       if (typeof unsubscribe === 'function') unsubscribe(); 
     };
   }, [subscribeToSettings]);
@@ -54,10 +49,8 @@ const Settings = () => {
     setIsUnlocked(status);
   }, []);
 
-  // Prevent UI flashing during initial data hydration
   if (isLoading) return null; 
 
-  // Security Gate
   if (!isUnlocked) {
     return (
       <SettingsPINLock 
@@ -105,6 +98,8 @@ const Settings = () => {
             <ConfirmCompletionToggle /> 
             <AutoPrintToggle />
             <ReceiptButtonToggle />
+            {/* ✨ ADDED: Order Tracking Toggle */}
+            <OrderTrackingToggle />
           </div>
 
           <div className="break-inside-avoid">

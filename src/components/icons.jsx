@@ -94,6 +94,37 @@ export const IconPlus = ({ className }) => (
   </svg>
 );
 
+export const IconBluetooth = ({ className }) => (
+
+  <svg width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="m7 8 10 8-5 4V4l5 4-10 8"></path>
+</svg>
+);
+
+export const IconPdf = ({ className }) => (
+
+ <svg width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19 4v16H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12Z"></path>
+        <path d="M19 16H7a2 2 0 0 0-2 2"></path>
+        <path d="M9 8h6"></path>
+</svg>
+);
+
+export const IconUsb = ({ className }) => (
+
+ <svg width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path>
+        <path d="M12 17V6"></path>
+        <path d="M7 10v3l5 3"></path>
+        <path d="m12 14.5 5-2V10"></path>
+        <path d="M16 10h2V8h-2v2Z"></path>
+        <path d="M7 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"></path>
+        <path d="M10 5.5h4L12 3l-2 2.5Z"></path>
+</svg>
+);
+
+
+
 // Fill-based icon (updated to allow flexible color changes)
 export const IconCheckWhite = ({ className }) => (
   <svg 

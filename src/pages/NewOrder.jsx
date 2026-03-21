@@ -408,7 +408,13 @@ export default function NewOrder() {
       if (systemConfig?.autoPrint === true) {
         try {
           const printableOrder = { ...orderPayload, created_at: new Date() };
-          await silentPrint(printableOrder, settings.defaultPrinter || 'browser', receiptConfig);
+         
+
+await silentPrint(printableOrder, systemConfig?.printerType || 'browser', {
+  ...receiptConfig,
+  enableTracking: systemConfig?.enableOrderTracking 
+});
+          
         } catch (printErr) {
           showNotification("Order saved, but printer failed to connect.", "info");
         }

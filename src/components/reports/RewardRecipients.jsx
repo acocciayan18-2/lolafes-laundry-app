@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "../../store/orders/useOrderStore"; 
 import { useReportStore } from "../../store/reports/useReportStore"; 
 import { 
-  IconClose, IconPhone, IconHash, IconEyeOpen, IconEyeClosed 
+  IconClose, IconPhone, IconMapPin , IconEyeOpen, IconEyeClosed 
 } from "../icons";
 
 // ==========================================
@@ -266,7 +266,7 @@ export default function RewardRecipients() {
                   </div>
                   <div className="flex justify-between items-start pr-8">
                     <div className="flex items-center gap-2.5 mt-0.5">
-                      <div className="w-4 flex justify-center"><IconHash className="w-3.5 h-3.5 text-text-dark/70" aria-hidden="true" /></div>
+                      <div className="w-4 flex justify-center"><IconMapPin className="w-3.5 h-3.5 text-text-dark/70" aria-hidden="true" /></div>
                       <span className="text-sm-text  text-text-dark/70">Address</span>
                     </div>
                     <span className="text-sm-text  text-text-dark text-right pl-2 leading-snug">

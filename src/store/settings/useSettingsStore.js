@@ -24,7 +24,10 @@ const DEFAULT_SYSTEM = Object.freeze({
   autoPrint: false, 
   autoLogout: false,
   confirmCompletion: true, 
+  // ✨ KEPT: This is our single source of truth for the default printer
+  printerType: 'browser', 
   ownerPIN: null, 
+  enableOrderTracking: true, 
   operatingHours: Object.freeze({
     allowedDays: [],
     openTime: "08:00",
@@ -160,6 +163,11 @@ export const useSettingsStore = create((set, get) => ({
   toggleConfirmCompletion: async () => {
     const current = get().systemConfig?.confirmCompletion ?? true;
     return await get().updateSystemConfig({ confirmCompletion: !current });
+  },
+
+  toggleOrderTracking: async () => {
+    const current = get().systemConfig?.enableOrderTracking ?? true;
+    return await get().updateSystemConfig({ enableOrderTracking: !current });
   },
 
   setOperatingHours: async (config) => {

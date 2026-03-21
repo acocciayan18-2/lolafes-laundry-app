@@ -44,7 +44,7 @@ class OrderTransactionService {
   static async executeCancellation(orderId, reason, localOrderState, isLockedCheck) {
     if (!orderId || typeof orderId !== 'string') throw new ValidationError("Invalid order identifier.");
     
-    // ✨ FIX: Allow null customer_id ONLY IF the order is an anonymous Walk-In
+    // Allow null customer_id ONLY IF the order is an anonymous Walk-In
     if (!localOrderState?.is_walk_in && !localOrderState?.customer_id) {
       throw new ValidationError("Order is missing customer association.");
     }
@@ -58,7 +58,7 @@ class OrderTransactionService {
     try {
       let rewardLogDocRefs = [];
       
-      // ✨ FIX: Only query for used rewards if the customer is NOT anonymous
+      // Only query for used rewards if the customer is NOT anonymous
       if (!localOrderState?.is_walk_in && localOrderState?.order_number) {
         const rewardLogQuery = query(
           collection(db, "reward_logs"), 
@@ -69,54 +69,67 @@ class OrderTransactionService {
       }
 
       await runTransaction(db, async (transaction) => {
-        // 1. READ ORDER
+        // ==========================================
+        // PHASE 1: ALL READS FIRST
+        // ==========================================
+        
+        // Read Order
         const orderSnap = await transaction.get(orderRef);
         if (!orderSnap.exists()) throw new Error("Order record missing on server. It may have already been deleted.");
         
         const dbOrderData = orderSnap.data();
         
-        // Secondary lock check against authoritative DB data
         if (TERMINAL_STATUSES.includes(dbOrderData.status)) {
           throw new Error("Order has already been processed and cannot be cancelled.");
         }
 
+        // ✨ THE FIX: Read Customer data BEFORE we write anything!
+        let custSnap = null;
+        let customerRef = null;
+        
+        if (!dbOrderData.is_walk_in && localOrderState.customer_id) {
+          customerRef = doc(db, "customers", localOrderState.customer_id);
+          custSnap = await transaction.get(customerRef);
+        }
+
+        // ==========================================
+        // PHASE 2: ALL WRITES
+        // ==========================================
+        
         const pointsSpentOnReward = Math.max(0, Number(dbOrderData.loyalty_points_to_deduct) || 0);
 
-        // 2. WRITE ARCHIVE & DELETE ORDER
+        // Write to Archive
         transaction.set(archiveRef, {
           ...dbOrderData,
           status: 'cancelled',
           cancelled_at: serverTimestamp(),
           cancellation_reason: safeReason,
           points_returned_to_customer: pointsSpentOnReward > 0 ? pointsSpentOnReward : 0,
-          // ✨ FIX: Do not log point deductions for Walk-Ins
           points_deducted_from_customer: (pointsSpentOnReward === 0 && !dbOrderData.is_walk_in) ? 1 : 0
         });
 
+        // Delete Original Order
         transaction.delete(orderRef);
 
-        // 3. REVERT CUSTOMER LOYALTY & STATS (Skipped completely if Walk-In)
-        if (!dbOrderData.is_walk_in && localOrderState.customer_id) {
-          const customerRef = doc(db, "customers", localOrderState.customer_id);
-          const custSnap = await transaction.get(customerRef);
+        // Update Customer Loyalty & Stats
+        if (custSnap && custSnap.exists() && customerRef) {
+          const currentBalance = Math.max(0, Number(custSnap.data().loyalty_points) || 0);
+          let pointsAdjustment = pointsSpentOnReward > 0 ? pointsSpentOnReward : -1;
+          const newBalance = Math.max(0, currentBalance + pointsAdjustment);
 
-          if (custSnap.exists()) {
-            const currentBalance = Math.max(0, Number(custSnap.data().loyalty_points) || 0);
-            let pointsAdjustment = pointsSpentOnReward > 0 ? pointsSpentOnReward : -1;
-            const newBalance = Math.max(0, currentBalance + pointsAdjustment);
-
-            const customerUpdates = { order_count: increment(-1) };
-            if (currentBalance !== newBalance) {
-              customerUpdates.loyalty_points = newBalance;
-            }
-            if (rewardLogDocRefs.length > 0) {
-              customerUpdates.rewards_claimed = increment(-rewardLogDocRefs.length);
-            }
-
-            transaction.update(customerRef, customerUpdates);
+          const customerUpdates = { order_count: increment(-1) };
+          if (currentBalance !== newBalance) {
+            customerUpdates.loyalty_points = newBalance;
           }
-          
-          // Delete associated reward logs
+          if (rewardLogDocRefs.length > 0) {
+            customerUpdates.rewards_claimed = increment(-rewardLogDocRefs.length);
+          }
+
+          transaction.update(customerRef, customerUpdates);
+        }
+        
+        // Delete associated reward logs (if any)
+        if (!dbOrderData.is_walk_in) {
           rewardLogDocRefs.forEach(ref => transaction.delete(ref));
         }
       });

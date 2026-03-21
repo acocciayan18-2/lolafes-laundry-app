@@ -254,7 +254,7 @@ export default function StoreGuard({ children }) {
                 </div>
 
                 <div className="bg-slate-50 rounded-xl p-4 text-center border border-slate-100 mb-6">
-                  <p className="text-micro  text-slate-600 leading-relaxed">
+                  <p className="text-sm-text  text-slate-600 leading-relaxed">
                     {isCritical 
                       ? "Immediate action required. Please conclude all pending transactions and secure your current session now."
                       : "Please begin finalizing active operations, processing remaining transactions, and preparing for system closure."}

@@ -168,7 +168,7 @@ export default function PaymentSettings() {
           variant="primary"
           disabled={!newMethodName.trim() || isActionPending}
           isLoading={isActionPending}
-          className="px-8 rounded-2xl"
+          className="px-8 !font-normal rounded-2xl"
         >
           Add
         </Button>

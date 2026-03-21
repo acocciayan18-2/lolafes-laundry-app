@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { IconX, IconCheckWhite, IconLock, IconTrash } from '../icons'; // Added IconTrash
+import { IconX, IconLock, IconTrash } from '../icons'; // ✨ Removed IconCheckWhite
 import { useSettingsStore } from '../../store/settings/useSettingsStore';
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
 
@@ -41,36 +41,16 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
     }
   }, [lockoutTime, attempts]);
 
-  const handleKeyPress = (n) => {
-    if (lockoutTime > 0) return;
-    if (pin.length < PIN_LENGTH) {
-      setPin(p => p + n);
-      setError(false);
-    }
-  };
-
-  const handleDelete = () => {
-    if (lockoutTime > 0) return;
-    setPin(p => p.slice(0, -1));
-  };
-
-  // ✨ NEW: Clear entire PIN logic
-  const handleClearAll = () => {
-    if (lockoutTime > 0) return;
-    setPin("");
-    setError(false);
-  };
-
-  const handleSubmit = async () => {
+  // ✨ THE FIX: Extracted submission logic to handle the raw 6-digit string instantly
+  const processSubmit = async (currentPin) => {
     if (lockoutTime > 0) return;
 
     if (isSetupMode) {
-      if (pin.length < PIN_LENGTH) return;
-      await updateSystemConfig({ ownerPIN: pin });
+      await updateSystemConfig({ ownerPIN: currentPin });
       showNotification("PIN Set!", "success");
       onUnlock();
     } else {
-      if (pin === existingPIN) {
+      if (currentPin === existingPIN) {
         setAttempts(0);
         localStorage.removeItem('pin_lockout_until');
         onUnlock();
@@ -78,7 +58,7 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         setError(true);
-        setPin("");
+        setPin(""); // Clear immediately so they can try again
 
         if (newAttempts >= MAX_ATTEMPTS) {
           const unlockAt = Date.now() + (LOCKOUT_SECONDS * 1000);
@@ -92,6 +72,32 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
     }
   };
 
+  const handleKeyPress = (n) => {
+    if (lockoutTime > 0) return;
+    
+    if (pin.length < PIN_LENGTH) {
+      const newPin = pin + n;
+      setPin(newPin);
+      setError(false);
+      
+      // ✨ AUTO-SUBMIT: Trigger instantly when length hits 6
+      if (newPin.length === PIN_LENGTH) {
+        processSubmit(newPin);
+      }
+    }
+  };
+
+  const handleDelete = () => {
+    if (lockoutTime > 0) return;
+    setPin(p => p.slice(0, -1));
+  };
+
+  const handleClearAll = () => {
+    if (lockoutTime > 0) return;
+    setPin("");
+    setError(false);
+  };
+
   const isLockedOut = lockoutTime > 0;
 
   return (
@@ -99,9 +105,8 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
       <motion.div 
         initial={{ scale: 0.95, opacity: 0 }} 
         animate={{ scale: 1, opacity: 1 }}
-        className="w-full max-w-[320px] bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-center relative"
+        className="w-full max-w-[320px] p-6 text-center relative"
       >
-        {/* ✨ CLEAR ALL BUTTON (Only shows in Setup Mode when typing) */}
         {isSetupMode && pin.length > 0 && !isLockedOut && (
           <button 
             onClick={handleClearAll}
@@ -139,19 +144,21 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
 
         <div className={`grid grid-cols-3 gap-2 mb-4 transition-opacity ${isLockedOut ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-            <button key={n} onClick={() => handleKeyPress(n.toString())} disabled={isLockedOut} className="h-12 rounded-xl bg-slate-50 text-lg font-bold text-text-dark hover:bg-slate-100 active:scale-90 transition-all disabled:active:scale-100">
+            <button key={n} onClick={() => handleKeyPress(n.toString())} disabled={isLockedOut} className="h-12 rounded-xl border bg-white text-lg font-bold text-text-dark hover:bg-slate-100 active:scale-90 transition-all disabled:active:scale-100">
               {n}
             </button>
           ))}
+          
           <button onClick={handleDelete} disabled={isLockedOut} className="h-12 flex items-center justify-center text-slate-300 hover:text-rose-500 disabled:hover:text-slate-300">
             <IconX className="w-5 h-5" />
           </button>
-          <button onClick={() => handleKeyPress("0")} disabled={isLockedOut} className="h-12 rounded-xl bg-slate-50 text-lg font-bold text-text-dark hover:bg-slate-100 active:scale-90 transition-all disabled:active:scale-100">
+          
+          <button onClick={() => handleKeyPress("0")} disabled={isLockedOut} className="h-12 rounded-xl border bg-white text-lg font-bold text-text-dark hover:bg-slate-100 active:scale-90 transition-all disabled:active:scale-100">
             0
           </button>
-          <button onClick={handleSubmit} disabled={pin.length < PIN_LENGTH || isLockedOut} className="h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center disabled:opacity-30 disabled:bg-slate-200 disabled:text-slate-400 active:scale-90 transition-all disabled:active:scale-100">
-            <IconCheckWhite className="w-5 h-5" />
-          </button>
+          
+          {/* ✨ EMPTY DIV KEEPS GRID ALIGNED PERFECTLY */}
+          <div className="h-12"></div>
         </div>
 
         {isSetupMode && <p className="text-nano text-amber-600 font-bold bg-amber-50 py-2 rounded-lg mt-2">Do not forget this PIN</p>}

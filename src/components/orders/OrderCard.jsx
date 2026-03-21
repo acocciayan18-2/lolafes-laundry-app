@@ -190,7 +190,10 @@ export default function OrderCard({ order, tick }) {
     e.stopPropagation();
     setIsPrinting(true);
     try {
-      await silentPrint(order, settings.defaultPrinter || 'browser', receiptConfig); 
+      await silentPrint(order, systemConfig?.printerType || 'browser', {
+  ...receiptConfig,
+  enableTracking: systemConfig?.enableOrderTracking 
+});
       logActivity(order, order.status, { action: 'print', label: "Reprinted Receipt" });
       showNotification("Sending to printer...", "success");
     } catch (err) {
@@ -492,7 +495,7 @@ export default function OrderCard({ order, tick }) {
                 
                 <div className="space-y-4 flex flex-col h-full">
                   <div>
-                    <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5">
+                    <h4 className="text-micro  text-text-dark/60  flex items-center gap-1.5">
                       <IconShirt className="w-3.5 h-3.5" aria-hidden="true"/> Services
                     </h4>
                     <ul className="flex flex-wrap gap-1.5 list-none p-0 mt-2">
@@ -506,10 +509,10 @@ export default function OrderCard({ order, tick }) {
                   </div>
 
                   <div className="mt-auto bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm" aria-label="Payment Breakdown">
-                    <h4 className="text-micro font-bold text-text-dark/50 uppercase mb-2 tracking-wider">Payment Summary</h4>
+                    <h4 className="text-micro  text-text-dark/60  mb-2 ">Payment Summary</h4>
                     <div className="space-y-1.5 text-sm-text">
                       <div className="flex justify-between">
-                        <span className="text-text-dark/70">Subtotal/Total:</span>
+                        <span className="text-text-dark/80">Subtotal/Total:</span>
                         <span className="font-bold text-text-dark">
                           ₱{safeMoney(order.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
@@ -518,13 +521,13 @@ export default function OrderCard({ order, tick }) {
                       {order.is_paid && String(order.payment_method).toLowerCase().includes('cash') && (
                         <>
                           <div className="flex justify-between">
-                            <span className="text-text-dark/70">Amount Tendered:</span>
+                            <span className="text-text-dark/80">Amount Tendered:</span>
                             <span className="font-bold text-text-dark">
                               ₱{safeMoney(order.amount_tendered || order.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </span>
                           </div>
                           <div className="flex justify-between border-t border-slate-200 pt-1.5 mt-1.5">
-                            <span className="text-text-dark/70 font-normal">Change Due:</span>
+                            <span className="text-text-dark/80 font-normal text-sm-text">Change Due:</span>
                             <span className="font-bold text-emerald-600">
                               ₱{safeMoney(order.change_due || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </span>
@@ -536,7 +539,7 @@ export default function OrderCard({ order, tick }) {
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5"><IconInfo className="w-3.5 h-3.5" aria-hidden="true"/> Contact Details</h4>
+                  <h4 className="text-micro  text-text-dark/60 flex items-center gap-1.5"><IconInfo className="w-3.5 h-3.5" aria-hidden="true"/> Contact Details</h4>
                   <address className="space-y-1.5 text-sm-text  text-text-dark not-italic">
                     <div className="flex items-center gap-2">
                       <IconPhone className="w-3.5 h-3.5 opacity-60" aria-hidden="true"/> 
@@ -559,7 +562,7 @@ export default function OrderCard({ order, tick }) {
                 <div className="flex flex-col justify-between space-y-4">
                   <div className="space-y-2 relative">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-micro font-bold text-text-dark/50 uppercase flex items-center gap-1.5"><IconEditPen className="w-3.5 h-3.5" aria-hidden="true"/>Notes</h4>
+                      <h4 className="text-micro  text-text-dark/60 flex items-center gap-1.5"><IconEditPen className="w-3.5 h-3.5" aria-hidden="true"/>Notes</h4>
                     </div>
                     
                     {isEditingNotes ? (

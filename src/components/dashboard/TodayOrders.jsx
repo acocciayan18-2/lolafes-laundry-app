@@ -35,12 +35,12 @@ const getSafeDate = (ts) => {
 };
 
 const maskPhone = (phone) => {
-  if (!phone || typeof phone !== 'string') return "N/A";
+  if (!phone || typeof phone !== 'string') return "No contact information";
   return phone.replace(/.(?=.{4})/g, '•');
 };
 
 const maskAddress = (address) => {
-  if (!address || typeof address !== 'string') return "N/A";
+  if (!address || typeof address !== 'string') return "No address provided";
   return "••••• Hidden for privacy";
 };
 
@@ -387,7 +387,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
                       <span className="text-sm-text  text-text-dark/70">Address</span>
                     </div>
                     <span className="text-sm-text  text-text-dark text-right pl-2 leading-snug" aria-live="polite">
-                      {isPiiRevealed ? (selectedOrder.customer_address || "N/A") : maskAddress(selectedOrder.customer_address)}
+                      {isPiiRevealed ? (selectedOrder.customer_address || "No address provided") : maskAddress(selectedOrder.customer_address)}
                     </span>
                   </div>
                 </div>

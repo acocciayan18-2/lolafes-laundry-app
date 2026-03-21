@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import ForgotPassword from "../modal/ForgotPassword";
 import { LoginPopup } from "../modal/LoginPopup";
 import { useLoginStore } from "../store/auth/useLoginStore"; 
+import { useSettingsStore } from "../store/settings/useSettingsStore"; // ✨ Added Settings Store
+import { SystemPinModal } from "../components/security/SystemPinModal"; // ✨ Added Modal Import
 import { IconAtSymbol, IconLock, IconEyeOpen, IconEyeClosed, IconClose } from "../components/icons";
 import { TERMS_AND_POLICY } from '../constants/termsContent';
 
@@ -30,7 +32,7 @@ const TermsModal = ({ isOpen, onClose }) => {
       <div className="bg-white w-full max-w-lg max-h-[80vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-100">
         <header className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
-            <h2 id="terms-title" className="text-base-text font-bold text-text-dark leading-none">
+            <h2 id="terms-title" className="text-base-text  text-text-dark leading-none">
               Terms & Privacy Policy
             </h2>
             <p className="text-nano text-text-dark/40 uppercase mt-1.5 ">
@@ -49,7 +51,7 @@ const TermsModal = ({ isOpen, onClose }) => {
         <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar text-left" tabIndex={0}>
           {TERMS_AND_POLICY.sections.map(s => (
             <div key={s.id}>
-              <h4 className="text-micro font-bold text-text-dark uppercase mb-1 flex items-center gap-2">
+              <h4 className="text-micro  text-text-dark uppercase mb-1 flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-app-dark" aria-hidden="true" />
                 {s.title}
               </h4>
@@ -81,6 +83,14 @@ export default function Login() {
   const navigate = useNavigate();
   const { isLoginLoading, isResetLoading, popup, clearPopup, loginUser, resetPassword } = useLoginStore();
   
+  // ✨ Gatekeeper State
+  const [isPinVerified, setIsPinVerified] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const systemConfig = useSettingsStore((state) => state.systemConfig);
+
+  // Form State
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -89,6 +99,26 @@ export default function Login() {
   const [showTermsModal, setShowTermsModal] = useState(false);
 
   const passwordInputRef = useRef(null);
+
+  // ✨ PIN Verification Handler
+  const handlePinVerification = useCallback((enteredPin) => {
+    setIsVerifying(true);
+    setPinError("");
+
+    setTimeout(() => {
+      // Validate against the database-configured PIN
+      if (enteredPin !== systemConfig?.system_pin) {
+        setPinError("Invalid Security PIN");
+        setIsVerifying(false);
+        setPinInput(""); // Clear for retry
+        return;
+      }
+
+      // Unlock the component
+      setIsPinVerified(true);
+      setIsVerifying(false);
+    }, 500); // 500ms delay to prevent rapid brute-force
+  }, [systemConfig?.system_pin]);
 
   // UseMemo prevents regex recompilation on every keystroke
   const isFormValid = useMemo(() => {
@@ -127,26 +157,54 @@ export default function Login() {
     });
   }, [resetEmail, resetPassword]);
 
+  // ==========================================
+  // ✨ THE ZERO-TRUST EARLY RETURN
+  // ==========================================
+  if (!isPinVerified) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center relative overflow-hidden">
+        {/* Subtle background branding while locked */}
+        <div className="absolute inset-0 opacity-5 flex items-center justify-center pointer-events-none">
+           <IconLock className="w-96 h-96 text-app-dark" aria-hidden="true" />
+        </div>
+        
+        <SystemPinModal 
+          isOpen={true}
+          hideClose={true} // Forces them to enter the PIN, no escaping
+          onSubmit={handlePinVerification}
+          title="Store Login Portal"
+          pin={pinInput}
+          setPin={setPinInput}
+          error={pinError}
+          isProcessing={isVerifying}
+        />
+      </main>
+    );
+  }
+
+  // ==========================================
+  // ACTUAL LOGIN UI (Rendered only after auth)
+  // ==========================================
   return (
-    <div className="flex justify-center items-center w-full min-h-screen p-3 bg-white overflow-y-auto">
+    <div className="flex justify-center items-center w-full min-h-screen p-3 bg-white overflow-y-auto animate-fade-in">
       <LoginPopup message={popup.message} type={popup.type} onClose={clearPopup} />
 
       <main className="flex flex-col w-full max-w-[350px] p-3 bg-white mt-[-100px]">
         <header className="flex justify-center items-center w-full flex-col">
-          <div className="mb-3 flex justify-center items-center w-14 h-14 bg-app-dark rounded-xl overflow-hidden">
+          <div className="mb-3 flex justify-center items-center w-14 h-14 bg-app-dark rounded-xl overflow-hidden shadow-sm">
             <img src="/images/lolafeslaundry-logo-transparent.png" alt="Lola Fe's Laundry Logo" className="w-12 h-12 object-contain" />
           </div>
-          <h1 className="text-center text-h1 font-bold text-text-dark mb-2">
+          <h1 className="text-center text-h1 font-bold text-text-dark mb-2 tracking-tight">
             Welcome to Lola Fe's Laundry&nbsp;Shop
           </h1>
-          <p className="text-center text-base-text text-text-dark/70 mb-4">
+          <p className="text-center text-base-text text-text-dark/70 mb-4 ">
             Log in to continue
           </p>
         </header>
 
         <form onSubmit={handleLogin} noValidate aria-label="Login form">
           <div className="mb-3 text-start">
-            <label htmlFor="login-email" className="block text-text-dark text-sm-text mb-1 ">Email</label>
+            <label htmlFor="login-email" className="block text-text-dark/80 text-sm-text mb-1 ">Email</label>
             <div className="relative flex items-center w-full mb-3 text-start">
               <span className="absolute left-3 text-text-dark" aria-hidden="true">
                 <IconAtSymbol className="w-4 h-4" />
@@ -155,7 +213,7 @@ export default function Login() {
                 type="email"
                 id="login-email"
                 maxLength={254}
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg text-text-dark text-sm-text outline-none focus:ring-1 focus:ring-app-dark transition-all disabled:opacity-50 disabled:bg-slate-50"
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg text-text-dark text-sm-text  outline-none focus:ring-0 focus:border-app-dark  transition-all disabled:opacity-50 disabled:bg-slate-50 shadow-sm"
                 placeholder="Enter your Email"
                 required
                 autoComplete="email"
@@ -169,7 +227,7 @@ export default function Login() {
           </div>
 
           <div className="mb-3 text-start">
-            <label htmlFor="login-password" className="block text-text-dark text-sm-text mb-1 ">Password</label>
+            <label htmlFor="login-password" className="block text-text-dark/80 text-sm-text mb-1 ">Password</label>
             <div className="relative w-full flex items-center">
               <span className="absolute left-3 text-text-dark" aria-hidden="true">
                 <IconLock className="w-4 h-4" />
@@ -179,7 +237,7 @@ export default function Login() {
                 type={showPassword ? "text" : "password"}
                 id="login-password"
                 maxLength={128}
-                className="w-full pl-10 pr-[40px] py-3 border border-slate-300 rounded-lg text-text-dark text-sm-text outline-none focus:ring-1 focus:ring-app-dark transition-all box-border disabled:opacity-50 disabled:bg-slate-50"
+                className="w-full pl-10 pr-[40px] py-3 border border-slate-300 rounded-lg text-text-dark text-sm-text  outline-none focus:ring-0 focus:border-app-dark  transition-all box-border disabled:opacity-50 disabled:bg-slate-50 shadow-sm"
                 placeholder="Enter your password"
                 required
                 autoComplete="current-password"
@@ -189,7 +247,7 @@ export default function Login() {
               />
               <button
                 type="button"
-                className="absolute right-3 flex items-center justify-center p-1 rounded hover:bg-slate-100 transition-colors focus:ring-1 focus:ring-app-dark outline-none disabled:opacity-50"
+                className="absolute right-3 flex items-center justify-center p-1 rounded hover:bg-slate-100 transition-colors opacity-80 focus:ring-0 outline-none disabled:opacity-50"
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 aria-pressed={showPassword}
@@ -199,12 +257,12 @@ export default function Login() {
               </button>
             </div>
 
-            <div className="text-end mt-1">
+            <div className="text-end mt-2">
               <button
                 type="button"
                 onClick={() => setShowForgotPopup(true)}
                 disabled={isLoginLoading}
-                className="text-nano text-blue-600 hover:text-blue-800 focus:text-blue-800 transition-colors  outline-none rounded focus:ring-1 focus:ring-blue-200 disabled:opacity-50"
+                className="text-nano text-blue-600  hover:text-blue-800 focus:text-blue-800 transition-colors outline-none rounded focus:ring-0 disabled:opacity-50"
               >
                 Forgot Password?
               </button>
@@ -214,7 +272,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoginLoading || !isFormValid}
-            className={`w-full bg-app-dark text-white  text-sm-text px-4 py-3 rounded-lg shadow cursor-pointer transition-all focus:outline-none focus:ring-4 focus:ring-app-dark/30 ${
+            className={`w-full bg-app-dark text-white  text-sm-text px-4 py-3 rounded-lg shadow cursor-pointer transition-all focus:outline-none focus:ring-0 mt-2 ${
               (isLoginLoading || !isFormValid) ? "opacity-40 cursor-not-allowed" : "hover:opacity-90 shadow-md active:scale-95"
             }`}
             aria-live="polite"
@@ -223,12 +281,12 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-4 text-center">
-          <p className="text-nano text-text-dark/50 leading-relaxed max-w-[280px] mx-auto">
+        <div className="mt-5 text-center">
+          <p className="text-nano text-text-dark/60  leading-relaxed max-w-[280px] mx-auto">
             By logging in or creating an account, you agree to our{" "}
             <button 
               onClick={() => setShowTermsModal(true)}
-              className="text-blue-600 font-bold hover:underline focus:outline-none focus:ring-1 focus:ring-blue-200 rounded"
+              className="text-blue-600  hover:underline focus:outline-none focus:ring-0 rounded"
               aria-haspopup="dialog"
             >
               Terms of Service and Privacy Policy
@@ -236,12 +294,12 @@ export default function Login() {
           </p>
         </div>
 
-        <div className="mt-2 flex gap-3 justify-center border-t border-slate-100 pt-4">
-          <p className="text-micro text-text-dark/70">
+        <div className="mt-4 flex gap-3 justify-center border-t border-slate-100 pt-5">
+          <p className="text-micro text-text-dark/70 ">
             Don't have an account?{" "}
             <Link 
               to={isLoginLoading ? "#" : "/signup"} 
-              className={`text-micro text-blue-600 font-bold no-underline rounded focus:outline-none focus:ring-1 focus:ring-blue-200 ${isLoginLoading ? "opacity-50 cursor-not-allowed pointer-events-none" : "hover:text-blue-800"}`}
+              className={`text-micro text-blue-600  no-underline rounded focus:outline-none focus:ring-0  ${isLoginLoading ? "opacity-50 cursor-not-allowed pointer-events-none" : "hover:text-blue-800"}`}
             >
               Sign up
             </Link>

@@ -9,6 +9,7 @@ import { useEffect, useState, memo, useMemo, useCallback } from "react";
 import { useReportStore } from "../store/reports/useReportStore";
 import { useOrderStore } from "../store/orders/useOrderStore";
 import ExportOrdersButton from "../components/reports/ExportOrdersButton";
+import DeletedCustomersBoard from '../components/reports/DeletedCustomersBoard'; 
 
 // Component Imports
 import CustomerMix from "../components/reports/CustomerMix";
@@ -21,7 +22,6 @@ import { ReportsSkeleton } from "../components/skeleton-loader";
 import { CancelledOrdersList } from "../components/reports/CancelledOrdersList";
 import RewardRecipients from '../components/reports/RewardRecipients';
 
-// --- PERFORMANCE: ISOLATED CLOCK (Prevents parent re-renders) ---
 const ReportHeaderClock = memo(() => {
   const [time, setTime] = useState(new Date());
 
@@ -60,6 +60,7 @@ export default function Reports() {
   
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [hasDeletedCustomers, setHasDeletedCustomers] = useState(true);
 
   // 1. Network Status Listener (Resilience)
   useEffect(() => {
@@ -126,7 +127,7 @@ export default function Reports() {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  return (
+ return (
     <main className="min-h-screen bg-app-light p-2" aria-busy={shouldShowSkeleton}>
       <div className="max-w-6xl mx-auto px-1 md:px-2 pb-20">
         
@@ -180,6 +181,7 @@ export default function Reports() {
               ) : (
                 <div className="flex flex-col gap-4">
                   
+                  {/* Top Row Full-Width Metrics */}
                   {safeOrders.length > 0 && (
                     <>
                       <div className="w-full">
@@ -194,6 +196,7 @@ export default function Reports() {
                     </>
                   )}
 
+                  {/* Masonry Grid (2 Columns on Desktop) */}
                   <div className="columns-1 lg:columns-2 gap-4 w-full mt-2">
                     {safeOrders.length > 0 && (
                       <>
@@ -223,6 +226,11 @@ export default function Reports() {
                           <RewardRecipients orders={safeOrders} />
                       </div>
                     )}
+
+                   <div className={`break-inside-avoid ${hasDeletedCustomers ? 'mb-4 block' : 'hidden'}`}>
+                        <DeletedCustomersBoard onDataStatus={setHasDeletedCustomers} />
+                    </div>
+
                   </div>
                 </div>
               )}

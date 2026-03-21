@@ -8,17 +8,14 @@ import {
   IconDelivery
 } from "../icons";
 
-// ==========================================
-// UTILITY HELPERS
-// ==========================================
 
 const maskPhone = (phone) => {
-  if (!phone || typeof phone !== 'string') return "N/A";
+  if (!phone || typeof phone !== 'string') return "No contact information";
   return phone.replace(/.(?=.{4})/g, '•');
 };
 
 const maskAddress = (address) => {
-  if (!address || typeof address !== 'string') return "N/A";
+  if (!address || typeof address !== 'string') return "No address provided";
   return "••••• Hidden for privacy";
 };
 
@@ -170,7 +167,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
                   {order.is_walk_in ? (
                     <span className="italic opacity-70">Anonymous (No Phone)</span>
                   ) : isPiiRevealed ? (
-                    order.customer_phone || "N/A"
+                    order.customer_phone || "No contact information"
                   ) : (
                     maskPhone(order.customer_phone)
                   )}
@@ -183,7 +180,7 @@ const CancelledOrderDetailModal = ({ order, isOpen, onClose }) => {
                   <span className="text-sm-text  text-text-dark/70">Address</span>
                 </div>
                 <span className="text-sm-text  text-text-dark text-right pl-2 leading-snug" aria-live="polite">
-                  {isPiiRevealed ? (order.customer_address || "N/A") : maskAddress(order.customer_address)}
+                  {isPiiRevealed ? (order.customer_address || "N0 address provided") : maskAddress(order.customer_address)}
                 </span>
               </div>
             </div>

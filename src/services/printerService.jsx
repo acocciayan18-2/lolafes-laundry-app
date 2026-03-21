@@ -2,9 +2,13 @@
  * @file printService.js
  * @description Enterprise-grade Hardware and Browser Print Orchestrator.
  * Implements ESC/POS encoding, WebUSB/WebBluetooth interfacing, and Auto-Print HTML rendering.
+ * Now includes cryptographic HMAC-SHA256 tracking URLs.
  */
 
 import EscPosEncoder from 'esc-pos-encoder';
+// ✨ IMPORT CRYPTO TOOLS
+import hmacSHA256 from 'crypto-js/hmac-sha256';
+import Hex from 'crypto-js/enc-hex';
 
 // ==========================================
 // CONFIGURATION CONSTANTS
@@ -57,9 +61,6 @@ const checkHardwareSupport = (type) => {
   return true;
 };
 
-// ==========================================
-// MAIN PRINT SERVICE
-// ==========================================
 
 export const silentPrint = async (order, type, config) => {
   if (!order || typeof order !== 'object') {
@@ -70,7 +71,8 @@ export const silentPrint = async (order, type, config) => {
     storeName = "LOLA FE'S LAUNDRY", 
     address = "", phone = "", email = "", website = "", 
     footerMessage = "THANK YOU FOR COMING!",
-    showOrderDate = true, showPrintDate = true 
+    showOrderDate = true, showPrintDate = true,
+     enableTracking = true
   } = config || {};
 
   // --- DATA PREPARATION ---
@@ -92,6 +94,15 @@ export const silentPrint = async (order, type, config) => {
   const changeDue = isCash && order.is_paid ? (Number(order.change_due) || 0) : null;
   
   const orderNotes = sanitizeText(order.special_instructions || order.notes || "");
+
+  // ✨ GENERATE DYNAMIC SECURE TRACKING URL
+  // We use the exact same math here as we did in ReceiptQRCode.jsx
+  const safeId = orderNumber.toUpperCase();
+  const secretKey = import.meta.env.VITE_TRACKING_SECRET || "lola-fe-super-secret-key-2026";
+  const signature = hmacSHA256(safeId, secretKey).toString(Hex).substring(0, 8);
+  
+  const baseUrl = "https://customer-site-lolafes-laundry.vercel.app"; 
+  const trackingUrl = `${baseUrl}/track/${safeId.toLowerCase()}/${signature}`;
 
   // ==========================================
   // HARDWARE PRINTING (USB / BLUETOOTH)
@@ -160,8 +171,18 @@ export const silentPrint = async (order, type, config) => {
         });
       }
 
-      // Footer Block (Aggressively compacted)
-      result.align('center').line("--------------------------------").line(sanitizeText(footerMessage)).cut();
+      // ✨ PRINT SECURE QR CODE TO HARDWARE PRINTER
+      if (enableTracking) {
+        result.align('center')
+          .line("--------------------------------")
+          .line("SCAN TO TRACK ORDER")
+          .qrcode(trackingUrl, 2, 6, 'm') 
+          .line(trackingUrl.replace(/^https?:\/\//, ''))
+          .line("--------------------------------");
+      }
+
+      // Footer Block 
+      result.line(sanitizeText(footerMessage)).cut();
       
       const receiptData = result.encode();
 
@@ -205,6 +226,9 @@ export const silentPrint = async (order, type, config) => {
       const printWindow = window.open('', '_blank', 'width=400,height=600');
       if (!printWindow) throw new Error("Popup blocked! Please allow popups for this site.");
       
+      // ✨ BROWSER QR CODE INJECTION WITH NEW SECURE URL
+      const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(trackingUrl)}`;
+
       const receiptHtml = `
         <!DOCTYPE html>
         <html>
@@ -215,7 +239,7 @@ export const silentPrint = async (order, type, config) => {
                 font-family: 'Courier New', Courier, monospace; 
                 width: 72mm; margin: 0 auto; padding: 5px; color: #000; 
                 text-transform: uppercase; font-weight: bold; 
-                line-height: 1.1; /* ✨ Aggressive Y-Axis Compression */
+                line-height: 1.1; 
               }
               .center { text-align: center; }
               .line { border-top: 1px dashed black; margin: 4px 0; opacity:50%; }
@@ -228,6 +252,9 @@ export const silentPrint = async (order, type, config) => {
               .payment-info { font-size: 11px; margin-top: 2px; }
               .notes-section { font-size: 11px; text-align: left; margin-top: 2px; white-space: pre-wrap; word-wrap: break-word; }
               .header-info { font-size: 11px; font-weight: bold; margin-bottom: 2px; }
+              .qr-container { margin-top: 8px; text-align: center; }
+              .qr-img { width: 120px; height: 120px; mix-blend-mode: multiply; }
+              .qr-text { font-size: 10px; margin-top: 2px; text-transform: lowercase; font-weight: normal; word-break: break-all; }
               @media print { 
                 @page { margin: 0; }
                 body { padding: 0; width: 100%; } 
@@ -282,21 +309,40 @@ export const silentPrint = async (order, type, config) => {
             
               <div class="total-row">TOTAL: P${formatMoney(totalAmount)}</div>
               
-              ${isCash && order.is_paid && amountTendered !== null ? `
+            
+            ${isCash && order.is_paid && amountTendered !== null ? `
                 <div class="cash-row">CASH: P${formatMoney(amountTendered)}</div>
                 <div class="cash-row">CHANGE: P${formatMoney(changeDue)}</div>
               ` : ''}
 
-             
+             ${enableTracking ? `
+                <div class="line"></div>
+                <div class="qr-container">
+                  <div style="font-size:11px; font-weight:bold; margin-bottom: 2px;">SCAN TO TRACK ORDER</div>
+                  <img id="qr-barcode" src="${qrImageUrl}" alt="Tracking QR Code" class="qr-img" />
+                  <div class="qr-text">${trackingUrl.replace(/^https?:\/\//, '')}</div>
+                </div>
+              ` : ''}
+
               <div class="center" style="margin-top: 6px; font-size:12px;">
-             
                 <p style="font-weight: 900; font-size: 14px; margin: 4px 0;">${sanitizeText(footerMessage)}</p>
               </div>
             </div>
             
             <script>
               window.onload = function() {
-                setTimeout(function() { window.print(); window.close(); }, 250);
+                var qrImg = document.getElementById('qr-barcode');
+                
+                var executePrint = function() {
+                  setTimeout(function() { window.print(); window.close(); }, 200);
+                };
+
+                if (!qrImg || qrImg.complete) {
+                  executePrint();
+                } else {
+                  qrImg.onload = executePrint;
+                  qrImg.onerror = executePrint; 
+                }
               };
             </script>
           </body>

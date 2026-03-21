@@ -1,12 +1,12 @@
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion';
-import React, { useEffect, useState, useCallback, useRef, useMemo, memo } from 'react';
+import  { useEffect, useState, useCallback, useRef, useMemo, memo } from 'react';
 import { useOrderStore } from '../../store/orders/useOrderStore';
 import { useUnclaimedStore } from '../../store/orders/useUnclaimedStore';
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
 import { usePaymentSettingsStore } from '../../store/settings/usePaymentSettingsStore';
 import { useActivityStore } from '../../store/activities/useActivityStore'; 
 import {
-  IconAlertCircle, IconArrowRight, IconClose, IconHash, IconPhone, IconEyeOpen, IconEyeClosed
+  IconAlertCircle, IconArrowRight, IconClose, IconMapPin, IconPhone, IconEyeOpen, IconEyeClosed
 } from '../icons';
 import PaymentUpdateModal from '../orders/PaymentUpdateModal'; 
 
@@ -22,8 +22,8 @@ const getSafeDate = (ts) => {
   return isNaN(parsed.getTime()) ? new Date() : parsed;
 };
 
-const maskPhone = (phone) => typeof phone === 'string' ? phone.replace(/.(?=.{4})/g, '•') : "N/A";
-const maskAddress = (address) => address ? "••••• Hidden for privacy" : "N/A";
+const maskPhone = (phone) => typeof phone === 'string' ? phone.replace(/.(?=.{4})/g, '•') : "No contact information";
+const maskAddress = (address) => address ? "••••• Hidden for privacy" : "No address provided";
 
 const formatOverdueTime = (readyDate) => {
   const diffMs = Math.max(0, Date.now() - readyDate.getTime()); 
@@ -342,7 +342,7 @@ const UnclaimedOrders = () => {
                 <button 
                   onClick={() => setSelectedOrder(null)}
                   disabled={isUpdating}
-                  className="absolute top-4 right-4 p-2 disabled:opacity-50 focus:outline-none focus:ring-1 focus:ring-rose-400 rounded-lg transition-colors hover:bg-rose-100/50"
+                  className="absolute top-4 right-4 p-2 disabled:opacity-50 focus:outline-none  rounded-full transition-colors hover:bg-rose-100/50"
                   aria-label="Close modal"
                 >
                   <IconClose className="w-5 h-5 text-text-dark/70" />
@@ -388,7 +388,7 @@ const UnclaimedOrders = () => {
                       {selectedOrder.is_walk_in ? (
                         <span className="italic opacity-70">Anonymous (No Phone)</span>
                       ) : isPiiRevealed ? (
-                        selectedOrder.customer_phone || "N/A"
+                        selectedOrder.customer_phone || "No contact information"
                       ) : (
                         maskPhone(selectedOrder.customer_phone)
                       )}
@@ -396,11 +396,11 @@ const UnclaimedOrders = () => {
                   </div>
                   <div className="flex justify-between items-start pr-8">
                     <div className="flex items-center gap-2.5 mt-0.5">
-                      <div className="w-4 flex justify-center"><IconHash className="w-3.5 h-3.5 text-text-dark/70" aria-hidden="true" /></div>
+                      <div className="w-4 flex justify-center"><IconMapPin className="w-3.5 h-3.5 text-text-dark/70" aria-hidden="true" /></div>
                       <span className="text-sm-text  text-text-dark/70">Address</span>
                     </div>
                     <span className="text-sm-text  text-text-dark text-right pl-2 leading-snug">
-                      {isPiiRevealed ? (selectedOrder.customer_address || "N/A") : maskAddress(selectedOrder.customer_address)}
+                      {isPiiRevealed ? (selectedOrder.customer_address || "No address provided") : maskAddress(selectedOrder.customer_address)}
                     </span>
                   </div>
                 </div>
