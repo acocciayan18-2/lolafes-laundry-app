@@ -107,7 +107,7 @@ const SessionSecurity = () => {
       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100/50 space-y-3">
         <div className="flex flex-col gap-1">
           <p id="session-security-desc" className="text-micro text-text-dark/70 leading-relaxed">
-            Automatically terminate the session if the browser tab is closed for over 30 seconds (TEST MODE). Prevents unauthorized access on shared devices.
+            Automatically terminate the session if the browser tab is closed for over 30 minutes. Prevents unauthorized access on shared devices.
           </p>
         </div>
 

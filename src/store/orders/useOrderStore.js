@@ -6,9 +6,7 @@ import {
   increment, updateDoc
 } from 'firebase/firestore';
 
-// ==========================================
-// ⚙️ CONFIGURATION & CONSTANTS (Frozen)
-// ==========================================
+
 const CONFIG = Object.freeze({
   STUCK_THRESHOLD_HOURS: 2,
   UNCLAIMED_THRESHOLD_HOURS: 48,
@@ -214,7 +212,7 @@ export const useOrderStore = create((set, get) => ({
     return (Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60) > CONFIG.STUCK_THRESHOLD_HOURS;
   },
 
- isOrderUnclaimed: (order) => {
+isOrderUnclaimed: (order) => {
   // 🛡️ DEFENSIVE GUARD: Strict state validation
   if (!order || order.status !== 'completed') return false;
 
@@ -228,18 +226,12 @@ export const useOrderStore = create((set, get) => ({
   const now = Date.now();
   const completionMs = completedTime.getTime();
 
-  // 🛡️ QA GUARD: Prevent "Future Clock" bugs (if client time is out of sync)
   if (completionMs > now) return false;
 
-  // --- ⏱️ TESTING CONFIGURATION ---
-  const elapsedSeconds = (now - completionMs) / 1000;
-  const TEST_THRESHOLD_SECONDS = 5;
-
-  // In Production, this would be: 
-  // (now - completionMs) / (1000 * 60 * 60) > CONFIG.UNCLAIMED_THRESHOLD_HOURS
-  return elapsedSeconds > TEST_THRESHOLD_SECONDS;
+  const elapsedHours = (now - completionMs) / (1000 * 60 * 60);
+  
+  return elapsedHours > CONFIG.UNCLAIMED_THRESHOLD_HOURS;
 },
-
   isOrderLocked: (order) => {
     if (!order || !order.updated_at) return false;
     if (!['picked_up', 'delivered'].includes(order.status)) return false;

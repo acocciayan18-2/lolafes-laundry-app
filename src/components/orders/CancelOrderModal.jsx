@@ -171,7 +171,7 @@ const CancelOrderModal = ({ isOpen, onClose, onConfirm, orderNumber }) => {
                 </div>
 
                 <h3 id="cancel-modal-title" className="text-h3 font-bold text-text-dark ">Cancel Order?</h3>
-                <p className="text-sm-text font-normal text-text-dark/60 mt-2 mb-8 px-2">
+                <p className="text-sm-text font-normal text-text-dark mt-2 mb-8 px-2">
                  Are you sure you want to cancel order <span className="font-bold text-text-dark whitespace-nowrap">#{orderNumber || "Unknown"}</span>?
                   This action will move the record to archives.
                 </p>

@@ -148,7 +148,6 @@ export const useSettingsStore = create((set, get) => ({
     }
   },
 
-  // --- ⚙️ BUSINESS LOGIC WRAPPERS ---
 
   toggleAutoPrint: async () => {
     const current = !!get().systemConfig?.autoPrint;

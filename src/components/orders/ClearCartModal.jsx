@@ -125,7 +125,7 @@ const ClearCartModal = ({ isOpen, onCancel, onConfirm }) => {
             </div>
             
             <h3 id="clear-cart-title" className="text-h3 font-bold text-text-dark">Clear Cart?</h3>
-            <p id="clear-cart-desc" className="text-sm-text font-normal text-text-dark/70 mt-2 mb-8 px-2">
+            <p id="clear-cart-desc" className="text-sm-text font-normal text-text-dark mt-2 mb-8 px-2">
               Changing the customer info will remove all items currently in the cart. Do you want to proceed?
             </p>
 

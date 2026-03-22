@@ -10,7 +10,7 @@ import QuickStats from '../components/dashboard/QuickStats';
 import RecentActivity from '../components/dashboard/RecentActivity';
 import TodayOrders from '../components/dashboard/TodayOrders';
 import UnclaimedOrders from '../components/dashboard/UnclaimedOrders';
-import { IconAlertTriangle, IconCheckCircle, IconClock, IconPackage, IconTrendingUp } from '../components/icons';
+import { IconAlertTriangle, IconCheckCircle, IconClock, IconPackage, IconDollarSign} from '../components/icons';
 import { DashboardSkeleton } from '../components/skeleton-loader';
 
 // ==========================================
@@ -239,9 +239,9 @@ export default function Dashboard() {
             <section id="step-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Key Performance Indicators">
     {/* Today's Sales - Emerald Theme */}
    <QuickStats 
-    title="Today's Sales" 
+    title="Today's Revenue" 
     value={`₱${formattedRevenue}`} 
-    icon={<IconTrendingUp />} 
+    icon={<IconDollarSign />} 
     iconClass="text-emerald-600 stroke-emerald-600"
     trend={`${stats.todayOrders?.length || 0} orders`} 
 />

@@ -17,7 +17,7 @@ import Button from '../ui/Button';
  */
 const FormField = React.memo(({ label, id, error, icon: Icon, children }) => (
   <div className="space-y-1">
-    <label htmlFor={id} className="text-micro  text-text-dark/80 ml-1">
+    <label htmlFor={id} className="text-sm-text  text-text-dark/70 ml-1">
       {label}
     </label>
     <div className="relative">
@@ -211,7 +211,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
 
   // --- RENDER ---
   const inputClass = (err) => `
-    w-full pl-10 pr-4 py-3 border  rounded-xl text-sm-text focus:outline-none focus-visible:ring-none transition-all
+    w-full pl-10 pr-4 py-3 border  rounded-xl text-sm-text focus:outline-none focus-visible:ring-none 
     ${err ? 'border-rose-500 focus:border-rose-600 focus-visible:ring-rose-500/50 bg-rose-50/30' : 'border-app-dark/20 focus:border-app-dark/90 focus-visible:ring-app-dark/50 bg-white'}
   `;
 
@@ -284,7 +284,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
             <textarea 
               id="edit-address"
               rows="2" 
-              className={`${inputClass()} resize-none custom-scrollbar`} 
+              className={`${inputClass()}  capitalize resize-none custom-scrollbar`} 
               value={formData.address} 
               onChange={handleAddressChange} 
               placeholder="House No., Street, Brgy."

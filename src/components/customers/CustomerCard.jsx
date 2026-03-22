@@ -9,7 +9,7 @@ import {
   IconDotsHorizontal,
   IconMapPin,
   IconPhone,
-  IconEdit,
+  IconEditPen,
   IconTrash,
   IconShirt,
 } from "../icons";
@@ -238,7 +238,7 @@ const CustomerCard = ({ customer, onEdit }) => {
                     onClick={handleEditClick}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm-text  text-text-dark hover:bg-gray-50 transition-colors border-b border-gray-100 focus:outline-none focus-visible:bg-gray-100"
                   >
-                    <IconEdit className="w-4 h-4 text-gray-400" aria-hidden="true" /> Edit Details
+                    <IconEditPen className="w-4 h-4 text-gray-400" aria-hidden="true" /> Edit Details
                   </button>
                   <button
                     role="menuitem"

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useReportStore } from "../../store/reports/useReportStore";
 import { IconDollarSign, IconInfo, IconPackage, IconTrendingUp, IconZap } from "../icons";
-import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react'; // ✨ Updated v2.0 Imports
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const FILTER_OPTIONS = [
@@ -9,6 +9,17 @@ const FILTER_OPTIONS = [
   { label: "30 Days", value: "30" },
   { label: "1 Year", value: "365" },
 ];
+
+// ✨ NEW: Currency Formatter
+// Keeps up to 2 decimals, but drops them if they are .00
+const formatCurrency = (value) => {
+  const num = Number(value) || 0;
+  // This tells JS to allow up to 2 decimals, but not force them if it's a whole number.
+  return `₱${num.toLocaleString('en-US', { 
+    minimumFractionDigits: 0, 
+    maximumFractionDigits: 2 
+  })}`;
+};
 
 export default function KpiCards() {
   const [selectedOption, setSelectedOption] = useState(FILTER_OPTIONS[0]);
@@ -42,9 +53,10 @@ export default function KpiCards() {
   };
 
   const items = [
-    { label: "Total Sales", value: `₱${Math.round(totalRevenue).toLocaleString()}`, icon: <IconDollarSign className="text-emerald-600 stroke-emerald-600" />, trend: "Gross earnings" },
+    // ✨ FIX: Removed Math.round() and applied the new formatCurrency helper
+    { label: "Total Revenue", value: formatCurrency(totalRevenue), icon: <IconDollarSign className="text-emerald-600 stroke-emerald-600" />, trend: "Gross earnings" },
     { label: "Orders Volume", value: totalOrders.toLocaleString(), icon: <IconPackage className="text-blue-600 stroke-blue-600" />, trend: "Total loads" },
-    { label: "Avg Order Value", value: `₱${Math.round(aov).toLocaleString()}`, icon: <IconTrendingUp className="text-amber-600 stroke-amber-600" />, trend: "Per customer" },
+    { label: "Avg Order Value", value: formatCurrency(aov), icon: <IconTrendingUp className="text-amber-600 stroke-amber-600" />, trend: "Per customer" },
     { label: "Avg Turnaround", value: formatDuration(avgTat), icon: <IconZap className="text-violet-600 stroke-violet-600" />, trend: "Processing speed" },
   ];
 
@@ -56,7 +68,7 @@ export default function KpiCards() {
           <Listbox value={selectedOption} onChange={setSelectedOption}>
             {({ open }) => (
               <>
-                <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-10 text-sm-text font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none">
+                <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-10 text-sm-text text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none">
                   <span className="block truncate ">{selectedOption.label}</span>
                   <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                     <svg className={`w-4 h-4 text-text-dark/50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,35 +135,34 @@ export default function KpiCards() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-  {items.map((kpi, i) => (
-    <div key={i} className="bg-white rounded-xl shadow-md border border-app-dark/10 overflow-hidden">
-      <div className="p-4 ">
-        <div className="flex items-start justify-between gap-1">
-          <div className="min-w-0 flex-1">
-            {/* ✨ FIX: Added pb-0.5 to prevent bottom clipping */}
-            <p className="text-micro  text-text-dark/70 mb-1 pb-0.5 truncate">
-              {kpi.label}
-            </p>
-            
-            <p className="text-h1 md:text-h1 font-bold text-text-dark leading-tight pb-1 truncate tracking-tighter cursor-default" title={kpi.value}>
-              {kpi.value}
-            </p>
-            
-            <p className="text-micro  text-text-dark/60 mt-2 pb-0.5 truncate">
-              {kpi.trend}
-            </p>
+        {items.map((kpi, i) => (
+          <div key={i} className="bg-white rounded-xl shadow-md border border-app-dark/10 overflow-hidden">
+            <div className="p-4 ">
+              <div className="flex items-start justify-between gap-1">
+                <div className="min-w-0 flex-1">
+                  <p className="text-micro  text-text-dark/70 mb-1 pb-0.5 truncate">
+                    {kpi.label}
+                  </p>
+                  
+                  <p className="text-h1 md:text-h1 font-bold text-text-dark leading-tight pb-1 truncate tracking-tighter cursor-default" title={kpi.value}>
+                    {kpi.value}
+                  </p>
+                  
+                  <p className="text-micro  text-text-dark/60 mt-2 pb-0.5 truncate">
+                    {kpi.trend}
+                  </p>
+                </div>
+                
+                <div className="p-2 md:p-2.5 rounded-lg bg-transparent border border-app-dark/10 shadow-hollow shrink-0">
+                  {require('react').cloneElement(kpi.icon, { 
+                    className: "w-4 h-4 md:w-5 md:h-5 " + kpi.icon.props.className
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
-          
-          <div className="p-2 md:p-2.5 rounded-lg bg-transparent border border-app-dark/10 shadow-hollow shrink-0">
-            {require('react').cloneElement(kpi.icon, { 
-              className: "w-4 h-4 md:w-5 md:h-5 " + kpi.icon.props.className
-            })}
-          </div>
-        </div>
+        ))}
       </div>
-    </div>
-  ))}
-</div>
     </div>
   );
 }

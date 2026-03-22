@@ -117,7 +117,7 @@ const ChartBar = React.memo(({ data, maxVal, isActive, isPeak, onHover, onLeave,
       {/* X-AXIS LABEL */}
       <span 
         className={`absolute -bottom-6 text-nano uppercase whitespace-nowrap w-full text-center px-0.5 transition-colors
-        ${isActive === true ? 'text-app-dark font-bold' : isPeak ? 'text-emerald-700 font-bold' : 'text-text-dark/60 '}`}
+        ${isActive === true ? 'text-app-dark font-bold' : isPeak ? 'text-emerald-700 font-bold' : 'text-text-dark/70 '}`}
         aria-hidden="true"
       >
         {data.formattedLabel}
@@ -337,7 +337,7 @@ export default function SalesPerformance() {
         >
           
           {/* Y-Axis Labels */}
-          <div className="flex flex-col justify-between h-[160px] pb-6 text-sm-text text-text-dark/50  text-right min-w-[45px] pr-2 mt-12" aria-hidden="true">
+          <div className="flex flex-col justify-between h-[160px] pb-6 text-sm-text text-text-dark/90  text-right min-w-[45px] pr-2 mt-12" aria-hidden="true">
             <span>₱{formatSmartMoney(maxVal)}</span>
             <span>₱{formatSmartMoney(maxVal / 2)}</span>
             <span>0</span>

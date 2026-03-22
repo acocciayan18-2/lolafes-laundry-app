@@ -198,7 +198,7 @@ useEffect(() => {
                     <p className="text-sm-text  text-text-dark group-hover:text-text-dark transition-colors flex items-center gap-1.5">
                       Notify Customer via SMS
                     </p>
-                    <p className="text-micro text-slate-500 mt-0.5 leading-relaxed">
+                    <p className="text-micro font-normal text-text-dark mt-0.5 leading-relaxed">
                      This opens your messaging app to send a pre-written ready-for-pickup/delivery text.
                     </p>
                   </div>

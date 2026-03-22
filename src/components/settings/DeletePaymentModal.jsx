@@ -129,25 +129,17 @@ const DeletePaymentModal = memo(({
 
               <p 
                 id="delete-modal-description"
-                className="mb-8 text-sm-text leading-relaxed text-slate-500 px-2"
+                className="mb-8 text-sm-text font-normal leading-relaxed text-text-dark px-2"
               >
                 Are you sure you want to remove 
                 <span className="mx-1 font-semibold text-slate-800 break-all">
                   "{itemName}"
                 </span>? 
-                This action is irreversible and will be logged for audit.
+                This action is irreversible.
               </p>
 
               <div className="flex w-full gap-3">
-                <Button
-                  variant="secondary"
-                  onClick={() => closeHandlerRef.current?.()}
-                  disabled={isLoading}
-                  className="flex-1 rounded-2xl py-3"
-                  aria-label="No, keep this item"
-                >
-                  Cancel
-                </Button>
+               
                 <Button
                   variant="danger"
                   onClick={handleSafeConfirm}
@@ -157,6 +149,15 @@ const DeletePaymentModal = memo(({
                   aria-label="Yes, delete this item"
                 >
                   Delete
+                </Button>
+                 <Button
+                  variant="secondary"
+                  onClick={() => closeHandlerRef.current?.()}
+                  disabled={isLoading}
+                  className="flex-1 rounded-2xl py-3"
+                  aria-label="No, keep this item"
+                >
+                  Cancel
                 </Button>
               </div>
             </div>

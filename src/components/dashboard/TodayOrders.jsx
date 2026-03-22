@@ -20,7 +20,7 @@ const statusConfig = Object.freeze({
   ready: { label: "Ready", banner: "bg-status-ready", theme: "text-status-ready bg-status-ready/10 border-status-ready/20", icon: IconStatusReady },
   completed: { label: "Completed", banner: "bg-status-complete", theme: "text-status-complete bg-status-complete/10 border-status-complete/70", icon: IconStatusCompleted },
   picked_up: { label: "Picked Up", banner: "bg-status-picked", theme: "text-status-picked bg-status-picked/10 border-status-picked/70", icon: IconStatusPickedUp },
-  delivered: { label: "Delivered", banner: "bg-emerald-500", theme: "text-emerald-600 bg-emerald-50 border-emerald-100", icon: IconStatusPickedUp }
+  delivered: { label: "Delivered", banner: "bg-status-picked", theme: "text-status-picked bg-status-picked/10 border-status-picked/70", icon: IconStatusPickedUp }
 });
 
 // ==========================================
@@ -514,7 +514,7 @@ export default function TodayOrders({ orders = [], isLoading }) {
                 </fieldset>
                 
                 {!selectedOrder.is_paid && (
-                  <p className="text-micro text-rose-500 font-bold text-center mt-3 uppercase tracking-wide" role="alert">
+                  <p className="text-micro text-rose-500 text-center mt-3" role="alert">
                     Payment Required for Handover
                   </p>
                 )}

@@ -249,7 +249,7 @@ const LogoutConfirmationModal = ({ onCancel, onConfirm }) => (
         </div>
 
         <h3 className="text-xl font-bold mb-2 text-text-dark ">Confirm Logout</h3>
-        <p className="text-sm-text text-text-dark/60 mb-8 px-4">
+        <p className="text-sm-text font-normal text-text-dark mb-8 px-4">
           Are you sure you want to log out? Any unsaved changes might be lost.
         </p>
 

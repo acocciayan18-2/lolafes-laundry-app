@@ -179,7 +179,7 @@ export default function ChangeHandoverModal({
               <h3 id="handover-modal-title" className="text-lg font-bold text-text-dark">
                 Change to {isSwitchingToDelivery ? "Delivery" : "Pickup"}
               </h3>
-              <p className="text-sm-text text-text-dark/60 mt-1 px-4" aria-live="polite">
+              <p className="text-sm-text font-normal text-text-dark mt-1 px-4" aria-live="polite">
                 {isSwitchingToDelivery 
                   ? "Enter the delivery fee to apply to this order." 
                   : `This will remove the ₱${parseMoney(currentFee).toLocaleString()} delivery fee.`}

@@ -12,9 +12,7 @@ import { useSettingsStore } from "../store/settings/useSettingsStore";
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
-// --- CONSTANTS ---
-// 🧪 TESTING MODE: 30 Seconds. Change back to (30 * 60 * 1000) for production!
-const EXPIRE_LIMIT_MS = 30 * 1000; 
+const EXPIRE_LIMIT_MS = 30 * 60 * 1000; 
 const HEARTBEAT_KEY = '_lf_last_pulse';
 
 export const AuthProvider = ({ children }) => {

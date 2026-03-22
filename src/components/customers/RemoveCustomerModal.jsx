@@ -113,7 +113,7 @@ const RemoveCustomerModal = ({
               Remove Customer?
             </h3>
 
-            <p id="remove-customer-desc" className="text-sm-text font-normal text-text-dark/60 mt-2 mb-8 leading-snug px-2">
+            <p id="remove-customer-desc" className="text-sm-text font-normal text-text-darkmt-2 mb-8 leading-snug px-2">
               Are you sure you want to remove{" "}
               <span className="font-bold text-text-dark" title={customerName}>
                 {safeCustomerName} 

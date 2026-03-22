@@ -1,10 +1,10 @@
 /**
  * @file ExportOrdersButton.jsx
  * @description Enterprise-grade secure Excel export module.
- * Implements Step-Up Authentication (PIN), CSV Injection defense, and non-blocking data parsing.
+ * Implements Step-Up Authentication, CSV Injection defense, and Multi-Sheet Analyst Reporting.
  */
 
-import  { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useReportStore } from "../../store/reports/useReportStore";
 import { useNotificationStore } from "../../store/ui/useNotificationStore";
 import { exportToExcel } from "../../utils/exportUtils";
@@ -15,10 +15,9 @@ import ExportPin from "./ExportPin";
 // CONFIGURATION & SECURITY CONSTANTS
 // ==========================================
 const EXPORT_CONFIG = Object.freeze({
-  FILENAME_PREFIX: "Lola_Fe_Laundry_Report",
+  FILENAME_PREFIX: "Lola_Fe_Laundry_Analytics",
   DEFAULT_GUEST_NAME: "GUEST",
   DATE_LOCALE: "en-US",
-  // 🛡️ SECURITY: Characters that can trigger malicious payload execution in Excel
   DANGEROUS_CHARS: ["=", "+", "-", "@", "\t", "\r"],
 });
 
@@ -26,18 +25,10 @@ const EXPORT_CONFIG = Object.freeze({
 // PURE TRANSFORMATION LOGIC (Isolated & Testable)
 // ==========================================
 
-/**
- * @description Sanitizes strings to prevent Excel Formula Injection (CSV Injection).
- * Strips or escapes leading characters that Excel interprets as functions.
- */
 const sanitizeForExcel = (val) => {
   if (typeof val !== "string") return val;
   const trimmed = val.trim();
-  
   if (!trimmed) return "";
-
-  // 🛡️ SECURITY: If the string starts with a dangerous character, prefix it with a single quote.
-  // This forces Excel to treat the cell strictly as plain text, disabling formula execution.
   if (EXPORT_CONFIG.DANGEROUS_CHARS.some((char) => trimmed.startsWith(char))) {
     return `'${trimmed}`; 
   }
@@ -49,7 +40,6 @@ const formatExcelDate = (dateSource) => {
   try {
     const d = dateSource?.toDate ? dateSource.toDate() : new Date(dateSource);
     if (isNaN(d.getTime())) return "Invalid Date";
-
     return d.toLocaleString(EXPORT_CONFIG.DATE_LOCALE, {
       month: "short", day: "numeric", year: "numeric",
       hour: "2-digit", minute: "2-digit", hour12: true,
@@ -61,8 +51,6 @@ const formatExcelDate = (dateSource) => {
 
 const transformOrdersForExport = (orders) => {
   if (!Array.isArray(orders)) return [];
-
-  // ⚡ PERFORMANCE: Use standard `for` loop instead of `.map` for massive arrays
   const exportArray = new Array(orders.length);
 
   for (let i = 0; i < orders.length; i++) {
@@ -70,11 +58,10 @@ const transformOrdersForExport = (orders) => {
     if (!order) continue;
 
     const isHandovered = ["picked_up", "delivered"].includes(order.status);
+    const isCancelled = order.status === "cancelled";
     const totalAmount = Number(order.total_amount) || 0;
     const tendered = Number(order.amount_tendered) || 0;
     
-    // Logic: If order is paid but amount_tendered is missing (legacy DB entries), 
-    // assume exact amount was paid to maintain financial balance.
     const actualTendered = (order.is_paid && tendered === 0) ? totalAmount : tendered;
     const changeDue = order.is_paid ? Math.max(0, actualTendered - totalAmount) : 0;
 
@@ -100,7 +87,7 @@ const transformOrdersForExport = (orders) => {
       "Payment Status": order.is_paid ? "PAID" : "UNPAID",
       "Payment Method": sanitizeForExcel(order.payment_method || "N/A").toUpperCase(),
       "Delivery Fee": Number(order.delivery_fee) || 0,
-      "Total Amount": totalAmount,
+      "Total Amount": isCancelled ? 0 : totalAmount, // Don't count cancelled revenue in raw dump
       "Amount Tendered": actualTendered,
       "Change Due": changeDue,
       "Released Date": isHandovered 
@@ -109,9 +96,62 @@ const transformOrdersForExport = (orders) => {
       "Audit ID": sanitizeForExcel(order.id), 
     };
   }
-
-  // Filter out any empty slots if null objects were skipped
   return exportArray.filter(Boolean); 
+};
+
+// ✨ NEW: Generates meaningful analyst tables for a secondary sheet
+const generateAnalyticsSummary = (orders) => {
+  if (!Array.isArray(orders)) return [];
+
+  let totalRevenue = 0;
+  let cashRevenue = 0;
+  let digitalRevenue = 0;
+  
+  const statusCounts = { pending: 0, processing: 0, completed: 0, picked_up: 0, delivered: 0, cancelled: 0 };
+  const handoverCounts = { pickup: 0, delivery: 0 };
+
+  for (const order of orders) {
+    if (!order) continue;
+    
+    const statusStr = (order.status || "unknown").toLowerCase();
+    const handoverStr = (order.handover_method || "pickup").toLowerCase();
+    
+    // Tally Statuses
+    if (statusCounts[statusStr] !== undefined) statusCounts[statusStr]++;
+    
+    // Tally Handover
+    if (handoverCounts[handoverStr] !== undefined) handoverCounts[handoverStr]++;
+
+    // Tally Financials (Exclude Cancelled)
+    if (statusStr !== 'cancelled' && order.is_paid) {
+      const amt = Number(order.total_amount) || 0;
+      totalRevenue += amt;
+      
+      if ((order.payment_method || "").toLowerCase().includes('cash')) {
+        cashRevenue += amt;
+      } else {
+        digitalRevenue += amt;
+      }
+    }
+  }
+
+  // Build the vertical summary table array
+  return [
+    { "Metric Category": "FINANCIAL PERFORMANCE", "Metric Name": "Gross Processed Revenue", "Value": totalRevenue },
+    { "Metric Category": "FINANCIAL PERFORMANCE", "Metric Name": "Total Cash Received", "Value": cashRevenue },
+    { "Metric Category": "FINANCIAL PERFORMANCE", "Metric Name": "Total Digital/Transfer", "Value": digitalRevenue },
+    { "Metric Category": "", "Metric Name": "", "Value": "" }, // Blank row separator
+    { "Metric Category": "OPERATIONAL METRICS", "Metric Name": "Total Orders Handled", "Value": orders.length },
+    { "Metric Category": "OPERATIONAL METRICS", "Metric Name": "Delivery Orders", "Value": handoverCounts.delivery },
+    { "Metric Category": "OPERATIONAL METRICS", "Metric Name": "Walk-in / Pickup Orders", "Value": handoverCounts.pickup },
+    { "Metric Category": "", "Metric Name": "", "Value": "" },
+    { "Metric Category": "ORDER STATUS FUNNEL", "Metric Name": "Pending / Received", "Value": statusCounts.pending },
+    { "Metric Category": "ORDER STATUS FUNNEL", "Metric Name": "Processing / Washing", "Value": statusCounts.processing },
+    { "Metric Category": "ORDER STATUS FUNNEL", "Metric Name": "Completed (Waiting)", "Value": statusCounts.completed },
+    { "Metric Category": "ORDER STATUS FUNNEL", "Metric Name": "Successfully Picked Up", "Value": statusCounts.picked_up },
+    { "Metric Category": "ORDER STATUS FUNNEL", "Metric Name": "Successfully Delivered", "Value": statusCounts.delivered },
+    { "Metric Category": "ORDER STATUS FUNNEL", "Metric Name": "Cancelled / Voided", "Value": statusCounts.cancelled },
+  ];
 };
 
 // ==========================================
@@ -120,38 +160,42 @@ const transformOrdersForExport = (orders) => {
 
 export default function ExportOrdersButton() {
   const [isExporting, setIsExporting] = useState(false);
-  const [showPinModal, setShowPinModal] = useState(false); // ✨ Security Gate State
+  const [showPinModal, setShowPinModal] = useState(false);
   
-  // ⚡ SELECTOR OPTIMIZATION: Only grab the exact data needed
   const orders = useReportStore(useCallback(state => state.orders, []));
   const showNotification = useNotificationStore(useCallback(state => state.showNotification, []));
 
-  // Step 1: User clicks the export button
   const handleInitiateExport = useCallback(() => {
     if (!orders || orders.length === 0) {
       showNotification("No orders available to export.", "info");
       return;
     }
-    // Trigger the Security Gate
     setShowPinModal(true);
   }, [orders, showNotification]);
 
-  // Step 2: User successfully passes the PIN check
   const handlePinSuccess = useCallback(async () => {
-    setShowPinModal(false); // Close gate
-    setIsExporting(true);   // Start processing UI
+    setShowPinModal(false);
+    setIsExporting(true); 
 
     try {
-      // Execute transformation synchronously
-      const dataForExcel = transformOrdersForExport(orders);
+      // 1. Generate Raw Data
+      const rawData = transformOrdersForExport(orders);
+      
+      // 2. Generate Analyst Summary
+      const summaryData = generateAnalyticsSummary(orders);
+      
+      // 3. Package as Multi-Sheet Object
+      const workbookData = {
+        "Executive Summary": summaryData, // Put summary first so it opens to this page
+        "Raw Database Dump": rawData
+      };
       
       const timestamp = new Date().toISOString().split('T')[0];
       const fileName = `${EXPORT_CONFIG.FILENAME_PREFIX}_${timestamp}`;
 
-      // Trigger standard file download logic
-      await exportToExcel(dataForExcel, fileName);
+      await exportToExcel(workbookData, fileName);
       
-      showNotification("Secure report generated successfully.", "success");
+      showNotification("Secure analyst report generated successfully.", "success");
     } catch (error) {
       console.error("[Export Service Error]:", error);
       showNotification("Failed to generate report. Please contact system admin.", "error");
@@ -167,10 +211,10 @@ export default function ExportOrdersButton() {
       <button
         onClick={handleInitiateExport}
         disabled={isDisabled}
-        aria-label="Export laundry orders to Excel"
+        aria-label="Export laundry analytics to Excel"
         aria-busy={isExporting}
         className={`
-          flex items-center gap-2 px-3 h-9 mt-1 border rounded-xl  text-micro shadow-md transition-all
+          flex items-center gap-2 px-3 h-9 mt-1 border rounded-xl text-micro shadow-md transition-all
           ${isDisabled
             ? "bg-slate-100 text-slate-400 cursor-not-allowed opacity-70 border-slate-200"
             : "bg-white text-text-dark hover:bg-slate-50 border-slate-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
@@ -183,16 +227,15 @@ export default function ExportOrdersButton() {
           <IconDownload className="w-4 h-4" aria-hidden="true" />
         )}
         <span className="whitespace-nowrap">
-          {isExporting ? "Processing Data..." : "Export All Orders"}
+          {isExporting ? "Processing Data..." : "Export Analytics"}
         </span>
       </button>
 
-      {/* ✨ SECURITY GATE: Step-Up Authentication Modal */}
-     <ExportPin 
+      <ExportPin 
         isOpen={showPinModal} 
         onClose={() => setShowPinModal(false)} 
         onSuccess={handlePinSuccess} 
-        title="Full Database Export" 
+        title="Full Analytics Export" 
       />
     </>
   );

@@ -272,7 +272,7 @@ export default function PopularServices({ range: initialRange }) {
                        <span className="text-micro font-bold text-text-dark truncate leading-tight" title={service.name}>
                          {service.name}
                        </span>
-                       <span className="text-nano  text-text-dark/60 shrink-0">
+                       <span className="text-micro  text-text-dark/70 shrink-0">
                          {service.share.toFixed(1)}% ({service.count})
                        </span>
                     </div>

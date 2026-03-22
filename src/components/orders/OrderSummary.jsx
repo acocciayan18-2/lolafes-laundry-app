@@ -269,7 +269,7 @@ export const OrderSummary = ({
   const handleCashInputChange = useCallback((e) => {
     let val = e.target.value.replace(/[^0-9.]/g, '');
     if ((val.match(/\./g) || []).length > 1) val = val.replace(/\.+$/, "");
-    updateAmountTendered(val.substring(0, 6));
+    updateAmountTendered(val.substring(0, 8));
   }, [updateAmountTendered]);
 
   const handleQuickDenomination = useCallback((amount) => {
@@ -344,7 +344,7 @@ export const OrderSummary = ({
             value={notes || ""}
             onChange={handleNotesChange}
             maxLength={MAX_NOTES_LENGTH}
-            placeholder={`Add any special notes (max ${MAX_NOTES_LENGTH} chars)...`}
+            placeholder={`Add special notes...`}
             className="w-full p-3 rounded-lg border border-gray-300 text-sm-text focus:ring-app-dark/80 focus:border-app-dark/80 outline-none min-h-[50px] resize-none custom-scrollbar"
           />
         </div>
