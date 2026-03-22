@@ -13,16 +13,12 @@ export const ReceiptQRCode = React.memo(({ orderNumber }) => {
     if (!orderNumber || !isEnabled) return "";
     
     const safeId = orderNumber.toUpperCase();
-    // 🔐 THE MATH: We mix the Order ID with a secret key
-    // NOTE: In production, add VITE_TRACKING_SECRET to your .env file!
     const secretKey = import.meta.env.VITE_TRACKING_SECRET || "lola-fe-super-secret-key-2026";
     
-    // Generates an irreversible 8-character string (e.g., "4f9b2a1c")
     const signature = hmacSHA256(safeId, secretKey).toString(Hex).substring(0, 8);
     
     const baseUrl = "https://customer-site-lolafes-laundry.vercel.app"; 
     
-    // ✨ Appends the mathematical signature to the URL
     return `${baseUrl}/track/${safeId.toLowerCase()}/${signature}`;
   }, [orderNumber, isEnabled]);
 
@@ -30,7 +26,7 @@ export const ReceiptQRCode = React.memo(({ orderNumber }) => {
 
   return (
     <div className="flex flex-col items-center justify-center py-4 mt-4 border-t border-black border-dashed">
-      <p className="text-micro  text-black mb-2 text-center">
+      <p className="text-micro font-bold uppercase tracking-widest text-black mb-2 text-center">
         Scan to Track Order
       </p>
       
@@ -44,7 +40,6 @@ export const ReceiptQRCode = React.memo(({ orderNumber }) => {
           bgColor="#FFFFFF"
         />
       </div>
-      
       
     </div>
   );

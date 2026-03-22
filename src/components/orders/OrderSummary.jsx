@@ -530,25 +530,38 @@ export const OrderSummary = ({
                     />
                   </div>
 
-                  <div className="flex gap-1.5 mt-2" aria-label="Quick exact amounts">
-                    <button 
-                      type="button"
-                      onClick={() => handleQuickDenomination(finalTotal)}
-                      className="flex-1 py-2 bg-white border border-emerald-200 text-emerald-700 text-micro  rounded-md hover:bg-emerald-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 active:scale-95"
-                    >
-                      Exact
-                    </button>
-                    {CASH_DENOMINATIONS.map(amount => (
-                      <button
-                        key={amount}
-                        type="button"
-                        onClick={() => handleQuickDenomination(amount)}
-                        className="flex-1 py-2 bg-white border border-emerald-200 text-emerald-700 text-micro  rounded-md hover:bg-emerald-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 active:scale-95"
-                      >
-                        ₱{amount}
-                      </button>
-                    ))}
-                  </div>
+                 <div className="flex gap-1.5 mt-2" aria-label="Quick exact amounts">
+  {/* EXACT BUTTON */}
+  <button 
+    type="button"
+    onClick={() => handleQuickDenomination(finalTotal)}
+    className={`flex-1 py-2 text-micro rounded-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 active:scale-95 ${
+      // ✨ FIX: Check if the exact amount is currently selected
+      Number(amountTendered) === Number(finalTotal)
+        ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-700 font-bold" 
+        : "bg-white border border-slate-200 text-text-dark/90 hover:bg-emerald-50 font-normal"
+    }`}
+  >
+    Exact
+  </button>
+  
+  {/* DENOMINATION BUTTONS */}
+  {CASH_DENOMINATIONS.map(amount => (
+    <button
+      key={amount}
+      type="button"
+      onClick={() => handleQuickDenomination(amount)}
+      className={`flex-1 py-2 text-micro rounded-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 active:scale-95 ${
+        // ✨ FIX: Check if this specific denomination is selected
+        Number(amountTendered) === amount
+          ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-700 font-bold"
+          : "bg-white border border-slate-200 text-text-dark/90 hover:bg-emerald-50 font-normal"
+      }`}
+    >
+      ₱{amount}
+    </button>
+  ))}
+</div>
                 </div>
               </motion.div>
             )}

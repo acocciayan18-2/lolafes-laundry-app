@@ -202,7 +202,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                 <IconClose className="w-5 h-5" aria-hidden="true" />
               </button>
 
-              <h3 id="payment-modal-title" className="text-sm-text  text-text-dark/70 mb-1">
+              <h3 id="payment-modal-title" className="text-sm-text  text-text-dark/90 mb-1">
                 Collect Payment
               </h3>
               <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -219,12 +219,12 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
             <div className="p-4 bg-white space-y-4">
               
               {/* ✨ MODIFIED: Unconditional Render of Amount Received */}
-              <div>
-                <label htmlFor="tendered-input" className="block text-sm-text text-text-dark/60  mb-1.5">
+             <div>
+                <label htmlFor="tendered-input" className="block text-sm-text text-text-dark/60 mb-1.5">
                   Amount Received 
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm-text  text-text-dark/40">₱</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm-text text-text-dark/40">₱</span>
                   <input
                     id="tendered-input"
                     ref={inputRef} 
@@ -239,10 +239,10 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                 
                 <div className="mt-2 mb-2 flex items-center justify-between px-1" aria-live="polite">
                   {isInsufficient ? (
-                    <span className="text-rose-500 text-micro ">Amount is less than total.</span>
+                    <span className="text-rose-500 text-micro">Amount is less than total.</span>
                   ) : changeDue > 0 ? (
                     <>
-                      <span className="text-micro  text-text-dark/50 ">Change Due:</span>
+                      <span className="text-micro text-text-dark/50">Change Due:</span>
                       <span className="font-bold text-emerald-600 text-sm-text">₱{formatSafeMoney(changeDue)}</span>
                     </>
                   ) : (
@@ -250,11 +250,52 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                   )}
                 </div>
 
+                {/* ✨ UPDATED QUICK DENOMINATION BUTTONS */}
                 <div className="flex gap-1.5 mt-1.5">
-                  <button onClick={() => handleQuickDenomination(totalAmount)} className="flex-1 py-2 bg-emerald-50 text-emerald-700 text-micro  rounded-md hover:bg-emerald-100 border border-emerald-100 active:scale-95 transition-all">Exact</button>
-                  <button onClick={() => handleQuickDenomination(100)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro  rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱100</button>
-                  <button onClick={() => handleQuickDenomination(500)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro  rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱500</button>
-                  <button onClick={() => handleQuickDenomination(1000)} className="flex-1 py-2 bg-white border border-slate-200 text-slate-600 text-micro  rounded-md hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all">₱1000</button>
+                  <button 
+                    type="button"
+                    onClick={() => handleQuickDenomination(totalAmount)} 
+                    className={`flex-1 py-2 text-micro rounded-md transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                      Number(tendered) === Number(totalAmount)
+                        ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-700 font-bold"
+                        : "bg-white border border-slate-200 text-text-dark/90 hover:bg-emerald-50 font-normal"
+                    }`}
+                  >
+                    Exact
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => handleQuickDenomination(100)} 
+                    className={`flex-1 py-2 text-micro rounded-md transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                      Number(tendered) === 100
+                        ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-700 font-bold"
+                        : "bg-white border border-slate-200 text-text-dark/90 hover:bg-emerald-50 font-normal"
+                    }`}
+                  >
+                    ₱100
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => handleQuickDenomination(500)} 
+                    className={`flex-1 py-2 text-micro rounded-md transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                      Number(tendered) === 500
+                        ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-700 font-bold"
+                        : "bg-white border border-slate-200 text-text-dark/90 hover:bg-emerald-50 font-normal"
+                    }`}
+                  >
+                    ₱500
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => handleQuickDenomination(1000)} 
+                    className={`flex-1 py-2 text-micro rounded-md transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                      Number(tendered) === 1000
+                        ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-700 font-bold"
+                        : "bg-white border border-slate-200 text-text-dark/90 hover:bg-emerald-50 font-normal"
+                    }`}
+                  >
+                    ₱1000
+                  </button>
                 </div>
               </div>
 

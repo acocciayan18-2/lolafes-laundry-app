@@ -1,9 +1,4 @@
-/**
- * @file NewOrder.jsx
- * @version 4.1.0 - Enterprise Edition
- * @description Orchestrates the New Order flow. Implements strict data gating,
- * dependency optimization, and fail-safe database synchronization.
- */
+
 
 import React, { useEffect, useRef, useState, useMemo, useCallback, forwardRef } from "react";
 import { collection, getDocs, limit, query, where, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
@@ -27,12 +22,7 @@ import { useLoyaltyStore } from "../store/services/useLoyaltyStore";
 import { useServiceStore } from "../store/services/useServiceStore";
 import { useNotificationStore } from "../store/ui/useNotificationStore";
 import { useSettingsStore } from "../store/settings/useSettingsStore";
-import { useOrderStore } from "../store/orders/useOrderStore"; 
 import { usePaymentSettingsStore } from "../store/settings/usePaymentSettingsStore"; 
-
-// ==========================================
-// 🛡️ UTILITY & SECURITY HELPERS
-// ==========================================
 
 const sanitizeString = (str, maxLen = 200) => {
   if (typeof str !== 'string') return "";
@@ -61,10 +51,6 @@ const generateUniqueOrderNumber = async (maxRetries = 5) => {
   }
   throw new Error("System is currently busy. Please try generating the order again.");
 };
-
-// ==========================================
-// ⚛️ ATOMIC UI COMPONENTS (Memoized)
-// ==========================================
 
 const Button = React.memo(({ children, variant = "primary", size = "md", className = "", disabled, isLoading, ...props }) => {
   const variants = {
@@ -128,7 +114,6 @@ export default function NewOrder() {
   const navigate = useNavigate();
   
   // --- GLOBAL STORES ---
-  const settings = useOrderStore((state) => state.settings);
   const { customers, subscribeToCustomers } = useCustomerStore();
   const { loyaltySettings, subscribeToLoyalty } = useLoyaltyStore();
   const { submitOrder, createCustomer } = useNewOrderStore(); 
@@ -410,10 +395,10 @@ export default function NewOrder() {
           const printableOrder = { ...orderPayload, created_at: new Date() };
          
 
-await silentPrint(printableOrder, systemConfig?.printerType || 'browser', {
-  ...receiptConfig,
-  enableTracking: systemConfig?.enableOrderTracking 
-});
+        await silentPrint(printableOrder, systemConfig?.printerType || 'browser', {
+          ...receiptConfig,
+          enableTracking: systemConfig?.enableOrderTracking 
+        });
           
         } catch (printErr) {
           showNotification("Order saved, but printer failed to connect.", "info");
@@ -431,10 +416,28 @@ await silentPrint(printableOrder, systemConfig?.printerType || 'browser', {
       }
     }
   }, [
-    isProcessing, isFormIncomplete, isPaid, paymentMethod, selectedServices, isPhoneDuplicate, 
-    customer, selectedCustomerId, handoverMethod, deliveryFee, notes, loyaltySettings?.orders_required, 
-    amountTendered, isWalkInGuest, submitOrder, createCustomer, systemConfig?.autoPrint, 
-    settings.defaultPrinter, receiptConfig, navigate, showNotification, logActivity
+    isProcessing, 
+    isFormIncomplete, 
+    isPaid, 
+    paymentMethod, 
+    selectedServices, 
+    isPhoneDuplicate, 
+    customer, 
+    selectedCustomerId, 
+    handoverMethod, 
+    deliveryFee, 
+    notes, 
+    loyaltySettings?.orders_required, 
+    amountTendered, 
+    isWalkInGuest, 
+    submitOrder, 
+    createCustomer, 
+    systemConfig, 
+    receiptConfig, 
+    navigate, 
+    showNotification, 
+    logActivity
+    
   ]);
 
   // --- RENDER ---

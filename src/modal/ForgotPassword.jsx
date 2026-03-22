@@ -15,11 +15,15 @@ export default function ForgotPassword({
 }) {
   const inputRef = useRef(null);
 
-  // ==========================================
-  // QA & A11Y: Auto-focus & Keyboard Trapping
-  // ==========================================
-  useEffect(() => {
-    // Focus input on mount for screen readers and fast typing
+  const handleClose = useCallback(() => {
+    if (resetLoading) return; // Prevent closing mid-transaction
+    setShowForgotPopup(false);
+    setResetEmail(""); // Purge sensitive state from memory immediately
+  }, [resetLoading, setShowForgotPopup, setResetEmail]);
+
+
+  
+ useEffect(() => {
     const timeout = setTimeout(() => inputRef.current?.focus(), 100);
     
     const handleKeyDown = (e) => {
@@ -33,7 +37,7 @@ export default function ForgotPassword({
       clearTimeout(timeout);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [resetLoading]);
+  }, [resetLoading, handleClose]); 
 
   // ==========================================
   // PERFORMANCE: Memoization
@@ -52,12 +56,7 @@ export default function ForgotPassword({
     setResetEmail(sanitizedValue);
   }, [setResetEmail]);
 
-  const handleClose = useCallback(() => {
-    if (resetLoading) return; // Prevent closing mid-transaction
-    setShowForgotPopup(false);
-    setResetEmail(""); // Purge sensitive state from memory immediately
-  }, [resetLoading, setShowForgotPopup, setResetEmail]);
-
+  
   // ==========================================
   // RESILIENCE: Safe Submission Wrapper
   // ==========================================

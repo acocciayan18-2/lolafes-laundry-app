@@ -77,7 +77,6 @@ export default function OrderCard({ order, tick }) {
   const isMounted = useRef(false);
 
   const { receiptConfig, systemConfig } = useSettingsStore();
-  const settings = useOrderStore((state) => state.settings);
   const { 
     cancelOrder, updateOrderStatus, togglePaymentStatus, isOrderUnclaimed,
     isOrderStuck, isOrderLocked, parseTimestamp, updateHandoverMethod, updateOrderNotes
@@ -186,14 +185,14 @@ export default function OrderCard({ order, tick }) {
     setIsEditingNotes(false);
   }, [order]);
 
-  const handleManualPrint = useCallback(async (e) => {
+ const handleManualPrint = useCallback(async (e) => {
     e.stopPropagation();
     setIsPrinting(true);
     try {
       await silentPrint(order, systemConfig?.printerType || 'browser', {
-  ...receiptConfig,
-  enableTracking: systemConfig?.enableOrderTracking 
-});
+        ...receiptConfig,
+        enableTracking: systemConfig?.enableOrderTracking 
+      });
       logActivity(order, order.status, { action: 'print', label: "Reprinted Receipt" });
       showNotification("Sending to printer...", "success");
     } catch (err) {
@@ -201,7 +200,7 @@ export default function OrderCard({ order, tick }) {
     } finally {
       if (isMounted.current) setIsPrinting(false);
     }
-  }, [order, settings.defaultPrinter, receiptConfig, logActivity, showNotification]);
+  }, [order, systemConfig, receiptConfig, logActivity, showNotification]);
 
   const handleConfirmHandoverChange = useCallback(async (newMethod, appliedFee, newTotal) => {
     try {

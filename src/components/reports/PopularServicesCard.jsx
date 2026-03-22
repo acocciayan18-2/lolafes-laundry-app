@@ -76,7 +76,7 @@ export default function PopularServices({ range: initialRange }) {
   }, [showInfo]);
 
   // --- DATA PROCESSING & FLAT PIE GEOMETRY MATH ---
-  const { pieSegments, totalOrdersProcessed } = useMemo(() => {
+  const { pieSegments } = useMemo(() => {
     if (!orders || !Array.isArray(orders)) return { pieSegments: [], totalOrdersProcessed: 0 };
 
     try {

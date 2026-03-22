@@ -1,8 +1,5 @@
 import { useState } from "react";
 import { 
-  IconStatusReady, 
-  IconDelivery, 
-  IconPackage,
   IconBluetooth,
   IconPdf,
   IconUsb

@@ -93,7 +93,6 @@ export const silentPrint = async (order, type, config) => {
   const amountTendered = isCash && order.is_paid ? (Number(order.amount_tendered) || totalAmount) : null;
   const changeDue = isCash && order.is_paid ? (Number(order.change_due) || 0) : null;
   
-  const orderNotes = sanitizeText(order.special_instructions || order.notes || "");
 
   // ✨ GENERATE DYNAMIC SECURE TRACKING URL
   // We use the exact same math here as we did in ReceiptQRCode.jsx
@@ -104,9 +103,7 @@ export const silentPrint = async (order, type, config) => {
   const baseUrl = "https://customer-site-lolafes-laundry.vercel.app"; 
   const trackingUrl = `${baseUrl}/track/${safeId.toLowerCase()}/${signature}`;
 
-  // ==========================================
-  // HARDWARE PRINTING (USB / BLUETOOTH)
-  // ==========================================
+
   if (type === 'usb' || type === 'bluetooth') {
     let device = null;
     let server = null;
@@ -163,22 +160,14 @@ export const silentPrint = async (order, type, config) => {
           .line(`CHANGE: P${formatMoney(changeDue)}`);
       }
 
-      // Notes Block
-      if (orderNotes) {
-        result.line("--------------------------------").align('left').line("NOTES:");
-        orderNotes.split('\n').forEach(line => {
-          if (line.trim()) result.line(line.trim());
-        });
-      }
+     
 
       // ✨ PRINT SECURE QR CODE TO HARDWARE PRINTER
       if (enableTracking) {
         result.align('center')
-          .line("--------------------------------")
           .line("SCAN TO TRACK ORDER")
           .qrcode(trackingUrl, 2, 6, 'm') 
           .line(trackingUrl.replace(/^https?:\/\//, ''))
-          .line("--------------------------------");
       }
 
       // Footer Block 
@@ -250,7 +239,6 @@ export const silentPrint = async (order, type, config) => {
               .total-row { font-size: 21px; font-weight: 900; margin-top: 5px; text-align: right; }
               .cash-row { font-size: 14px; font-weight: bold; text-align: right; margin-top: 1px; }
               .payment-info { font-size: 11px; margin-top: 2px; }
-              .notes-section { font-size: 11px; text-align: left; margin-top: 2px; white-space: pre-wrap; word-wrap: break-word; }
               .header-info { font-size: 11px; font-weight: bold; margin-bottom: 2px; }
               .qr-container { margin-top: 8px; text-align: center; }
               .qr-img { width: 120px; height: 120px; mix-blend-mode: multiply; }
