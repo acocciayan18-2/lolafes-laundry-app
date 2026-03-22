@@ -336,7 +336,7 @@ export default function ServiceCard({
               type="submit"
               variant="success" 
               disabled={isProcessing}
-              className="flex-1 md:w-28 text-sm-text  bg-green-700 text-white hover:bg-green-800 disabled:opacity-70 disabled:cursor-wait focus:outline-none focus-visible:ring-1 focus-visible:ring-green-700 focus-visible:ring-offset-2" 
+              className="flex-1 md:w-28 text-sm-text  bg-emerald-700 text-white hover:bg-emerald-800 disabled:opacity-70 disabled:cursor-wait focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-700 focus-visible:ring-offset-2" 
             >
               {isProcessing ? (
                 <div className="w-3.5 h-3.5 border border-white/30 border-t-white rounded-full animate-spin mx-auto" aria-hidden="true" />

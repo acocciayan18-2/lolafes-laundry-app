@@ -14,7 +14,7 @@ export const Button = ({ children, onClick, className = "", variant = "primary",
     primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-sm",
     outline: "bg-white text-text-dark border border-slate-200 hover:bg-slate-50",
     success: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm",
-    danger: "bg-red-500 hover:bg-red-600 text-white shadow-sm"
+    danger: "bg-rose-500 hover:bg-rose-600 text-white shadow-sm"
   };
 
   return (

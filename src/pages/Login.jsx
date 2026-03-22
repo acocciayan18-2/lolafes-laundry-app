@@ -272,7 +272,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoginLoading || !isFormValid}
-            className={`w-full bg-app-dark text-white  text-sm-text px-4 py-3 rounded-lg shadow cursor-pointer transition-all focus:outline-none focus:ring-0 mt-2 ${
+            className={`w-full bg-app-dark text-white  text-sm-text px-4 py-3 rounded-lg shadow cursor-pointer transition-all focus:outline-none focus:ring-0  ${
               (isLoginLoading || !isFormValid) ? "opacity-40 cursor-not-allowed" : "hover:opacity-90 shadow-md active:scale-95"
             }`}
             aria-live="polite"

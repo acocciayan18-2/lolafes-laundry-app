@@ -136,7 +136,7 @@ export default function OrderCard({ order, tick }) {
   }), [order?.handover_method]);
 
   const cardStyles = useMemo(() => {
-    if (isUnclaimed) return "border-red-500 bg-red-50/5 shadow-red-100 shadow-sm";
+    if (isUnclaimed) return "border-rose-500 bg-rose-50/5 shadow-rose-100 shadow-sm";
     if (isStuck) return "bg-orange-50/5 shadow-sm";
     return "border-gray-200 shadow-sm";
   }, [isStuck, isUnclaimed]);
@@ -332,8 +332,8 @@ export default function OrderCard({ order, tick }) {
                 </div>
                 {(isStuck || isUnclaimed) && (
                   <div className="absolute -top-1 -right-1 flex h-4 w-4 z-10" aria-label={isUnclaimed ? "Unclaimed Warning" : "Stuck Order Warning"}>
-                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isUnclaimed ? 'bg-red-500' : 'bg-orange-500'}`}></span>
-                    <span className={`relative inline-flex rounded-full h-4 w-4 border-2 border-white ${isUnclaimed ? 'bg-red-500' : 'bg-orange-500'}`}></span>
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isUnclaimed ? 'bg-rose-500' : 'bg-orange-500'}`}></span>
+                    <span className={`relative inline-flex rounded-full h-4 w-4 border-2 border-white ${isUnclaimed ? 'bg-rose-500' : 'bg-orange-500'}`}></span>
                   </div>
                 )}
               </div>
@@ -385,7 +385,7 @@ export default function OrderCard({ order, tick }) {
                   <span className={`text-nano font-bold uppercase px-2 py-0.5 rounded border card-trigger-area ${status.theme}`}>{status.label}</span>
                   {handoverDate && (
                     <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md card-trigger-area">
-                      <IconDoubleCheck className="w-3 h-3 text-green-700" aria-hidden="true" />
+                      <IconDoubleCheck className="w-3 h-3 text-emerald-700" aria-hidden="true" />
                       <time dateTime={handoverDate.toISOString()} className="text-nano font-bold uppercase">
                         {handoverDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} | {handoverDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                       </time>
@@ -405,8 +405,8 @@ export default function OrderCard({ order, tick }) {
                     className={`text-nano font-bold px-2 py-0.5 rounded border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${
                       order.is_paid
                         ? 'text-emerald-600 bg-emerald-50 border-emerald-200 cursor-default' 
-                        : 'text-red-500 bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-95' 
-                    } ${isLocked && !order.is_paid ? 'opacity-80 cursor-default hover:bg-red-50 active:scale-100' : ''}`}
+                        : 'text-rose-500 bg-rose-50 border-rose-200 hover:bg-rose-100 cursor-pointer active:scale-95' 
+                    } ${isLocked && !order.is_paid ? 'opacity-80 cursor-default hover:bg-rose-50 active:scale-100' : ''}`}
                   >
                     {order.is_paid ? "PAID" : "UNPAID"}
                   </button>
@@ -621,9 +621,9 @@ export default function OrderCard({ order, tick }) {
                     {order.status === 'pending' && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); setShowCancelModal(true); }} 
-                        className="flex items-center gap-1.5 px-3 py-2 text-micro  text-red-500 hover:bg-red-50 rounded-xl border border-red-100 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                        className="flex items-center gap-1.5 px-3 py-2 text-micro  text-rose-500 hover:bg-rose-50 rounded-xl border border-rose-100 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
                       >
-                        <IconBan className="w-3.5 h-3.5 opacity-60 text-red-500  stroke-red-500" aria-hidden="true" />
+                        <IconBan className="w-3.5 h-3.5 opacity-60 text-rose-500  stroke-rose-500" aria-hidden="true" />
                         <p>Cancel</p>
                       </button>
                     )}

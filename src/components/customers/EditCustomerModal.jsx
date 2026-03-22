@@ -24,7 +24,7 @@ const FormField = React.memo(({ label, id, error, icon: Icon, children }) => (
       <Icon 
         aria-hidden="true"
         className={`absolute left-3 w-4 h-4 transition-colors 
-        ${error ? 'text-red-500' : 'text-text-dark/70'} 
+        ${error ? 'text-rose-500' : 'text-text-dark/70'} 
         ${label.includes('Address') ? 'top-3' : 'top-1/2 -translate-y-1/2'}`} 
       />
       {children}
@@ -34,7 +34,7 @@ const FormField = React.memo(({ label, id, error, icon: Icon, children }) => (
         <motion.p 
           initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
           role="alert"
-          className="text-micro text-red-500 font-bold ml-1 mt-1 uppercase tracking-tight"
+          className="text-micro text-rose-500 font-bold ml-1 mt-1 uppercase tracking-tight"
         >
           {error}
         </motion.p>
@@ -212,7 +212,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
   // --- RENDER ---
   const inputClass = (err) => `
     w-full pl-10 pr-4 py-3 border  rounded-xl text-sm-text focus:outline-none focus-visible:ring-none transition-all
-    ${err ? 'border-red-500 focus:border-red-600 focus-visible:ring-red-500/50 bg-red-50/30' : 'border-app-dark/20 focus:border-app-dark/90 focus-visible:ring-app-dark/50 bg-white'}
+    ${err ? 'border-rose-500 focus:border-rose-600 focus-visible:ring-rose-500/50 bg-rose-50/30' : 'border-app-dark/20 focus:border-app-dark/90 focus-visible:ring-app-dark/50 bg-white'}
   `;
 
   return createPortal(

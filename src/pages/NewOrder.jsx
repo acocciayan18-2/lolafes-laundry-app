@@ -58,7 +58,7 @@ const Button = React.memo(({ children, variant = "primary", size = "md", classNa
     outline: "border border-gray-200 text-gray-700 hover:bg-gray-50",
     default: "bg-app-dark text-white",
     yellow: "bg-yellow-500 text-white hover:bg-yellow-600",
-    ghost: "text-red-500 hover:bg-red-50",
+    ghost: "text-rose-500 hover:bg-rose-50",
     warning: "bg-amber-500 text-white hover:bg-amber-600"
   };
   const sizes = { sm: "px-3 py-1 text-micro", md: "px-4 py-2 text-sm-text", icon: "p-2" };
@@ -386,7 +386,7 @@ export default function NewOrder() {
       // Log Activity to Audit Trail
       logActivity(orderPayload, 'pending', { 
         action: 'create_order', 
-        label: `Order #${uniqueOrderNumber} created for ${cleanName}` 
+        label: `Order created` 
       });
 
       // Hardware execution

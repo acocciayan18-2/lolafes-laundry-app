@@ -243,9 +243,9 @@ const CustomerCard = ({ customer, onEdit }) => {
                   <button
                     role="menuitem"
                     onClick={handleInitiateDelete}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm-text  text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus-visible:bg-red-50"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm-text  text-rose-600 hover:bg-rose-50 transition-colors focus:outline-none focus-visible:bg-rose-50"
                   >
-                    <IconTrash className="w-4 h-4 text-red-400" aria-hidden="true" /> Remove Customer
+                    <IconTrash className="w-4 h-4 text-rose-400" aria-hidden="true" /> Remove Customer
                   </button>
                 </motion.div>
               )}

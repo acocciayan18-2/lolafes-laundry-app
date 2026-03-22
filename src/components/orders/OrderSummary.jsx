@@ -290,14 +290,14 @@ export const OrderSummary = ({
         
         {/* CUSTOMER CARD */}
         <article>
-          <h4 className="text-sm-text  text-text-dark/50 !mb-1">Customer Details</h4>
-          <div className={`p-3 rounded-xl overflow-hidden border transition-colors ${!isCustomerValid && customer?.name ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
+          <h4 className="text-sm-text  text-text-dark/70 !mb-1">Customer Details</h4>
+          <div className={`p-3 rounded-xl overflow-hidden border transition-colors ${!isCustomerValid && customer?.name ? 'bg-rose-50 border-rose-100' : 'bg-gray-50 border-gray-100'}`}>
             {customer?.name ? (
               <div className="space-y-1">
                 <p className="text-base-text font-bold text-gray-900 leading-tight">
                   {customer.name} {isWalkInGuest && <span className="text-nano text-text-dark/90 bg-gray-100 px-1.5 py-0.5 rounded leading-none align-middle">Walk-In</span>}
                 </p>
-                <p className={`text-sm-text  flex items-center gap-1 ${!isWalkInGuest && (!isPhoneValid || isPhoneDuplicate) ? 'text-red-600 font-bold' : 'text-text-dark'}`}>
+                <p className={`text-sm-text  flex items-center gap-1 ${!isWalkInGuest && (!isPhoneValid || isPhoneDuplicate) ? 'text-rose-600 font-bold' : 'text-text-dark'}`}>
                   {isWalkInGuest ? "Anonymous (No Phone)" : (customer.phone || "No contact number")}
                 </p>
                 <p className="text-sm-text text-gray-600 leading-snug truncate" title={customer.address}>
@@ -419,7 +419,7 @@ export const OrderSummary = ({
           <div className="flex items-center justify-between px-1">
             <div className="flex flex-col">
               <span id="payment-status-label" className="text-sm-text  text-text-dark/70 mb-1">Payment Status</span>
-              <span className={`text-base-text font-bold tracking-tight ${isPaid ? 'text-emerald-700' : 'text-red-600'}`} aria-live="polite">
+              <span className={`text-base-text font-bold tracking-tight ${isPaid ? 'text-emerald-700' : 'text-rose-600'}`} aria-live="polite">
                 {isPaid ? "Paid in Full" : "Unpaid"}
               </span>
             </div>
@@ -447,7 +447,7 @@ export const OrderSummary = ({
                 {/* Payment Method Dropdown */}
                 <div className="space-y-1 mb-4" ref={dropdownRef}>
                   <label id="payment-method-label" className="text-sm-text  text-text-dark/70 ml-1">
-                    Payment Method <span className="text-red-500" aria-hidden="true">*</span>
+                    Payment Method <span className="text-rose-500" aria-hidden="true">*</span>
                   </label>
                   <div className="relative">
                     <button
@@ -509,7 +509,7 @@ export const OrderSummary = ({
                     <label htmlFor="cash-received" className="text-sm-text  text-emerald-800">
                       Amount Received
                     </label>
-                    <span className={`text-sm-text  ${isAmountInsufficient ? 'text-red-500 animate-pulse' : 'text-emerald-600'}`} aria-live="polite">
+                    <span className={`text-sm-text  ${isAmountInsufficient ? 'text-rose-500 ' : 'text-emerald-600'}`} aria-live="polite">
                       {isAmountInsufficient ? "Insufficient" : changeDue > 0 ? `Change: ₱${changeDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "No change"}
                     </span>
                   </div>
@@ -524,8 +524,8 @@ export const OrderSummary = ({
                       value={actualAmountTendered}
                       onChange={handleCashInputChange}
                       placeholder="0.00"
-                      className={`w-full pl-8 pr-3 py-2.5 bg-white border rounded-lg font-bold text-sm-text transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${
-                        isAmountInsufficient && actualAmountTendered !== "" ? "border-red-300 text-red-600" : "border-emerald-200 text-text-dark"
+                      className={`w-full pl-8 pr-3 py-2.5 bg-white border rounded-lg text-base-text font-bold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${
+                        isAmountInsufficient && actualAmountTendered !== "" ? "border-rose-300 text-rose-600" : "border-emerald-200 text-text-dark"
                       }`}
                     />
                   </div>

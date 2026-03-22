@@ -135,7 +135,7 @@ export default function CompactIntelligence() {
               </span>
             </div>
             
-            <span className="text-micro text-text-dark/70 italic truncate sm:pl-3 border-l border-transparent sm:border-gray-200">
+            <span className="text-micro text-text-dark/70 italic truncate sm:pl-3 border-l pb-1 border-transparent sm:border-gray-200">
                {current.sub}
             </span>
           </div>

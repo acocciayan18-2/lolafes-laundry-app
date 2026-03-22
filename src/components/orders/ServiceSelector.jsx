@@ -265,7 +265,7 @@ export const ServiceSelector = ({
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
             >
-              <h3 className="text-sm-text font-bold text-text-dark/70 mb-3 ml-1 tracking-wider">Current Selection</h3>
+              <h3 className="text-sm-text text-text-dark/80 mb-3 ml-1">Current Selection</h3>
               <div className="space-y-3" role="list" aria-label="Selected Services">
                 {selectedServices.map((service, index) => (
                   <motion.div 
