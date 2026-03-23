@@ -139,7 +139,6 @@ export const OrderSummary = ({
     }
   }, [isDropdownOpen]);
 
-  // --- DERIVED STATE (MEMOIZED) ---
   const activeMethods = useMemo(() => {
     if (!Array.isArray(methods)) return [];
     return methods.filter(m => m && m.isActive);
@@ -172,9 +171,8 @@ export const OrderSummary = ({
     return safeMoney(actualAmountTendered) < finalTotal;
   }, [isPaid, actualAmountTendered, finalTotal]);
 
-  // ✨ FIX: Strict Validations - Adjusted for Walk-In Bypass
   const isPhoneValid = useMemo(() => {
-    if (isWalkInGuest) return true; // Automatically pass phone validation if Walk-In
+    if (isWalkInGuest) return true; 
     const phone = customer?.phone;
     return typeof phone === 'string' && phone.length === 11 && phone.startsWith("09");
   }, [customer?.phone, isWalkInGuest]);
@@ -191,24 +189,28 @@ export const OrderSummary = ({
     return true;
   }, [isPaid, paymentMethod, isAmountInsufficient]);
   
-  const isOrderInvalid = isProcessing || !Array.isArray(selectedServices) || selectedServices.length === 0 || !isCustomerValid || !isPaymentValid;
+  const isAddressMissingForDelivery = useMemo(() => {
+    return handoverMethod === 'delivery' && (!customer?.address || customer.address.trim() === "");
+  }, [handoverMethod, customer?.address]);
+
+  const isOrderInvalid = isProcessing || !Array.isArray(selectedServices) || selectedServices.length === 0 || !isCustomerValid || !isPaymentValid || isAddressMissingForDelivery;
 
   const selectedOption = useMemo(() => {
     return activeMethods.find(m => m.name === paymentMethod);
   }, [paymentMethod, activeMethods]);
 
 
-  // --- HANDLERS ---
   const getButtonText = useCallback(() => {
     if (isProcessing) return "Processing...";
     if (isPhoneDuplicate && !isWalkInGuest) return "Number Already Exists";
     if (!customer?.name || !customer.name.trim()) return "Enter Customer Name"; 
     if (!isPhoneValid && !isWalkInGuest) return "Invalid Phone (11 Digits)";
+    if (isAddressMissingForDelivery) return "Address Required for Delivery";
     if (!Array.isArray(selectedServices) || selectedServices.length === 0) return "Add Services";
     if (isPaid && !paymentMethod) return "Select Payment Method";
     if (isAmountInsufficient) return "Insufficient Amount";
     return "Place Order";
-  }, [isProcessing, isPhoneDuplicate, isWalkInGuest, customer?.name, isPhoneValid, selectedServices, isPaid, paymentMethod, isAmountInsufficient]);
+  }, [isProcessing, isPhoneDuplicate, isWalkInGuest, customer?.name, isPhoneValid, isAddressMissingForDelivery, selectedServices, isPaid, paymentMethod, isAmountInsufficient]);
 
   const handleNotesChange = useCallback((e) => {
     if (typeof setNotes !== 'function') return;
@@ -515,7 +517,7 @@ export const OrderSummary = ({
                   </div>
                   
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-emerald-600" aria-hidden="true">₱</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base-text font-bold text-text-dark" aria-hidden="true">₱</span>
                     <input
                       id="cash-received"
                       ref={cashInputRef}
@@ -524,8 +526,8 @@ export const OrderSummary = ({
                       value={actualAmountTendered}
                       onChange={handleCashInputChange}
                       placeholder="0.00"
-                      className={`w-full pl-8 pr-3 py-2.5 bg-white border rounded-lg text-base-text font-bold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${
-                        isAmountInsufficient && actualAmountTendered !== "" ? "border-rose-300 text-rose-600" : "border-emerald-200 text-text-dark"
+                      className={`w-full pl-7 pr-3 py-2.5 bg-white border rounded-lg text-base-text font-bold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${
+                        isAmountInsufficient && actualAmountTendered !== "" ? "border-rose-200  text-rose-600" : "border-emerald-200 text-text-dark"
                       }`}
                     />
                   </div>

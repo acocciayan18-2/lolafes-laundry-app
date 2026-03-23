@@ -233,14 +233,14 @@ export default function ServiceCard({
   if (showConfirmDelete) {
     return (
       <article className={`${containerBase} border-app-dark/20 bg-app-light p-4 relative z-0`} aria-live="polite">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between py-2.5 gap-4">
           <div className="flex items-center gap-3">
             <div className="bg-rose-600 p-2 rounded-lg shrink-0" aria-hidden="true">
               <IconTrash className="w-5 h-5 text-white stroke-white" />
             </div>
             <div>
               <h3 className="text-sm-text  text-text-dark">Delete this service?</h3>
-              <p className="text-sm-text text-rose-700  truncate" title={`Remove ${service.name}`}>
+              <p className="text-micro text-rose-600 pb-1 truncate" title={`Remove ${service.name}`}>
                 This will permanently remove {service.name}.
               </p>
             </div>
@@ -280,7 +280,7 @@ export default function ServiceCard({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
               
               <div className="space-y-1">
-                <label htmlFor={`service-name-${service.id || 'new'}`} className="text-micro  text-text-dark/60 ml-1">Service Name</label>
+                <label htmlFor={`service-name-${service.id || 'new'}`} className="text-micro text-text-dark/70 ml-1">Service Name</label>
                 <Input 
                   id={`service-name-${service.id || 'new'}`}
                   value={tempData?.name || ""} 
@@ -297,7 +297,7 @@ export default function ServiceCard({
               </div>
 
               <div className="space-y-1 relative z-20">
-                <label htmlFor={`service-type-${service.id || 'new'}`} className="text-micro  text-text-dark/60 ml-1">Service Type</label>
+                <label htmlFor={`service-type-${service.id || 'new'}`} className="text-micro  text-text-dark/70  ml-1">Service Type</label>
                 <HeadlessServiceSelect 
                   id={`service-type-${service.id || 'new'}`}
                   value={tempData?.type || tempData?.category || "wash_dry"} 
@@ -309,7 +309,7 @@ export default function ServiceCard({
               </div>
 
               <div className="space-y-1 relative z-10">
-                <label htmlFor={`service-price-${service.id || 'new'}`} className="text-micro  text-text-dark/60 ml-1">Price (₱)</label>
+                <label htmlFor={`service-price-${service.id || 'new'}`} className="text-micro  text-text-dark/70  ml-1">Price (₱)</label>
                 <Input 
                   id={`service-price-${service.id || 'new'}`}
                   type="text" 
@@ -341,7 +341,7 @@ export default function ServiceCard({
               {isProcessing ? (
                 <div className="w-3.5 h-3.5 border border-white/30 border-t-white rounded-full animate-spin mx-auto" aria-hidden="true" />
               ) : (
-                <>{isNew ? <IconPlus className="w-3.5 h-3.5 mr-1 stroke-white text-white" aria-hidden="true" /> : <IconCheckWhite className="w-3.5 h-3.5 mr-1" aria-hidden="true" />}{isNew ? "Add" : "Save"}</>
+                <>{isNew ? <IconPlus className="w-3.5 h-3.5 mr-1 stroke-white text-white" aria-hidden="true" /> : <IconCheckWhite className="w-3.5 h-3.5 mr-1" aria-hidden="true" />}{isNew ? <p className="!text-sm-text !font-medium">Add</p> : <p className="!text-sm-text !font-medium">Save</p>}</>
               )}
             </Button>
             <Button 
@@ -351,7 +351,7 @@ export default function ServiceCard({
               disabled={isProcessing}
               className="flex-1 md:w-28 text-sm-text  disabled:opacity-50 focus:outline-none focus-visible:ring-1 focus-visible:ring-app-dark" 
             >
-              <IconX className="w-4 h-4 mr-1" aria-hidden="true" /> Cancel
+              <IconX className="w-4 h-4 mr-1" aria-hidden="true" /> <p className="!text-sm-text !font-medium">Cancel</p>
             </Button>
           </div>
         </div>
@@ -391,9 +391,9 @@ export default function ServiceCard({
               type="button"
               variant="outline" 
               onClick={() => onEdit(service)}
-              className="text-sm-text  px-3 border-gray-100 hover:bg-app-dark/5 transition-colors active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-app-dark" 
+              className="text-sm-text  px-3 border-gray-100 hover:bg-app-dark/5 gap-1 transition-colors active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-app-dark" 
             >
-              <IconEdit2 className="w-3 h-3 mr-1" aria-hidden="true" /> Edit
+              <IconEdit2 className="w-3 h-3 mr-1 text-text-dark/70" aria-hidden="true" /> <p className="!text-micro !font-medium text-text-dark">Edit</p>
             </Button>
           ) : (
             <Button 

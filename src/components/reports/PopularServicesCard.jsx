@@ -168,7 +168,7 @@ export default function PopularServices({ range: initialRange }) {
                       role="tooltip"
                       className="absolute left-[-50px] top-7 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200"
                     > 
-                      <p className="text-sm-text text-text-dark/90 leading-relaxed">
+                      <p className="text-sm-text font-normal text-text-dark/90 leading-relaxed">
                         Visualizes the market share of your services. Slices represent the percentage of total orders processed.
                       </p>
                     </div>

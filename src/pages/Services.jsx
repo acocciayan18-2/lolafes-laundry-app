@@ -209,10 +209,9 @@ export default function Services() {
             <LoyaltySettings />
           </div>
 
-          {/* List of Services (Instant Snap - No AnimatePresence/motion.div wrappers) */}
-          <div className="grid gap-3 relative z-[10]">
+          <div className="grid gap-3 relative z-[10] pb-4">
             {sortedServices.map((service) => (
-              <div key={service.id}>
+              <div key={service.id} >
                 <ServiceCard 
                   service={service} 
                   isEditing={editingId === service.id}

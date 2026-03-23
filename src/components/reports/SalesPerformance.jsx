@@ -99,7 +99,7 @@ const ChartBar = React.memo(({ data, maxVal, isActive, isPeak, onHover, onLeave,
         aria-hidden="true"
       >
         <div className="bg-app-dark text-white shadow-xl rounded-md px-2.5 py-1.5 whitespace-nowrap">
-          <p className="text-micro font-bold tracking-wide">₱{formatSmartMoney(data.value)}</p>
+          <p className="text-micro font-normal tracking-wide">₱{formatSmartMoney(data.value)}</p>
         </div>
         {/* Tooltip Arrow */}
         <div className="w-2.5 h-2.5 bg-app-dark rotate-45 -mt-1.5" />
@@ -254,7 +254,7 @@ export default function SalesPerformance() {
                     className="absolute left-0 top-7 w-56 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100]"
                   >
                     <p className="text-sm-text text-text-dark/90 leading-relaxed font-normal">
-                      View revenue trends across different timeframes. The <span className="text-emerald-600 font-bold">green bar</span> indicates your peak earning period.
+                      View revenue trends across different timeframes. The green bar indicates your peak earning period.
                     </p>
                   </motion.div>
                 )}

@@ -20,9 +20,6 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const isLoggingOutRef = useRef(false);
 
-  // ==========================================
-  // 1. INITIAL MOUNT & FIREBASE HYDRATION
-  // ==========================================
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {

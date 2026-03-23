@@ -121,7 +121,7 @@ const ClearCartModal = ({ isOpen, onCancel, onConfirm }) => {
 
             {/* ICON HEADER */}
             <div className="w-16 h-16 flex items-center justify-center mx-auto" aria-hidden="true">
-              <IconTrash className="w-8 h-8 text-text-dark" />
+              <IconTrash className="w-8 h-8 text-rose-500" />
             </div>
             
             <h3 id="clear-cart-title" className="text-h3 font-bold text-text-dark">Clear Cart?</h3>

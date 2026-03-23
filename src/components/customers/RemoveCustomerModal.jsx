@@ -104,16 +104,16 @@ const RemoveCustomerModal = ({
             </button>
 
             {/* HEADER ICON */}
-            <div className="w-16 h-16 flex items-center justify-center mx-auto mb-3" aria-hidden="true">
-              <IconUsers className="w-8 h-8 text-text-dark" />
+            <div className="w-16 h-16 flex items-center justify-center mx-auto" aria-hidden="true">
+              <IconUsers className="w-8 h-8 text-rose-500" />
             </div>
 
             {/* CONTENT */}
-            <h3 id="remove-customer-title" className="text-h3 font-bold text-text-dark">
+            <h3 id="remove-customer-title" className="text-h3 mb-3 font-bold text-text-dark">
               Remove Customer?
             </h3>
 
-            <p id="remove-customer-desc" className="text-sm-text font-normal text-text-darkmt-2 mb-8 leading-snug px-2">
+            <p id="remove-customer-desc" className="text-sm-text font-normal text-text-darkmt-2 mb-6 leading-snug px-2">
               Are you sure you want to remove{" "}
               <span className="font-bold text-text-dark" title={customerName}>
                 {safeCustomerName} 

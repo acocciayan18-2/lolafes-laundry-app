@@ -214,7 +214,7 @@ export default function ExportOrdersButton() {
         aria-label="Export laundry analytics to Excel"
         aria-busy={isExporting}
         className={`
-          flex items-center gap-2 px-3 h-9 mt-1 border rounded-xl text-micro shadow-md transition-all
+          flex items-center gap-2 px-3 h-9 mt-1 border rounded-xl text-micro shadow-sm transition-all
           ${isDisabled
             ? "bg-slate-100 text-slate-400 cursor-not-allowed opacity-70 border-slate-200"
             : "bg-white text-text-dark hover:bg-slate-50 border-slate-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
@@ -227,7 +227,7 @@ export default function ExportOrdersButton() {
           <IconDownload className="w-4 h-4" aria-hidden="true" />
         )}
         <span className="whitespace-nowrap">
-          {isExporting ? "Processing Data..." : "Export Analytics"}
+          {isExporting ? "Processing Data..." : "Export Orders"}
         </span>
       </button>
 

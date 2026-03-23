@@ -125,7 +125,7 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
           {isLockedOut ? "Access Locked" : isSetupMode ? "Setup 6-Digit PIN" : "Enter 6-Digit PIN"}
         </h2>
         
-        <p className={`text-micro font-bold tracking-widest mb-6 ${isLockedOut ? 'text-rose-500' : 'text-text-dark/70'}`}>
+        <p className={`text-sm-text mb-6 ${isLockedOut ? 'text-rose-500' : 'text-text-dark/70'}`}>
           {isLockedOut ? `Try again in ${lockoutTime}s` : "Settings Access"}
         </p>
 

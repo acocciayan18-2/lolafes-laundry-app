@@ -87,7 +87,7 @@ const FilterDropdown = React.memo(({
                     onChange(option.value);
                   }} 
                   className={`w-full px-3 py-2 text-left text-sm-text flex items-center justify-between transition-colors tracking-tight focus:outline-none focus-visible:bg-slate-100 ${
-                    isSelected ? "font-bold bg-slate-50 text-black" : "text-text-dark font-normal hover:bg-gray-50"
+                    isSelected ? "font-medium bg-slate-50 text-black" : "text-text-dark font-normal hover:bg-gray-50"
                   }`}
                 >
                   <span>{option.label}</span>
@@ -180,8 +180,8 @@ export default function OrderFilters({
         <IconSearch aria-hidden="true" className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10 group-focus-within:text-app-dark transition-colors" />
         <input
           id="order-search-input"
-          type="text"           // ✨ QA FIX: Changed from 'search' to 'text' to disable native browser 'x'
-          role="searchbox"      // ✨ QA FIX: Maintained A11y semantics for screen readers
+          type="text"         
+          role="searchbox"      
           placeholder="Search name, phone, address, or order #..."
           value={searchTerm || ""}
           onChange={handleSearchChange}
