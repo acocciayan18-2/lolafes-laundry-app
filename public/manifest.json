@@ -1,0 +1,24 @@
+{
+  "short_name": "Lola Fe's",
+  "name": "Lola Fe's Laundry POS",
+  "description": "Point of Sale for Lola Fe's Laundry Shop",
+  "icons": [
+    {
+      "src": "/images/lolafeslaundry-logo-transparent.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/lolafeslaundry-logo-transparent.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/login",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#252525",
+  "background_color": "#252525"
+}

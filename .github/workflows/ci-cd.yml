@@ -1,0 +1,45 @@
+name: CI and CD Pipeline
+
+on:
+  push:
+    branches: [dev] 
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+
+      # 2. Install Vercel CLI
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      # 3. Pull Vercel Settings (Required for the build)
+      # We use 'preview' because this is the dev branch
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      # 4. Build the Project (Creates the .vercel/output folder)
+      # IMPORTANT: We removed '--prod' because this is for dev/preview
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      # 5. Deploy the Prebuilt Artifacts
+      # IMPORTANT: We removed '--prod' so it creates a Preview URL
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
