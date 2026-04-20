@@ -9,13 +9,13 @@ import { IconUsers, IconInfo } from "../icons";
  * @property {number} retentionRate
  */
 
-export default function CustomerMix({ range }) {
+export default function CustomerMix() {
   // --- STATE & REFS ---
   const [showInfo, setShowInfo] = useState(false);
   const infoRef = useRef(null);
   
-  // Select only the necessary slice of the store to prevent unnecessary component re-renders
-  const getAnalytics = useReportStore(useCallback(state => state.getAnalytics, []));
+  // ✨ FIX: Subscribe directly to the kpiData state where the store calculates these metrics
+  const kpiData = useReportStore((state) => state.kpiData);
 
   // --- EVENT HANDLERS ---
   const toggleInfo = useCallback(() => setShowInfo(prev => !prev), []);
@@ -45,12 +45,8 @@ export default function CustomerMix({ range }) {
 
   // --- DATA PROCESSING ---
   const { newCount, returningCount, retentionRate, returningPct } = useMemo(() => {
-    let rawStats = {};
-    try {
-      rawStats = (typeof getAnalytics === 'function' ? getAnalytics(range) : {}) || {};
-    } catch (e) {
-      console.error("[CustomerMix] Error fetching analytics:", e);
-    }
+    // Safely fallback if kpiData is not yet loaded
+    const rawStats = kpiData || {};
 
     // Sanitize: Force strict number types and provide logical boundaries (0-infinity)
     const n = Math.max(0, Math.floor(Number(rawStats.newCount) || 0));
@@ -60,8 +56,8 @@ export default function CustomerMix({ range }) {
     const total = n + r;
     const pct = total > 0 ? (r / total) * 100 : 0;
 
-    return { stats: rawStats, newCount: n, returningCount: r, retentionRate: rate, returningPct: pct };
-  }, [range, getAnalytics]);
+    return { newCount: n, returningCount: r, retentionRate: rate, returningPct: pct };
+  }, [kpiData]);
 
   // --- UI THEME LOGIC ---
   const heatmap = useMemo(() => {
@@ -135,51 +131,51 @@ export default function CustomerMix({ range }) {
         {/* ANALYTICS VISUALIZATION */}
         <div className="flex flex-col items-center justify-center flex-1 py-2">
          <div className="relative flex items-center justify-center w-28 h-28 drop-shadow-sm" aria-hidden="true">
-  {/* SVG Progress Circle */}
-  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-    {/* Background Ring (New Clients - Gray) */}
-    <circle 
-      cx="50" cy="50" r={radius}
-      fill="transparent" 
-      className="text-slate-100" 
-      stroke="currentColor" 
-      strokeWidth="12" 
-    />
-    {/* Overlay Progress Ring (Returning Clients) */}
-    {newCount + returningCount > 0 && (
-      <circle 
-        cx="50" cy="50" r={radius} 
-        fill="transparent" 
-        className={`${heatmap.stroke} transition-all duration-1000 ease-out`} 
-        stroke="currentColor" 
-        strokeWidth="12" 
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={strokeDashoffset}
-      />
-    )}
-  </svg>
+            {/* SVG Progress Circle */}
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              {/* Background Ring (New Clients - Gray) */}
+              <circle 
+                cx="50" cy="50" r={radius}
+                fill="transparent" 
+                className="text-slate-100" 
+                stroke="currentColor" 
+                strokeWidth="12" 
+              />
+              {/* Overlay Progress Ring (Returning Clients) */}
+              {newCount + returningCount > 0 && (
+                <circle 
+                  cx="50" cy="50" r={radius} 
+                  fill="transparent" 
+                  className={`${heatmap.stroke} transition-all duration-1000 ease-out`} 
+                  stroke="currentColor" 
+                  strokeWidth="12" 
+                  strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                />
+              )}
+            </svg>
 
-  {/* Inner text overlay */}
-  <div className="absolute flex flex-col items-center justify-center text-center w-full px-4">
-    <span 
-      className="text-sm-text  text-text-dark leading-none truncate max-w-[60px] block"
-      title={newCount + returningCount} 
-    >
-      {newCount + returningCount}
-    </span>
-    <span className="text-micro  text-text-dark/50 ">Total</span>
-  </div>
-</div>
+            {/* Inner text overlay */}
+            <div className="absolute flex flex-col items-center justify-center text-center w-full px-4">
+              <span 
+                className="text-sm-text font-normal text-text-dark leading-none truncate max-w-[60px] block"
+                title={newCount + returningCount} 
+              >
+                {newCount + returningCount}
+              </span>
+              <span className="text-micro text-text-dark/50 ">Total</span>
+            </div>
+          </div>
           
           {/* LEGEND / DATA GRID */}          
           <div className="grid grid-cols-2 w-full mt-6 gap-2">
             <div className="text-center p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="w-2 h-2 rounded-full bg-slate-300" aria-hidden="true" />
-                <p className="text-sm-text text-text-dark/70">New</p>
+                <p className="text-sm-text  text-text-dark/70">New</p>
               </div>
-              <p className="text-sm-text text-text-dark font-bold leading-tight">
+              <p className="text-sm-text text-text-dark font-normal  leading-tight">
                 {newCount.toLocaleString()}
               </p>
             </div>
@@ -187,9 +183,9 @@ export default function CustomerMix({ range }) {
             <div className="text-center p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className={`w-2 h-2 rounded-full ${heatmap.bg}`} aria-hidden="true" />
-                <p className="text-sm-text text-text-dark/70">Return</p>
+                <p className="text-sm-text  text-text-dark/70">Return</p>
               </div>
-              <p className="text-sm-text text-text-dark font-bold leading-tight">
+              <p className="text-sm-text text-text-dark font-normal  leading-tight">
                 {returningCount.toLocaleString()}
               </p>
             </div>

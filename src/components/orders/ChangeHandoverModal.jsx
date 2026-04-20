@@ -231,7 +231,7 @@ export default function ChangeHandoverModal({
 
             {/* Total Preview */}
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex justify-between items-center mb-2" aria-live="polite">
-              <span className="text-sm-text  text-slate-500">New Total</span>
+              <span className="text-sm-text  text-text-dark/80">New Total</span>
               <span className="text-h3 font-bold text-text-dark">
                 ₱{calculatedTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>

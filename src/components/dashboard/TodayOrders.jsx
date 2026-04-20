@@ -254,14 +254,14 @@ export default function TodayOrders({ orders = [], isLoading }) {
 
   // --- RENDER ---
   return (
-    <section className="bg-white rounded-2xl shadow-sm border border-app-dark/10 flex flex-col max-h-[450px] min-h-[300px] overflow-hidden relative" aria-label="Today's Orders">
+    <section className="bg-white rounded-2xl shadow-sm border border-app-dark/10 flex flex-col max-h-[350px] min-h-[200px] overflow-hidden relative" aria-label="Today's Orders">
       
       <header className="px-5 py-3.5 border-b border-app-dark/5 flex justify-between items-center bg-white">
         <div className="flex items-center gap-3 pl-2">
           <div className="p-1.5 bg-white border border-app-dark/10 rounded-lg text-text-dark shadow-hollow" aria-hidden="true">
             <IconShirt className="w-5 h-5" />
           </div>
-          <h2 className="text-base-text font-bold text-text-dark">Today's Orders</h2>
+          <h2 className="text-base-text font-bold text-text-dark/90">Today's Laundry</h2>
         </div>
         {orders?.length > 0 && (
           <span 

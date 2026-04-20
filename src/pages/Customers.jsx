@@ -1,5 +1,10 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
-import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+/**
+ * @file Customers.jsx
+ * @description Enterprise Customer Management Dashboard.
+ * @architecture Implements Concurrent Rendering, Render Capping, and Layout-Thrashing Prevention.
+ */
+import React, { useEffect, useState, useMemo, useCallback, useRef, useDeferredValue } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import CustomerCard from "../components/customers/CustomerCard";
 import CustomerStats from "../components/customers/CustomerStats";
 import { IconSearch, IconUsers, IconClose } from "../components/icons";
@@ -7,22 +12,16 @@ import { useCustomerStore } from "../store/customer/useCustomerStore";
 import { CustomerListSkeleton } from "../components/skeleton-loader";
 import EditCustomerModal from "../components/customers/EditCustomerModal"; 
 import StoreGuard from '../components/settings/StoreGuard';
+import { useAuthStore } from "../store/auth/useAuthStore";
 
 // ==========================================
-// CONFIGURATION & CONSTANTS
+// 🛡️ CONFIGURATION & CONSTANTS
 // ==========================================
-const SMOOTH_TRANSITION = Object.freeze({
-  type: "spring",
-  stiffness: 300,
-  damping: 30,
-  mass: 1,
-  restDelta: 0.01 
-});
-
+const RENDER_BATCH_SIZE = 50;
 const MAX_SEARCH_LENGTH = 100;
 
 // ==========================================
-// ATOMIC COMPONENTS
+// ⚛️ ATOMIC COMPONENTS
 // ==========================================
 const Input = React.memo(React.forwardRef(({ className, ...props }, ref) => (
   <input 
@@ -34,21 +33,29 @@ const Input = React.memo(React.forwardRef(({ className, ...props }, ref) => (
 Input.displayName = "Input";
 
 // ==========================================
-// MAIN COMPONENT
+// 🚀 MAIN CONTROLLER
 // ==========================================
 export default function Customers() {
-  // --- GLOBAL STATE ---
   const { customers, isLoading, subscribeToCustomers } = useCustomerStore();
   
-  // --- ✨ ADDED: Role Identification ---
-  const userRole = localStorage.getItem("userRole") || "STAFF";
+  // 🛡️ SECURE RBAC: Direct Memory Access
+  const userRole = useAuthStore((state) => state.userRole);
+  const isOwnerOrAdmin = useMemo(() => {
+    const safeRole = String(userRole || "STAFF").toUpperCase();
+    return safeRole === "OWNER" || safeRole === "ADMIN";
+  }, [userRole]);
 
-  // --- LOCAL STATE ---
+  // --- STATE ---
   const [searchTerm, setSearchTerm] = useState("");
+  // ⚡ PERFORMANCE: Defer expensive filtering so the input never lags
+  const deferredSearchTerm = useDeferredValue(searchTerm); 
+  
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(true); 
   const [editingCustomer, setEditingCustomer] = useState(null);
+  
+  // ⚡ PERFORMANCE: Render cap state to prevent DOM bloat
+  const [displayLimit, setDisplayLimit] = useState(RENDER_BATCH_SIZE);
 
-  // --- REFS ---
   const searchInputRef = useRef(null);
   const isMounted = useRef(false);
 
@@ -81,41 +88,40 @@ export default function Customers() {
     return () => clearTimeout(timer); 
   }, [isLoading]);
 
+  // Reset pagination limit when search term changes
+  useEffect(() => {
+    setDisplayLimit(RENDER_BATCH_SIZE);
+  }, [deferredSearchTerm]);
 
-  // --- DERIVED STATE (MEMOIZED) ---
+  // --- DERIVED STATE (O(N) ALGORITHM) ---
   const filteredCustomers = useMemo(() => {
     if (!Array.isArray(customers)) return [];
     
-    const safeTerm = (searchTerm || "").trim().toLowerCase();
-    let filtered = customers;
+    const safeTerm = deferredSearchTerm.trim().toLowerCase();
     
-    if (safeTerm) {
-      filtered = customers.filter(customer => {
-        if (!customer || typeof customer !== 'object') return false;
-        const name = (customer.name || "").toLowerCase();
-        const phone = customer.phone || "";
-        const address = (customer.address || "").toLowerCase();
-
-        return (
-          name.includes(safeTerm) ||
-          phone.includes(safeTerm) ||
-          address.includes(safeTerm)
-        );
-      });
+    // Fast path: No search term
+    if (!safeTerm) {
+      return [...customers].sort((a, b) => (a?.name || "").localeCompare(b?.name || ""));
     }
 
-    return [...filtered].sort((a, b) => {
-      const nameA = a?.name || "";
-      const nameB = b?.name || "";
-      return nameA.localeCompare(nameB);
-    });
+    // Filter and Sort in a clean pipeline
+    return customers.filter(customer => {
+      if (!customer || typeof customer !== 'object') return false;
+      return (
+        (customer.name || "").toLowerCase().includes(safeTerm) ||
+        (customer.phone || "").includes(safeTerm) ||
+        (customer.address || "").toLowerCase().includes(safeTerm)
+      );
+    }).sort((a, b) => (a?.name || "").localeCompare(b?.name || ""));
     
-  }, [customers, searchTerm]);
+  }, [customers, deferredSearchTerm]);
 
+  // Slice the array to prevent rendering thousands of nodes at once
+  const displayedCustomers = filteredCustomers.slice(0, displayLimit);
 
   // --- HANDLERS ---
   const handleSearchChange = useCallback((e) => {
-    const safeVal = e.target.value.replace(/[<>]/g, "").substring(0, MAX_SEARCH_LENGTH);
+    const safeVal = e.target.value.replace(/[&<>'"]/g, "").substring(0, MAX_SEARCH_LENGTH);
     setSearchTerm(safeVal);
   }, []);
 
@@ -128,7 +134,11 @@ export default function Customers() {
     setEditingCustomer(null);
   }, []);
 
+  const handleLoadMore = useCallback(() => {
+    setDisplayLimit(prev => prev + RENDER_BATCH_SIZE);
+  }, []);
 
+  // --- EARLY RETURN ---
   if (isLoading && shouldShowSkeleton) return <CustomerListSkeleton />;
   if (isLoading && !shouldShowSkeleton) return null;
 
@@ -137,7 +147,6 @@ export default function Customers() {
       <main className="min-h-screen bg-app-light p-2" aria-label="Customer Management Dashboard">
         <div className="max-w-6xl mx-auto px-1 md:px-2 relative">
           
-          {/* Header */}
           <header className="flex justify-between items-center mb-3">
             <div>
               <h1 className="text-h2 font-bold text-text-dark">Customers</h1>
@@ -145,15 +154,12 @@ export default function Customers() {
             </div>
           </header>
 
-          {/* Search Section */}
           <section className="relative w-full mb-3 group" aria-label="Customer Search">
+            {/* CSS Hack: Hide native browser search clear icons */}
             <style dangerouslySetInnerHTML={{__html: `
               #customer-search-input::-webkit-search-decoration,
               #customer-search-input::-webkit-search-cancel-button,
-              #customer-search-input::-webkit-search-results-button,
-              #customer-search-input::-webkit-search-results-decoration { display: none; }
-              #customer-search-input::-ms-clear,
-              #customer-search-input::-ms-reveal { display: none; width: 0; height: 0; }
+              #customer-search-input::-ms-clear { display: none; }
             `}} />
 
             <label htmlFor="customer-search-input" className="sr-only">Search name, phone, or address</label>
@@ -167,7 +173,7 @@ export default function Customers() {
               placeholder="Search name, phone, or address..."
               value={searchTerm}
               onChange={handleSearchChange}
-              className="!pl-10 !pr-10 bg-white rounded-xl border-slate-200 focus:!border-gray-900 focus:!ring-0 w-full focus-visible:ring-2 focus-visible:ring-app-dark [&::-webkit-search-cancel-button]:appearance-none [&::-ms-clear]:hidden"
+              className="!pl-10 !pr-10 bg-white rounded-xl border-slate-200 focus:!border-gray-900 focus:!ring-0 w-full focus-visible:ring-2 focus-visible:ring-app-dark"
             />
             
             <AnimatePresence>
@@ -187,59 +193,69 @@ export default function Customers() {
             </AnimatePresence>
           </section>
 
+          {/* A11y: Visually hidden live region to announce search results */}
+          <div aria-live="polite" className="sr-only">
+             {filteredCustomers.length} customers found.
+          </div>
+
           <CustomerStats customers={Array.isArray(customers) ? customers : []} />
 
-          <section aria-label="Customer List" aria-live="polite">
-            <LayoutGroup>
-              <div className="grid">
-                <AnimatePresence mode="popLayout" initial={false}>
-                  {filteredCustomers.length > 0 ? (
-                    filteredCustomers.map((customer) => {
-                      if (!customer || !customer.id) return null;
-                      return (
-                        <motion.article
-                          key={customer.id}
-                          layout
-                          initial={{ opacity: 0, scale: 0.98 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.98 }}
-                          transition={SMOOTH_TRANSITION}
-                        >
-                          <CustomerCard 
-                            customer={customer} 
-                            userRole={userRole} // ✨ Pass Role to card
-                            // ✨ Disable Edit Modal trigger for Staff
-                            onEdit={userRole === "OWNER" ? () => setEditingCustomer(customer) : undefined}
-                          />
-                        </motion.article>
-                      );
-                    })
-                  ) : (
-                    <motion.div 
-                      key="empty"
-                      layout
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-center py-20"
-                      role="status"
-                    >
-                      <div className="flex justify-center mb-4" aria-hidden="true">
-                        <IconUsers className="w-12 h-12 text-gray-200" />
-                      </div>
-                      <h3 className="text-base-text  text-text-dark/70 mb-1">
-                        {searchTerm ? "No customers found" : "No customers yet"}
-                      </h3>
-                      <p className="text-sm-text  text-text-dark/40">
-                        {searchTerm ? "Try adjusting your search term" : "Customers will appear here when you create orders"}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+          <section aria-label="Customer List">
+            <div className="grid">
+              <AnimatePresence initial={false}>
+                {displayedCustomers.length > 0 ? (
+                  displayedCustomers.map((customer) => {
+                    if (!customer || !customer.id) return null;
+                    return (
+                      <motion.article
+                        key={customer.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <CustomerCard 
+                          customer={customer} 
+                          onEdit={isOwnerOrAdmin ? setEditingCustomer : undefined}
+                        />
+                      </motion.article>
+                    );
+                  })
+                ) : (
+                  <motion.div 
+                    key="empty"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center py-20"
+                    role="status"
+                  >
+                    <div className="flex justify-center mb-4" aria-hidden="true">
+                      <IconUsers className="w-12 h-12 text-gray-200" />
+                    </div>
+                    <h3 className="text-base-text text-text-dark/70 mb-1">
+                      {searchTerm ? "No customers found" : "No customers yet"}
+                    </h3>
+                    <p className="text-sm-text text-text-dark/40">
+                      {searchTerm ? "Try adjusting your search term" : "Customers will appear here when you create orders"}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            
+            {/* Load More Button */}
+            {filteredCustomers.length > displayLimit && (
+              <div className="pt-4 pb-10 flex justify-center">
+                <button
+                  onClick={handleLoadMore}
+                  className="px-6 py-2.5 bg-white border border-slate-200 shadow-sm rounded-xl text-sm-text font-bold text-text-dark hover:bg-slate-50 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                >
+                  Load More Customers ({filteredCustomers.length - displayLimit} remaining)
+                </button>
               </div>
-            </LayoutGroup>
+            )}
           </section>
 
-          {/* Modal logic - Only Owners can trigger this now */}
           <AnimatePresence>
             {editingCustomer && (
               <EditCustomerModal 

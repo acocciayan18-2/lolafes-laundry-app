@@ -286,7 +286,7 @@ export default function Orders() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={() => setDisplayLimit(prev => prev + PAGE_SIZE)}
-                    className="w-full mt-2 text-text-dark/70  text-micro hover:text-text-dark py-3 active:scale-[0.98] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark rounded-lg"
+                    className="w-full mt-2 mb-5 border border-text-dark/20 text-text-dark/70  text-micro hover:text-text-dark py-3 active:scale-[0.98] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark rounded-full"
                   >
                     Load More Orders
                   </motion.button>

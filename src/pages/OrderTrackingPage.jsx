@@ -48,7 +48,7 @@ export default function OrderTrackingPage() {
         <article className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-md w-full text-center" role="alert">
           <div className="text-5xl mb-4" aria-hidden="true">🔒</div>
           <h1 className="text-xl font-bold text-slate-900 mb-2">Tracking Disabled</h1>
-          <p className="text-sm-text text-slate-600">
+          <p className="text-sm-text text-text-dark">
             Online order tracking is currently disabled by the store administration. Please contact the store directly for updates on your laundry.
           </p>
         </article>
@@ -63,7 +63,7 @@ export default function OrderTrackingPage() {
       <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="flex flex-col items-center" aria-live="polite" aria-busy="true">
           <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4" />
-          <p className="text-sm-text font-bold text-slate-500 tracking-wide uppercase">Locating Order...</p>
+          <p className="text-sm-text font-bold text-text-dark/80 tracking-wide uppercase">Locating Order...</p>
         </div>
       </main>
     );
@@ -77,7 +77,7 @@ export default function OrderTrackingPage() {
             <span className="text-2xl" aria-hidden="true">🕵️</span>
           </div>
           <h1 className="text-xl font-bold text-slate-900 mb-2">Order Not Found</h1>
-          <p className="text-sm-text text-slate-600 mb-6">{error}</p>
+          <p className="text-sm-text text-text-dark mb-6">{error}</p>
         </article>
       </main>
     );
@@ -109,7 +109,7 @@ export default function OrderTrackingPage() {
             <h2 className={`text-2xl font-bold ${currentStatus.text}`}>
               {currentStatus.label}
             </h2>
-            <p className="text-sm-text text-slate-500  mt-1">
+            <p className="text-sm-text text-text-dark/80  mt-1">
               {order.handover_method === 'delivery' && currentStatus.step === 3 
                 ? "Your laundry is out for delivery." 
                 : "We are taking great care of your laundry."}
@@ -171,11 +171,11 @@ export default function OrderTrackingPage() {
         <footer className="bg-slate-50 p-6 border-t border-slate-100 flex justify-between items-center">
            <div className="flex flex-col">
              <span className="text-[10px] uppercase font-bold text-slate-400">Total Items</span>
-             <span className="text-sm-text font-bold text-slate-700">{order.services_count} Services</span>
+             <span className="text-sm-text font-bold text-text-dark">{order.services_count} Services</span>
            </div>
            <div className="flex flex-col items-end">
              <span className="text-[10px] uppercase font-bold text-slate-400">Handover</span>
-             <span className="text-sm-text font-bold text-slate-700 capitalize">{order.handover_method}</span>
+             <span className="text-sm-text font-bold text-text-dark capitalize">{order.handover_method}</span>
            </div>
         </footer>
       </article>

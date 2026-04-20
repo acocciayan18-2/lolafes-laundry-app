@@ -108,7 +108,7 @@ export default function ForgotPassword({
         {/* ✨ FORM WRAPPER: Enables "Enter" key submission natively */}
         <form onSubmit={onSubmit} className="w-full">
           <div className="mb-8 text-left">
-            <label htmlFor="email" className="block text-text-dark/80 text-sm-text mb-1 font-medium">
+            <label htmlFor="email" className="block text-text-dark/80 text-sm-text mb-1  ">
               Admin Email Address
             </label>
             <div className="relative flex items-center">

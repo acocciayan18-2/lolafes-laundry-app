@@ -1,17 +1,21 @@
 /**
  * @file Reports.jsx
  * @description Enterprise Analytics Dashboard for Lola Fe's POS.
- * Implements Atomic Zustand Selectors, robust network resilience, and A11y standards.
+ * @architecture Uses modular component imports to maintain clean code and separation of concerns.
  */
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, memo, useMemo, useCallback } from "react";
 import { useReportStore } from "../store/reports/useReportStore";
 import { useOrderStore } from "../store/orders/useOrderStore";
+
 import ExportOrdersButton from "../components/reports/ExportOrdersButton";
 import DeletedCustomersBoard from '../components/reports/DeletedCustomersBoard';
+import ProfitPerformance from "../components/reports/ProfitPerformance";
+import MonthlyExpensesBoard from "../components/reports/MonthlyExpensesBoard";
+import RecentActivity from "../components/dashboard/RecentActivity";
 
-// Component Imports
+// --- Component Imports ---
 import CustomerMix from "../components/reports/CustomerMix";
 import KpiCards from "../components/reports/KpiCards";
 import RushPulse from "../components/reports/RushPulse";
@@ -21,6 +25,7 @@ import PopularServicesCard from "../components/reports/PopularServicesCard";
 import { ReportsSkeleton } from "../components/skeleton-loader";
 import { CancelledOrdersList } from "../components/reports/CancelledOrdersList";
 import RewardRecipients from '../components/reports/RewardRecipients';
+
 
 const ReportHeaderClock = memo(() => {
   const [time, setTime] = useState(new Date());
@@ -32,13 +37,13 @@ const ReportHeaderClock = memo(() => {
 
   return (
     <div className="flex items-center gap-2 mt-0.5" aria-live="polite" aria-atomic="true">
-      <p className="text-text-dark/80 text-micro  whitespace-nowrap">
+      <p className="text-text-dark/80 text-micro whitespace-nowrap">
         {time.toLocaleDateString('en-US', {
           weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
         })}
       </p>
       <span className='text-micro text-text-dark/80 font-light select-none' aria-hidden="true">|</span>
-      <span className="text-micro  text-text-dark/80 uppercase whitespace-nowrap">
+      <span className="text-micro text-text-dark/80 uppercase whitespace-nowrap">
         {time.toLocaleTimeString([], {
           hour: '2-digit', minute: '2-digit', hour12: true
         })}
@@ -50,7 +55,6 @@ const ReportHeaderClock = memo(() => {
 ReportHeaderClock.displayName = 'ReportHeaderClock';
 
 export default function Reports() {
-  // 🛡️ PERFORMANCE: Atomic Selectors. 
   const subscribeToReports = useReportStore(useCallback(state => state.subscribeToReports, []));
   const isLoading = useReportStore(useCallback(state => state.isLoading, []));
   const orders = useReportStore(useCallback(state => state.orders, []));
@@ -62,21 +66,19 @@ export default function Reports() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [hasDeletedCustomers, setHasDeletedCustomers] = useState(true);
 
-  // 1. Network Status Listener (Resilience)
+  // Network Resilience
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  // 2. Firebase Subscriptions
+  // Data Subscriptions
   useEffect(() => {
     const unsubscribeReports = subscribeToReports();
     const unsubscribeCancelled = subscribeToCancelledOrders();
@@ -87,13 +89,12 @@ export default function Reports() {
     };
   }, [subscribeToReports, subscribeToCancelledOrders]);
 
-  // 3. Strict Data Guarding & Memoization
+  // Memoized Data Guards
   const safeOrders = useMemo(() => Array.isArray(orders) ? orders : [], [orders]);
   const safeCancelledOrders = useMemo(() => Array.isArray(cancelledOrders) ? cancelledOrders : [], [cancelledOrders]);
 
   const hasAnyData = safeOrders.length > 0 || safeCancelledOrders.length > 0;
 
-  // Single-pass reduction for performance
   const totalLost = useMemo(() => {
     let sum = 0;
     for (let i = 0; i < safeCancelledOrders.length; i++) {
@@ -102,7 +103,6 @@ export default function Reports() {
     return sum;
   }, [safeCancelledOrders]);
 
-  // Optimized Array.some() with early exit
   const hasRewards = useMemo(() => {
     return safeOrders.some(order => {
       if (!order) return false;
@@ -116,7 +116,7 @@ export default function Reports() {
     });
   }, [safeOrders]);
 
-  // Loading State Debouncer
+  // Loading Debouncer
   useEffect(() => {
     let timer;
     if (isLoading) {
@@ -130,7 +130,6 @@ export default function Reports() {
   return (
     <main className="min-h-screen bg-app-light p-2" aria-busy={shouldShowSkeleton}>
       <div className="max-w-6xl mx-auto px-1 md:px-2 pb-20">
-
         <AnimatePresence mode="wait">
           {shouldShowSkeleton ? (
             <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -142,10 +141,9 @@ export default function Reports() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }} // Snappy, immediate fade-in
+              transition={{ duration: 0.15 }} 
               className="flex flex-col"
             >
-              {/* ✨ Header is now bundled inside the revealed content */}
               <header className="flex flex-row justify-between items-start md:items-center mb-4">
                 <div className="flex flex-col">
                   <div className="flex items-center gap-3">
@@ -173,67 +171,70 @@ export default function Reports() {
                   <div className="w-16 h-16 mx-auto mb-3 bg-slate-50 rounded-full flex items-center justify-center" aria-hidden="true">
                     <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                   </div>
-                  <h3 className="text-sm-text font-bold text-text-dark">No data available</h3>
-                  <p className="text-micro text-slate-400 mt-1 max-w-[200px] mx-auto leading-relaxed">
+                  <h3 className="text-base-text font-bold text-text-dark">No data available</h3>
+                  <p className="text-sm-text text-slate-400 mt-1 max-w-[200px] mx-auto leading-relaxed">
                     Process or cancel some orders to generate analytics.
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-4">
+  <div className="flex flex-col gap-4">
 
-                  {/* Top Row Full-Width Metrics */}
-                  {safeOrders.length > 0 && (
-                    <>
-                      <div className="w-full">
-                        <KpiCards range="7" />
-                      </div>
-                      <div className="w-full">
-                        <SalesPerformance range="7" />
-                      </div>
-                      <div className="w-full">
-                        <RushPulse range="7" />
-                      </div>
-                    </>
-                  )}
+    {/* FULL-WIDTH STRIP */}
+    {safeOrders.length > 0 && (
+      <>
+        <KpiCards range="7" />
+        <SalesPerformance range="7" />
+        <ProfitPerformance />
+        <RushPulse  />
+      </>
+    )}
 
-                  {/* Masonry Grid (2 Columns on Desktop) */}
-                  <div className="columns-1 lg:columns-2 gap-4 w-full mt-2">
-                    {safeOrders.length > 0 && (
-                      <>
-                        <div className="break-inside-avoid mb-4 block">
-                          <CustomerMix range="7" />
-                        </div>
-                        <div className="break-inside-avoid mb-4 block">
-                          <TopCustomers range="7" />
-                        </div>
-                        <div className="break-inside-avoid mb-4 block">
-                          <PopularServicesCard range="7" />
-                        </div>
-                      </>
-                    )}
+    <div className="columns-1 lg:columns-2 gap-4 w-full">
 
-                    {safeCancelledOrders.length > 0 && (
-                      <div className="break-inside-avoid mb-4 block">
-                        <CancelledOrdersList
-                          cancelledOrders={safeCancelledOrders}
-                          totalLost={totalLost}
-                        />
-                      </div>
-                    )}
+     
 
-                    {hasRewards && (
-                      <div className="break-inside-avoid mb-4 block">
-                        <RewardRecipients orders={safeOrders} />
-                      </div>
-                    )}
+      {safeOrders.length > 0 && (
+        <>
+          <div className="break-inside-avoid mb-4">
+            <CustomerMix range="7" />
+          </div>
+          <div className="break-inside-avoid mb-4">
+            <TopCustomers range="7" />
+          </div>
+          <div className="break-inside-avoid mb-4">
+            <PopularServicesCard range="7" />
+          </div>
+          <div className="break-inside-avoid mb-4">
+            <RecentActivity />
+          </div>
+           <div className="break-inside-avoid mb-4">
+        <MonthlyExpensesBoard range="7" />
+      </div>
+        </>
+      )}
 
-                    <div className={`break-inside-avoid ${hasDeletedCustomers ? 'mb-4 block' : 'hidden'}`}>
-                      <DeletedCustomersBoard onDataStatus={setHasDeletedCustomers} />
-                    </div>
+      {safeCancelledOrders.length > 0 && (
+        <div className="break-inside-avoid mb-4">
+          <CancelledOrdersList
+            cancelledOrders={safeCancelledOrders}
+            totalLost={totalLost}
+          />
+        </div>
+      )}
 
-                  </div>
-                </div>
-              )}
+      {hasRewards && (
+        <div className="break-inside-avoid mb-4">
+          <RewardRecipients orders={safeOrders} />
+        </div>
+      )}
+
+      <div className={`break-inside-avoid ${hasDeletedCustomers ? 'mb-4' : 'hidden'}`}>
+        <DeletedCustomersBoard onDataStatus={setHasDeletedCustomers} />
+      </div>
+
+    </div>
+  </div>
+)}
             </motion.div>
           )}
         </AnimatePresence>

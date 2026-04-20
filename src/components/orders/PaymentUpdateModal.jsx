@@ -9,7 +9,7 @@ const getPaymentIcon = (name) => {
     return <div className="w-4 h-4 rounded-full border-2 border-dashed border-text-dark/20" aria-hidden="true" />;
   }
   // 🛡️ ENFORCEMENT: Universally return the wallet icon for all payment methods per requirements
-  return <IconWallet className="w-5 h-5 text-text-dark/70" aria-hidden="true" />;
+  return <IconWallet className="w-5 h-5 text-text-dark/70 opacity-80" aria-hidden="true" />;
 };
 
 const formatSafeMoney = (val) => {
@@ -196,7 +196,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
               <button
                 onClick={handleClose}
                 disabled={isUpdating}
-                className="absolute top-1 right-1 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="absolute top-1 right-1 p-2 rounded-full text-slate-400 hover:text-text-dark hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Close modal"
               >
                 <IconClose className="w-5 h-5" aria-hidden="true" />
@@ -336,7 +336,7 @@ const PaymentUpdateModal = ({ isOpen, onClose, onConfirm, orderNumber, paymentMe
                           } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
                         >
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center m" aria-hidden="true">
+                            <div className="w-8 h-8 rounded-full opacity-80 flex items-center justify-center m" aria-hidden="true">
                               {getPaymentIcon(method.name)}
                             </div>
                             <span className={`block  text-sm-text transition-colors ${isSelected ? 'text-emerald-800' : 'text-text-dark'}`}>

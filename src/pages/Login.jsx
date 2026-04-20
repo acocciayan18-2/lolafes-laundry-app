@@ -180,138 +180,141 @@ export default function Login() {
   // ==========================================
   // ACTUAL LOGIN UI (Rendered only after auth)
   // ==========================================
-  return (
-    <div className="flex justify-center items-center w-full min-h-screen p-3 bg-app-light overflow-y-auto animate-fade-in">
-      <LoginPopup message={popup.message} type={popup.type} onClose={clearPopup} />
+ return (
+  <div className="flex justify-center items-center w-full h-screen overflow-y-auto p-3 bg-app-light animate-fade-in">
+    <LoginPopup message={popup.message} type={popup.type} onClose={clearPopup} />
 
-      <main className="flex   flex-col w-full max-w-[350px] p-3 bg-app-light">
-        <header className="flex justify-center items-center w-full flex-col">
-          <div className="mb-3 flex justify-center items-center w-14 h-14 bg-app-dark rounded-xl overflow-hidden shadow-sm">
-            <img src="/images/lolafeslaundry-logo-transparent.png" alt="Lola Fe's Laundry Logo" className="w-12 h-12 object-contain" />
+    <main className="flex flex-col w-full max-w-[350px] p-3 bg-app-light">
+      <header className="flex justify-center items-center w-full flex-col">
+        <div className="mb-3 flex justify-center items-center w-14 h-14 bg-app-dark rounded-xl overflow-hidden shadow-sm">
+          <img src="/images/lolafeslaundry-logo-transparent.png" alt="Lola Fe's Laundry Logo" className="w-12 h-12 object-contain" />
+        </div>
+        <h1 className="text-center text-h1 font-bold text-text-dark mb-2 tracking-tight">
+          Welcome to Lola Fe's Laundry&nbsp;Shop
+        </h1>
+        <p className="text-center text-base-text text-text-dark/70 mb-4">
+          Log in to continue
+        </p>
+      </header>
+
+      <form onSubmit={handleLogin} noValidate aria-label="Login form">
+        <div className="mb-3 text-start">
+          <label htmlFor="login-email" className="block text-text-dark/80 text-sm-text mb-1">Email</label>
+          <div className="relative flex items-center w-full mb-3 text-start">
+            <span className="absolute left-3 text-text-dark" aria-hidden="true">
+              <IconAtSymbol className="w-4 h-4" />
+            </span>
+            <input
+              type="email"
+              id="login-email"
+              maxLength={254}
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg text-text-dark text-sm-text outline-none focus:ring-0 focus:border-app-dark transition-all disabled:opacity-50 disabled:bg-slate-50 shadow-sm"
+              placeholder="Enter your Email"
+              required
+              autoComplete="email"
+              value={loginEmail}
+              onChange={(e) => setLoginEmail(e.target.value)}
+              onKeyDown={handleEmailKeyDown}
+              disabled={isLoginLoading}
+              aria-invalid={loginEmail.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail)}
+            />
           </div>
-          <h1 className="text-center text-h1 font-bold text-text-dark mb-2 tracking-tight">
-            Welcome to Lola Fe's Laundry&nbsp;Shop
-          </h1>
-          <p className="text-center text-base-text text-text-dark/70 mb-4 ">
-            Log in to continue
-          </p>
-        </header>
+        </div>
 
-        <form onSubmit={handleLogin} noValidate aria-label="Login form">
-          <div className="mb-3 text-start">
-            <label htmlFor="login-email" className="block text-text-dark/80 text-sm-text mb-1 ">Email</label>
-            <div className="relative flex items-center w-full mb-3 text-start">
-              <span className="absolute left-3 text-text-dark" aria-hidden="true">
-                <IconAtSymbol className="w-4 h-4" />
-              </span>
-              <input
-                type="email"
-                id="login-email"
-                maxLength={254}
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg text-text-dark text-sm-text  outline-none focus:ring-0 focus:border-app-dark  transition-all disabled:opacity-50 disabled:bg-slate-50 shadow-sm"
-                placeholder="Enter your Email"
-                required
-                autoComplete="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                onKeyDown={handleEmailKeyDown}
-                disabled={isLoginLoading}
-                aria-invalid={loginEmail.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail)}
-              />
-            </div>
-          </div>
-
-          <div className="mb-3 text-start">
-            <label htmlFor="login-password" className="block text-text-dark/80 text-sm-text mb-1 ">Password</label>
-            <div className="relative w-full flex items-center">
-              <span className="absolute left-3 text-text-dark" aria-hidden="true">
-                <IconLock className="w-4 h-4" />
-              </span>
-              <input
-                ref={passwordInputRef}
-                type={showPassword ? "text" : "password"}
-                id="login-password"
-                maxLength={128}
-                className="w-full pl-10 pr-[40px] py-3 border border-slate-300 rounded-lg text-text-dark text-sm-text  outline-none focus:ring-0 focus:border-app-dark  transition-all box-border disabled:opacity-50 disabled:bg-slate-50 shadow-sm"
-                placeholder="Enter your password"
-                required
-                autoComplete="current-password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                disabled={isLoginLoading}
-              />
-              <button
-                type="button"
-                className="absolute right-3 flex items-center justify-center p-1 rounded hover:bg-slate-100 transition-colors opacity-80 focus:ring-0 outline-none disabled:opacity-50"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                aria-pressed={showPassword}
-                disabled={isLoginLoading}
-              >
-                {showPassword ? <IconEyeClosed className="w-4 h-4" aria-hidden="true" /> : <IconEyeOpen className="w-4 h-4" aria-hidden="true" />}
-              </button>
-            </div>
-
-            <div className="text-end mt-2">
-              <button
-                type="button"
-                onClick={() => setShowForgotPopup(true)}
-                disabled={isLoginLoading}
-                className="text-nano text-blue-600  hover:text-blue-800 focus:text-blue-800 transition-colors outline-none rounded focus:ring-0 disabled:opacity-50"
-              >
-                Forgot Password?
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoginLoading || !isFormValid}
-            className={`w-full bg-app-dark text-white  text-sm-text px-4 py-3 rounded-lg shadow cursor-pointer transition-all focus:outline-none focus:ring-0  ${(isLoginLoading || !isFormValid) ? "opacity-40 cursor-not-allowed" : "hover:opacity-90 shadow-md active:scale-95"
-              }`}
-            aria-live="polite"
-          >
-            {isLoginLoading ? "Logging in..." : "Log in"}
-          </button>
-        </form>
-
-        <div className="mt-5 text-center">
-          <p className="text-nano text-text-dark/60  leading-relaxed max-w-[280px] mx-auto">
-            By logging in or creating an account, you agree to our{" "}
+        <div className="mb-3 text-start">
+          <label htmlFor="login-password" className="block text-text-dark/80 text-sm-text mb-1">Password</label>
+          <div className="relative w-full flex items-center">
+            <span className="absolute left-3 text-text-dark" aria-hidden="true">
+              <IconLock className="w-4 h-4" />
+            </span>
+            <input
+              ref={passwordInputRef}
+              type={showPassword ? "text" : "password"}
+              id="login-password"
+              maxLength={128}
+              className="w-full pl-10 pr-[40px] py-3 border border-slate-300 rounded-lg text-text-dark text-sm-text outline-none focus:ring-0 focus:border-app-dark transition-all box-border disabled:opacity-50 disabled:bg-slate-50 shadow-sm"
+              placeholder="Enter your password"
+              required
+              autoComplete="current-password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              disabled={isLoginLoading}
+            />
             <button
-              onClick={() => setShowTermsModal(true)}
-              className="text-blue-600  hover:underline focus:outline-none focus:ring-0 rounded"
-              aria-haspopup="dialog"
+              type="button"
+              className="absolute right-3 flex items-center justify-center p-1 rounded hover:bg-slate-100 transition-colors opacity-80 focus:ring-0 outline-none disabled:opacity-50"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              disabled={isLoginLoading}
             >
-              Terms of Service and Privacy Policy
+              {showPassword ? <IconEyeClosed className="w-4 h-4" aria-hidden="true" /> : <IconEyeOpen className="w-4 h-4" aria-hidden="true" />}
             </button>
-          </p>
-        </div>
+          </div>
 
-        <div className="mt-4 flex gap-3 justify-center border-t border-slate-100 pt-5">
-          <p className="text-micro text-text-dark/70 ">
-            Don't have an account?{" "}
-            <Link
-              to={isLoginLoading ? "#" : "/signup"}
-              className={`text-micro text-blue-600  no-underline rounded focus:outline-none focus:ring-0  ${isLoginLoading ? "opacity-50 cursor-not-allowed pointer-events-none" : "hover:text-blue-800"}`}
+          <div className="text-end mt-2">
+            <button
+              type="button"
+              onClick={() => setShowForgotPopup(true)}
+              disabled={isLoginLoading}
+              className="text-nano text-blue-600 hover:text-blue-800 focus:text-blue-800 transition-colors outline-none rounded focus:ring-0 disabled:opacity-50"
             >
-              Sign up
-            </Link>
-          </p>
+              Forgot Password?
+            </button>
+          </div>
         </div>
-      </main>
 
-      <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
+        <button
+          type="submit"
+          disabled={isLoginLoading || !isFormValid}
+          className={`w-full bg-app-dark text-white text-sm-text px-4 py-3 rounded-lg shadow cursor-pointer transition-all focus:outline-none focus:ring-0 ${
+            (isLoginLoading || !isFormValid) ? "opacity-40 cursor-not-allowed" : "hover:opacity-90 shadow-md active:scale-95"
+          }`}
+          aria-live="polite"
+        >
+          {isLoginLoading ? "Logging in..." : "Log in"}
+        </button>
+      </form>
 
-      {showForgotPopup && (
-        <ForgotPassword
-          resetEmail={resetEmail}
-          setResetEmail={setResetEmail}
-          resetLoading={isResetLoading}
-          handleForgotPassword={handleForgotPassword}
-          setShowForgotPopup={setShowForgotPopup}
-        />
-      )}
-    </div>
-  );
+      <div className="mt-5 text-center">
+        <p className="text-nano text-text-dark/60 leading-relaxed max-w-[280px] mx-auto">
+          By logging in or creating an account, you agree to our{" "}
+          <button
+            onClick={() => setShowTermsModal(true)}
+            className="text-blue-600 hover:underline focus:outline-none focus:ring-0 rounded"
+            aria-haspopup="dialog"
+          >
+            Terms of Service and Privacy Policy
+          </button>
+        </p>
+      </div>
+
+      <div className="mt-4 flex gap-3 justify-center border-t border-slate-100 pt-5">
+        <p className="text-micro text-text-dark/70">
+          Don't have an account?{" "}
+          <Link
+            to={isLoginLoading ? "#" : "/signup"}
+            className={`text-micro text-blue-600 no-underline rounded focus:outline-none focus:ring-0 ${
+              isLoginLoading ? "opacity-50 cursor-not-allowed pointer-events-none" : "hover:text-blue-800"
+            }`}
+          >
+            Sign up
+          </Link>
+        </p>
+      </div>
+    </main>
+
+    <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
+
+    {showForgotPopup && (
+      <ForgotPassword
+        resetEmail={resetEmail}
+        setResetEmail={setResetEmail}
+        resetLoading={isResetLoading}
+        handleForgotPassword={handleForgotPassword}
+        setShowForgotPopup={setShowForgotPopup}
+      />
+    )}
+  </div>
+);
 }

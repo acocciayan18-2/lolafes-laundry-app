@@ -5,12 +5,14 @@ import { useLoyaltyStore } from "../../store/services/useLoyaltyStore";
 import { useServiceStore } from "../../store/services/useServiceStore";
 import { IconArrowUp, IconGift } from "../icons";
 import { useNotificationStore } from '../../store/ui/useNotificationStore';
+// ✨ SECURE RBAC: Import Auth Store instead of using localStorage
+import { useAuthStore } from "../../store/auth/useAuthStore"; 
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react';
 import Button from '../ui/Button';
 
 
 const Label = React.memo(({ htmlFor, children }) => (
-  <label htmlFor={htmlFor} className="text-micro  text-text-dark/60 block mb-1.5 ml-1">
+  <label htmlFor={htmlFor} className="text-micro text-text-dark/60 block mb-1.5 ml-1">
     {children}
   </label>
 ));
@@ -25,7 +27,7 @@ const Input = React.memo(({ id, type = "text", value, onChange, disabled, classN
     disabled={disabled}
     placeholder={placeholder}
     inputMode={inputMode}
-    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text  focus:outline-none focus:ring-1 focus:ring-app-dark/90  disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
+    className={`flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base-text focus:outline-none focus:ring-1 focus:ring-app-dark/90 disabled:bg-slate-50 disabled:text-slate-400 ${className}`}
   />
 ));
 Input.displayName = "Input";
@@ -60,7 +62,7 @@ const HeadlessSelect = React.memo(({ id, value, onChange, options, disabled }) =
           <>
             <ListboxButton
               id={id}
-              className={`flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm-text  focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark transition-colors
+              className={`flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm-text focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark transition-colors
                 ${open ? "bg-white border-app-dark" : "border-slate-200 hover:border-gray-300 bg-white"}
                 ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50 hover:border-slate-200" : "cursor-pointer"}
               `}
@@ -87,7 +89,7 @@ const HeadlessSelect = React.memo(({ id, value, onChange, options, disabled }) =
                       <ListboxOption
                         key={option.id}
                         className={({ active }) =>
-                          `relative cursor-pointer select-none py-2.5 px-3 text-sm-text  transition-colors flex items-center justify-between ${active ? 'bg-gray-50 text-text-dark' : 'text-text-dark'
+                          `relative cursor-pointer select-none py-2.5 px-3 text-sm-text transition-colors flex items-center justify-between ${active ? 'bg-gray-50 text-text-dark' : 'text-text-dark'
                           }`
                         }
                         value={option}
@@ -142,9 +144,10 @@ export default function LoyaltySettings() {
   // --- REFS ---
   const isMounted = useRef(false);
 
-  // ✨ FIX: Get user role
-  const userRole = localStorage.getItem("userRole") || "STAFF";
-  const isOwner = userRole === "OWNER" || userRole === "ADMIN";
+  // ✨ SECURE RBAC: Hardened string normalization to prevent casing mismatches
+  const userRole = useAuthStore((state) => state.userRole); 
+  const safeRole = String(userRole || "STAFF").toUpperCase();
+  const isOwner = safeRole === "OWNER" || safeRole === "ADMIN";
 
   // --- LIFECYCLE ---
   useEffect(() => {
@@ -196,6 +199,12 @@ export default function LoyaltySettings() {
   }, []);
 
   const executeStatusChange = useCallback(async (newStatus, wipePoints = false) => {
+    // 🛡️ FRONTEND GATE: Double-check authorization before executing
+    if (!isOwner) {
+      showNotification("Unauthorized action. Admin privileges required.", "error");
+      return;
+    }
+
     if (isSaving) return;
     setIsSaving(true);
 
@@ -222,7 +231,7 @@ export default function LoyaltySettings() {
     } finally {
       if (isMounted.current) setIsSaving(false);
     }
-  }, [localSettings, saveLoyaltySettings, logActivity, showNotification, isSaving]);
+  }, [localSettings, saveLoyaltySettings, logActivity, showNotification, isSaving, isOwner]);
 
   const handleToggle = useCallback((checked) => {
     if (checked) {
@@ -237,6 +246,12 @@ export default function LoyaltySettings() {
   }, []);
 
   const handleSave = useCallback(async () => {
+    // 🛡️ FRONTEND GATE: Enforce strict admin evaluation
+    if (!isOwner) {
+      showNotification("Unauthorized action. Admin privileges required.", "error");
+      return;
+    }
+
     if (isSaving || !hasChanges || !isValid) return;
 
     setIsSaving(true);
@@ -273,7 +288,7 @@ export default function LoyaltySettings() {
     } finally {
       if (isMounted.current) setIsSaving(false);
     }
-  }, [isSaving, hasChanges, isValid, localSettings, loyaltySettings, saveLoyaltySettings, logActivity, showNotification]);
+  }, [isSaving, hasChanges, isValid, localSettings, loyaltySettings, saveLoyaltySettings, logActivity, showNotification, isOwner]);
 
   // --- RENDER EARLY RETURN ---
   if (isLoading) return null;
@@ -388,11 +403,11 @@ export default function LoyaltySettings() {
                 <h4 className={`text-nano font-bold uppercase ${localSettings?.is_enabled ? 'text-teal-600' : 'text-slate-400'}`}>Reward Summary</h4>
                 <div className={`p-3 rounded-lg border border-dashed shadow-sm transition-colors ${localSettings?.is_enabled ? 'bg-white border-sky-300' : 'bg-slate-100 border-slate-300'}`}>
                   <div className="text-h3 font-bold text-text-dark" aria-hidden="true">FREE</div>
-                  <div className={`text-micro font-bold uppercase truncate ${localSettings?.is_enabled ? 'text-teal-600' : 'text-slate-500'}`} title={localSettings?.free_service_type}>
+                  <div className={`text-micro font-bold uppercase truncate ${localSettings?.is_enabled ? 'text-teal-600' : 'text-text-dark/80'}`} title={localSettings?.free_service_type}>
                     {localSettings?.free_service_type || "No Service"}
                   </div>
                   <div className="h-px bg-slate-100 my-2" aria-hidden="true" />
-                  <p className="text-micro text-slate-500 ">After {localSettings?.orders_required || 0} visits</p>
+                  <p className="text-micro text-text-dark/80 ">After {localSettings?.orders_required || 0} visits</p>
                 </div>
               </div>
 

@@ -88,7 +88,7 @@ export default function CleanupRewardClaims() {
 >
   {isLoading ? (
     <span className="flex items-center gap-2">
-      <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" aria-hidden="true" />
+      <div className="w-3 h-3 border-2 border-slate-300 border-t-text-dark rounded-full animate-spin" aria-hidden="true" />
       Processing...
     </span>
   ) : (

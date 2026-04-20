@@ -24,7 +24,7 @@
     "react-scripts": "5.0.1",
     "react-time-picker": "^8.0.2",
     "tailwind-merge": "^3.5.0",
-    "xlsx": "^0.18.5",
+    "xlsx-js-style": "^1.2.0",
     "zustand": "^5.0.9"
   },
   "scripts": {

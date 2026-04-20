@@ -363,22 +363,33 @@ export default function OrderCard({ order, tick }) {
                     </time>
                   </div>
                   
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isLocked) setShowHandoverModal(true);
-                    }} 
-                    aria-label={`Change Handover Method. Current: ${order.handover_method}`}
-                    disabled={isLocked}
-                    className={`shrink-0 text-nano  uppercase px-1.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${
-                      isLocked ? 'cursor-default opacity-80' : 'hover:scale-105 active:scale-95'
-                    } ${
-                      order.handover_method === 'delivery' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
-                    }`}
-                  >
-                    {handoverConfig[order.handover_method]?.icon}
-                    {handoverConfig[order.handover_method]?.label}
-                  </button>
+                 <button 
+  onClick={(e) => {
+    e.stopPropagation();
+    if (!isLocked) setShowHandoverModal(true);
+  }} 
+  aria-label={`Change Handover Method. Current: ${order.handover_method}`}
+  disabled={isLocked}
+  className={`shrink-0 text-nano uppercase px-2 py-1 rounded-lg flex items-center gap-1.5 transition-all border focus:outline-none focus-visible:ring-1  ${
+    isLocked ? 'cursor-default opacity-80' : ' active:scale-95'
+  } ${
+    order.handover_method === 'delivery' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+  }`}
+>
+  {handoverConfig[order.handover_method]?.icon}
+  <span>{handoverConfig[order.handover_method]?.label}</span>
+  
+  {!isLocked && (
+    <svg 
+      className="w-2.5 h-2.5 opacity-60 ml-0.5 stroke-[3]" 
+      fill="none" 
+      viewBox="0 0 24 24" 
+      stroke="currentColor"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+    </svg>
+  )}
+</button>
                 </div>
                 
                 <div className="flex items-center gap-1.5 flex-wrap mt-0.5 card-trigger-area">
@@ -409,7 +420,7 @@ export default function OrderCard({ order, tick }) {
                         : 'text-rose-500 bg-rose-50 border-rose-200 hover:bg-rose-100 cursor-pointer active:scale-95' 
                     } ${isLocked && !order.is_paid ? 'opacity-80 cursor-default hover:bg-rose-50 active:scale-100' : ''}`}
                   >
-                    {order.is_paid ? "PAID" : "UNPAID"}
+                    {order.is_paid ? "PAID" : "MARK AS PAID"}
                   </button>
 
                   {order.is_paid && (
@@ -433,15 +444,32 @@ export default function OrderCard({ order, tick }) {
 
               <div className="flex items-center gap-1.5" ref={dropdownRef}>
                 <div className="relative">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} 
-                    disabled={isLocked} 
-                    aria-haspopup="menu"
-                    aria-expanded={isOpen}
-                    className={`h-8 px-3 text-sm-text  rounded-lg border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${isLocked ? "bg-slate-100 text-slate-400" : isOpen ? "bg-app-dark/5 " : "bg-white text-text-dark border-app-dark/20"}`}
-                  >
-                    Update
-                  </button>
+                 <button 
+  onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} 
+  disabled={isLocked} 
+  aria-haspopup="menu"
+  aria-expanded={isOpen}
+  className={`h-8 px-3 text-sm-text rounded-lg border transition-all flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${
+    isLocked 
+      ? "bg-slate-100 text-slate-400 border-slate-200" 
+      : isOpen 
+        ? "bg-app-dark/5 border-app-dark/30" 
+        : "bg-white text-text-dark border-app-dark/20 hover:bg-slate-50 shadow-sm"
+  }`}
+>
+  <span>Update</span>
+
+  {!isLocked && (
+    <svg 
+      className={`w-2.5 h-2.5 opacity-60 transition-transform duration-200 stroke-[3] ${isOpen ? 'rotate-180' : ''}`} 
+      fill="none" 
+      viewBox="0 0 24 24" 
+      stroke="currentColor"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+    </svg>
+  )}
+</button>
                   
                   <AnimatePresence>
                     {isOpen && (
@@ -479,9 +507,9 @@ export default function OrderCard({ order, tick }) {
                   <button 
                     onClick={(e) => handleStatusChange(e, status.nextStatus)}
                     aria-label={`Advance status to ${statusLabels[status.nextStatus]}`}
-                    className="bg-btn-primary hover:bg-btn-primary/90 text-white pl-4 pr-3 py-1.5 rounded-lg shadow-md active:scale-95 flex items-center gap-1.5 transition-all group shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-btn-primary"
+                    className="bg-btn-primary hover:bg-btn-primary/90 text-white pl-4 pr-3 py-1.5 rounded-lg shadow-sm active:scale-95 flex items-center gap-1.5 transition-all group shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-btn-primary"
                   >
-                    <span className="text-sm-text ">Next</span>
+                    <span className="text-sm-text ">Next Phase</span>
                     <IconArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
                   </button>
                 )}

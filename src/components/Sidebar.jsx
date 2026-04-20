@@ -6,6 +6,9 @@ import "../style/main-app.css";
 import "../style/sidebar.css";
 import Button from "./ui/Button";
 
+// ✨ Import the secure Auth Store to handle logout wipes
+import { useAuthStore } from "../store/auth/useAuthStore";
+
 import {
   IconChart,
   IconDashboard,
@@ -22,7 +25,7 @@ import {
 const SIDEBAR_CONFIG = {
   menuItems: [
     { text: "Dashboard", to: "/main/dashboard", icon: <IconDashboard className="w-5 h-5" /> },
-    { text: "New Order", to: "/main/neworder", icon: <IconPlus className="w-5 h-5" /> },
+    { text: "New Orders", to: "/main/neworder", icon: <IconPlus className="w-5 h-5" /> },
     { text: "Orders", to: "/main/orders", icon: <IconShirt className="w-5 h-5" /> },
     { text: "Customers", to: "/main/customers", icon: <IconUsers className="w-5 h-5" /> },
     { text: "Services", to: "/main/services", icon: <IconGridPlus className="w-5 h-5" /> },
@@ -31,19 +34,20 @@ const SIDEBAR_CONFIG = {
   ],
 };
 
-export default function Sidebar({ isOpen, setIsOpen }) {
+// ✨ FIXED: Added userRole to the component props!
+export default function Sidebar({ isOpen, setIsOpen, userRole }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const navigate = useNavigate();
 
-  // ✨ ADDED: Fetch user role to hide Settings for STAFF
-  const userRole = localStorage.getItem("userRole") || "STAFF";
-  const isOwner = userRole === "OWNER" || userRole === "ADMIN";
+  // ✨ FIXED: Use the secure prop passed from MainApp instead of localStorage
+  const safeRole = userRole || "STAFF";
+  const isOwner = safeRole === "OWNER" || safeRole === "ADMIN";
 
-  // Filter out Settings if the user is not an Owner/Admin
+  // Filter out Settings AND Reports if the user is not an Owner/Admin
   const visibleMenuItems = useMemo(() => {
     return SIDEBAR_CONFIG.menuItems.filter(item => {
-      if (item.text === "Settings" && !isOwner) return false;
+      if ((item.text === "Settings" || item.text === "Reports") && !isOwner) return false;
       return true;
     });
   }, [isOwner]);
@@ -56,6 +60,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   const handleLogout = async () => {
     try {
+      // ✨ FIXED: Instantly wipe the Zustand memory BEFORE telling Firebase to sign out
+      useAuthStore.getState().logout();
       await signOut(auth);
       navigate("/login");
     } catch (error) {

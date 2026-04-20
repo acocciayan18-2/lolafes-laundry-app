@@ -186,7 +186,7 @@ export default function OrderFilters({
           value={searchTerm || ""}
           onChange={handleSearchChange}
           maxLength={MAX_SEARCH_LENGTH}
-          className="flex h-10 w-full rounded-xl border font-normal border-slate-200 bg-white/80 pl-10 pr-10 py-2 text-sm-text text-text-dark placeholder:text-text-dark/40 outline-none focus:outline-none transition-all focus:border-slate-500 focus:bg-white focus:ring-0"
+          className="flex h-10 w-full rounded-xl border font-normal border-slate-200 bg-white/80 pl-10 pr-10 py-2 text-sm-text text-text-dark placeholder:text-text-dark/40 outline-none focus:outline-none transition-all focus:border-text-dark/80 focus:bg-white focus:ring-0"
         />
         
         {searchTerm && (

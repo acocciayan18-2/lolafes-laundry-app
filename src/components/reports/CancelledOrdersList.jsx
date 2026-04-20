@@ -468,7 +468,7 @@ export const CancelledOrdersList = ({ cancelledOrders, totalLost }) => {
               <div className="mt-1 mb-3">
                 <div className="inline-flex flex-col py-1.5 rounded-lg">
                   <p className="text-sm-text  text-rose-600 leading-none mb-1.5 ">
-                    Total Revenue Lost
+                    Total Sales Lost
                   </p>
                   <p className="text-base-text font-bold text-rose-700 leading-none">
                     ₱{Number(totalLost || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}

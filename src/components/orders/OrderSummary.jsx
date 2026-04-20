@@ -284,7 +284,7 @@ export const OrderSummary = ({
       <header className="p-4 !pb-0">
         <h3 id="summary-title" className="text-h3 font-bold text-text-dark flex items-center gap-2">
           <IconCalculator className="w-6 h-6 !text-emerald-700 !stroke-emerald-600" aria-hidden="true" />
-          Order
+          Order Summary
         </h3>
       </header>
 

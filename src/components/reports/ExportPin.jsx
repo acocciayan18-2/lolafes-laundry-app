@@ -106,7 +106,7 @@ export default function ExportPin({
             onClick={onClose}
             disabled={isProcessing}
             aria-label="Close security modal"
-            className="absolute top-6 right-6 p-2 rounded-full text-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-all focus:ring-2 focus:ring-slate-200 outline-none"
+            className="absolute top-6 right-6 p-2 rounded-full text-slate-300 hover:text-text-dark/80 hover:bg-slate-50 transition-all focus:ring-2 focus:ring-slate-200 outline-none"
           >
             <IconClose className="w-4 h-4" />
           </button>
@@ -121,7 +121,7 @@ export default function ExportPin({
           <h3 id="pin-modal-title" className="text-xl font-bold text-slate-800">
             Security Verification
           </h3>
-          <p className="text-sm text-slate-500 mt-2 mb-8">
+          <p className="text-sm text-text-dark/80 mt-2 mb-8">
             Please enter PIN to authorize <br />
             <span className="text-blue-600 font-semibold">{title}</span>
           </p>

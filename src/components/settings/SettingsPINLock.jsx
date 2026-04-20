@@ -154,7 +154,7 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
           </button>
         )}
 
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors ${isLockedOut ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600'}`}>
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors ${isLockedOut ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-text-dark'}`}>
           <IconLock className={`w-6 h-6 ${isSetupMode ? 'text-emerald-600' : ''}`} aria-hidden="true" />
         </div>
 
@@ -162,7 +162,7 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
           {isLockedOut ? "Access Locked" : isSetupMode ? "Setup Security PIN" : "Security Verification"}
         </h3>
         
-        <p className="text-sm-text text-slate-500 mb-6">
+        <p className="text-sm-text text-text-dark/80 mb-6">
           {isLockedOut ? `Try again in ${lockoutTime} seconds` : isSetupMode ? "Create a 6-digit access code" : "Please enter your 6-digit PIN"}
         </p>
 
@@ -218,14 +218,14 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
           </motion.div>
 
           {/* ✨ ON-SCREEN NUMPAD */}
-          <div className={`grid grid-cols-3 gap-1 max-w-[260px] mx-auto pb-1 transition-opacity ${isLockedOut ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+          <div className={`grid grid-cols-3 gap-1 max-w-[260px] mx-auto pb-1  transition-opacity ${isLockedOut ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <button
                 key={num}
                 type="button"
                 disabled={isLockedOut}
                 onClick={() => handleNumpadPress(num.toString())}
-                className="h-14 bg-slate-50 border hover:bg-slate-100 active:bg-slate-200 text-xl font-bold text-slate-800 rounded-2xl transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                className="h-14 bg-slate-50 border border-app-dark/20 hover:bg-slate-100 active:bg-slate-200 text-xl font-bold text-slate-800 rounded-2xl transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
               >
                 {num}
               </button>
@@ -237,7 +237,7 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
               type="button"
               disabled={isLockedOut}
               onClick={() => handleNumpadPress("0")}
-              className="h-14 bg-slate-50 border hover:bg-slate-100 active:bg-slate-200 text-xl font-bold text-slate-800 rounded-2xl transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="h-14 bg-slate-50 border hover:bg-slate-100 border-app-dark/20 active:bg-slate-200 text-xl font-bold text-slate-800 rounded-2xl transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
             >
               0
             </button>
@@ -247,7 +247,7 @@ export default function SettingsPINLock({ onUnlock, existingPIN }) {
               disabled={isLockedOut || pin.length === 0}
               onClick={handleBackspace}
               aria-label="Delete last digit"
-              className="h-14 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-600 flex items-center justify-center rounded-2xl transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="h-14 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-text-dark flex items-center justify-center rounded-2xl transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />

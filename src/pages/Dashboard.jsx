@@ -1,16 +1,13 @@
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useOrderStore } from '../store/orders/useOrderStore';
-import { useUnclaimedStore } from '../store/orders/useUnclaimedStore';
 import StoreGuard from '../components/settings/StoreGuard';
-
 // Component Imports
 import CompactIntelligence from '../components/dashboard/CompactIntelligence';
 import QuickActions from '../components/dashboard/QuickActions';
 import QuickStats from '../components/dashboard/QuickStats';
-import RecentActivity from '../components/dashboard/RecentActivity';
 import TodayOrders from '../components/dashboard/TodayOrders';
 import UnclaimedOrders from '../components/dashboard/UnclaimedOrders';
-import { IconAlertTriangle, IconCheckCircle, IconClock, IconPackage, IconDollarSign } from '../components/icons';
+import { IconCheckCircle, IconClock, IconPackage, IconDollarSign } from '../components/icons';
 import { DashboardSkeleton } from '../components/skeleton-loader';
 
 // ==========================================
@@ -73,17 +70,13 @@ LiveClockHeader.displayName = 'LiveClockHeader';
 // ==========================================
 export default function Dashboard() {
   const { orders, isLoading, subscribeToOrders } = useOrderStore();
-  const { unclaimedOrders } = useUnclaimedStore();
+
 
   // UI & Error State
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(true); // Default to true to prevent flash
   const [connectionError, setConnectionError] = useState(false);
 
   const unclaimedRef = useRef(null);
-
-
-  // SECURE FALLBACK: Guarantee an array structure
-  const safeUnclaimedOrders = Array.isArray(unclaimedOrders) ? unclaimedOrders : [];
 
   // --- LIFECYCLE & SUBSCRIPTIONS ---
   useEffect(() => {
@@ -122,14 +115,6 @@ export default function Dashboard() {
     };
   }, [isLoading]);
 
-  // --- HANDLERS ---
-  const scrollToUnclaimed = useCallback(() => {
-    if (unclaimedRef.current) {
-      unclaimedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // A11y: Move programmatic focus to the element being scrolled to
-      unclaimedRef.current.focus({ preventScroll: true });
-    }
-  }, []);
 
   // --- DATA AGGREGATION (FRONTEND) ---
   /**
@@ -213,40 +198,23 @@ export default function Dashboard() {
               </nav>
             </section>
 
-            {/* --- 2. INTELLIGENCE & ALERTS ROW --- */}
+            {/* --- 2. INTELLIGENCE --- */}
             <section id="step-intelligence" className="flex flex-col md:flex-row items-center justify-between gap-4" aria-label="Intelligence and Alerts">
               <div className="flex-1 w-full">
                 <CompactIntelligence />
               </div>
-
-              {safeUnclaimedOrders.length > 0 && (
-                <button
-                  onClick={scrollToUnclaimed}
-                  className="shrink-0 flex items-center gap-2 px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-100 rounded-xl transition-all group focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  aria-label={`Scroll to ${safeUnclaimedOrders.length} overdue orders`}
-                >
-                  <div className="relative">
-                    <IconAlertTriangle className="w-4 h-4 text-rose-500" aria-hidden="true" />
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping" />
-                  </div>
-                  <span className="text-micro  text-rose-500 ">
-                    {safeUnclaimedOrders.length} Overdue Order{safeUnclaimedOrders.length !== 1 ? 's' : ''}
-                  </span>
-                </button>
-              )}
             </section>
 
+            {/* --- 3. STATS --- */}
             <section id="step-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Key Performance Indicators">
-              {/* Today's Sales - Emerald Theme */}
               <QuickStats
-                title="Today's Revenue"
+                title="Today's Sales"
                 value={`₱${formattedRevenue}`}
                 icon={<IconDollarSign />}
                 iconClass="text-emerald-600 stroke-emerald-600"
                 trend={`${stats.todayOrders?.length || 0} orders`}
               />
 
-              {/* Pending - Amber Theme */}
               <QuickStats
                 title="Pending"
                 value={stats.pendingCount}
@@ -255,7 +223,6 @@ export default function Dashboard() {
                 trend="Needs attention"
               />
 
-              {/* In Progress - Blue Theme */}
               <QuickStats
                 title="In Progress"
                 value={stats.inProgressCount}
@@ -264,7 +231,6 @@ export default function Dashboard() {
                 trend="Being washed"
               />
 
-              {/* Ready - Violet Theme */}
               <QuickStats
                 title="Ready"
                 value={stats.readyCount}
@@ -274,22 +240,24 @@ export default function Dashboard() {
               />
             </section>
 
-            {/* --- 4. DATA GRIDS --- */}
-            <section className="grid grid-cols-1 lg:grid-cols-12 gap-3 pb-20" aria-label="Order Data and Activity">
-              <div className="lg:col-span-6 space-y-3">
-                <div id="step-today-orders">
-                  <TodayOrders orders={stats.todayOrders} isLoading={isLoading} />
-                </div>
+            {/* --- 4. DATA GRIDS (SIDE BY SIDE ON DESKTOP) --- */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20" aria-label="Order Data and Activity">
 
-                {/* A11y: tabIndex allows programmatic focus from the warning button */}
-                <div ref={unclaimedRef} id="step-unclaimed-orders" tabIndex={-1} className="focus:outline-none rounded-xl focus-visible:ring-2 focus-visible:ring-app-dark">
-                  <UnclaimedOrders />
-                </div>
+              {/* Takes up 2/3 of the screen on Desktop */}
+              <div id="step-today-orders" className="lg:col-span-1">
+                <TodayOrders orders={stats.todayOrders} isLoading={isLoading} />
               </div>
 
-              <aside id="step-activity" className="lg:col-span-6" aria-label="Recent Activity Log">
-                <RecentActivity />
-              </aside>
+              {/* Takes up 1/3 of the screen on Desktop */}
+              <div
+                ref={unclaimedRef}
+                id="step-unclaimed-orders"
+                tabIndex={-1}
+                className="lg:col-span-1 focus:outline-none rounded-xl focus-visible:ring-2 focus-visible:ring-app-dark"
+              >
+                <UnclaimedOrders />
+              </div>
+
             </section>
 
           </div>

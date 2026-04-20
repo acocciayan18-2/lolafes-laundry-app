@@ -94,6 +94,82 @@ export const IconPlus = ({ className }) => (
   </svg>
 );
 
+export const IconAllCategories = ({ className = "w-5 h-5", ...props }) => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
+    <path d="M3 19h18"></path><path d="M18 6H6a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1Z"></path>
+  </svg>
+);
+
+export const IconBolt = ({ className = "w-5 h-5", ...props }) => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
+    <path d="M13 3v7h6l-8 11v-7H5l8-11Z"></path>
+  </svg>
+);
+
+
+
+export const IconDroplet = ({ className = "w-5 h-5", ...props }) => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
+    <path d="M6.8 11a6 6 0 1 0 10.396 0l-5.197-8-5.2 8H6.8Z"></path>
+  </svg>
+);
+
+export const IconHome = ({ className = "w-5 h-5", ...props }) => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
+    <path d="M5 12H3l9-9 9 9h-2"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path><path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6"></path>
+  </svg>
+);
+
+
+
+export const IconUsersExtra = ({ className = "w-5 h-5", ...props }) => (
+  <svg viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg" fill="currentColor" className={className} {...props}>
+    <path d="M240 192C240 147.8 275.8 112 320 112C364.2 112 400 147.8 400 192C400 236.2 364.2 272 320 272C275.8 272 240 236.2 240 192zM448 192C448 121.3 390.7 64 320 64C249.3 64 192 121.3 192 192C192 262.7 249.3 320 320 320C390.7 320 448 262.7 448 192zM144 544C144 473.3 201.3 416 272 416L368 416C438.7 416 496 473.3 496 544L496 552C496 565.3 506.7 576 520 576C533.3 576 544 565.3 544 552L544 544C544 446.8 465.2 368 368 368L272 368C174.8 368 96 446.8 96 544L96 552C96 565.3 106.7 576 120 576C133.3 576 144 565.3 144 552L144 544z"/>
+  </svg>
+);
+
+export const IconPen = ({ className = "w-5 h-5", ...props }) => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
+    <path d="M3 21h4L20 8a2.829 2.829 0 0 0-4-4L3 17v4Z"></path><path d="m14.5 5.5 4 4"></path>
+    <path d="M12 8 7 3 3 7l5 5"></path><path d="M7 8 5.5 9.5"></path><path d="m16 12 5 5-4 4-5-5"></path><path d="m16 17-1.5 1.5"></path>
+  </svg>
+);
+
+export const IconWrench = ({ className = "w-5 h-5", ...props }) => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
+    <path d="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2.121 2.121 0 1 1-3 3l-6-6a6 6 0 0 1-8-8L7 10Z"></path>
+  </svg>
+);
+
+export const IconLayout = ({ className = "w-5 h-5", ...props }) => (
+  <svg width="24" height="24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
+    <path d="M8 4H6a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"></path>
+    <path d="M8 13H6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2Z"></path>
+    <path d="M18 4h-2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"></path>
+    <path d="M18 15h-2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2Z"></path>
+  </svg>
+);
+
+export const IconDollarCircle = ({ className = "w-6 h-6", ...props }) => (
+  <svg 
+    width="24" 
+    height="24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    strokeWidth="2" 
+    viewBox="0 0 24 24" 
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    {...props}
+  >
+    <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"></path>
+    <path d="M14.8 9.001a2 2 0 0 0-1.8-1h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1"></path>
+    <path d="M12 16v2m0-12v2-2Z"></path>
+  </svg>
+);
+
 export const IconBluetooth = ({ className }) => (
 
   <svg width="24" height="24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

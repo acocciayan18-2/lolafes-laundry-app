@@ -40,7 +40,7 @@ export default function CompactIntelligence() {
       { 
         label: "Sales Progress", 
         val: `${salesPercent}%`, 
-        sub: `Today's revenue is ₱${parsedSalesToday.toLocaleString()} vs yesterday's ₱${parsedSalesYesterday.toLocaleString()}`, 
+        sub: `Today's sales is ₱${parsedSalesToday.toLocaleString()} vs yesterday's ₱${parsedSalesYesterday.toLocaleString()}`, 
       },
       { 
         label: "Order Pacing", 

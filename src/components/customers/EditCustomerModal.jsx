@@ -17,7 +17,7 @@ import Button from '../ui/Button';
  */
 const FormField = React.memo(({ label, id, error, icon: Icon, children }) => (
   <div className="space-y-1">
-    <label htmlFor={id} className="text-sm-text  text-text-dark/70 ml-1">
+    <label htmlFor={id} className="text-micro text-text-dark/70 ml-1">
       {label}
     </label>
     <div className="relative">
@@ -245,11 +245,11 @@ const EditCustomerModal = ({ customer, onClose }) => {
         {/* HEADER */}
         <header className="p-5 border-b border-slate-50 pb-0">
           <h3 id="edit-customer-title" className="text-xl font-bold text-text-dark">Edit Customer</h3>
-          <p className="text-sm-text text-slate-500 truncate" title={originalName}>Update {originalName} details</p>
+          <p className="text-sm-text mt-1 mb-2 text-text-dark/80 truncate" title={originalName}>Update {originalName} details</p>
         </header>
 
         {/* FORM */}
-        <form onSubmit={handleSubmit} className="p-5 pt-2 space-y-3" noValidate>
+        <form onSubmit={handleSubmit} className="p-5 pt-2 space-y-4" noValidate>
           <FormField label="Full Name *" id="edit-name" error={errors.name} icon={IconUsers}>
             <input 
               id="edit-name"

@@ -1,36 +1,37 @@
 /**
  * @file ProtectedRoute.jsx
- * @description Route wrapper enforcing Firebase authentication, email verification, and Role-Based Access Control (RBAC).
+ * @description Enterprise-grade RBAC gatekeeper.
+ * @security Uses in-memory state for role verification to prevent localStorage manipulation.
  */
 
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../security/AuthContext";
+// ✨ SECURE ROLE SOURCE
+import { useAuthStore } from "../store/auth/useAuthStore";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
   const { currentUser } = useAuth();
   const location = useLocation();
 
-  // 1. Get the role saved in localStorage during the login process
-  const userRole = localStorage.getItem("userRole") || "STAFF";
+  // 🛡️ SECURITY FIX: Get the authoritative role from memory, NOT localStorage
+  const userRole = useAuthStore((state) => state.userRole) || "STAFF";
 
-  // 2. Defend against completely unauthenticated or expired users
+  // 1. Defend against unauthenticated users
   if (!currentUser) {
-    // Pass the attempted URL in state so we can redirect them back after they log in
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 3. Strict Access Control: Enforce Email Verification
+  // 2. Enforce Email Verification
   if (!currentUser.emailVerified) {
     return <Navigate to="/login" replace />;
   }
 
-  // 4. Role-Based Access Control (Check if the role is allowed to see this page)
-  // If allowedRoles is provided and the user's role isn't in it, kick them to the dashboard.
+  // 3. Role-Based Access Control (RBAC)
   if (allowedRoles && !allowedRoles.includes(userRole)) {
-    console.warn(`Access Denied: Role "${userRole}" is not authorized for this route.`);
+    console.warn(`[Security] Access Denied: Role "${userRole}" attempted to access restricted path: ${location.pathname}`);
+    // Redirect unauthorized users to the dashboard
     return <Navigate to="/main/dashboard" replace />;
   }
 
-  // Render child components or the Outlet for nested routes
   return children ? children : <Outlet />;
 }

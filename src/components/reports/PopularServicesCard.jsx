@@ -5,70 +5,92 @@ import { useReportStore } from "../../store/reports/useReportStore";
 import { IconInfo, IconPackage } from "../icons";
 
 // ==========================================
-// CONFIGURATION & CONSTANTS (Frozen)
+// 🛡️ DYNAMIC CONFIGURATION
 // ==========================================
-const RANGE_OPTIONS = Object.freeze([
-  { id: '7', name: '7 Days' },
-  { id: '30', name: '30 Days' },
-  { id: 'year', name: '1 Year' },
-]);
+// Generates past years dynamically so the app doesn't break when the year changes
+const generateTimeFilters = () => {
+  const currentYear = new Date().getFullYear();
+  return [
+    { id: "7_days", label: "Last 7 Days", payload: { range: "days", value: 7 } },
+    { id: "30_days", label: "Last 30 Days", payload: { range: "days", value: 30 } },
+    { id: `year_${currentYear}`, label: `This Year (${currentYear})`, payload: { range: "year", value: currentYear } },
+    { id: `year_${currentYear - 1}`, label: `Last Year (${currentYear - 1})`, payload: { range: "year", value: currentYear - 1 } },
+    { id: `year_${currentYear - 2}`, label: `Year ${currentYear - 2}`, payload: { range: "year", value: currentYear - 2 } }
+  ];
+};
 
-// Expanded palette to support up to 6 slices
+const TIME_FILTERS = Object.freeze(generateTimeFilters());
+
 const PIE_COLORS = Object.freeze([
   { stroke: "text-sky-400", bg: "bg-sky-400" },
   { stroke: "text-blue-500", bg: "bg-blue-500" },
   { stroke: "text-indigo-500", bg: "bg-indigo-500" },
   { stroke: "text-fuchsia-400", bg: "bg-fuchsia-400" },
   { stroke: "text-rose-400", bg: "bg-rose-400" },
-  { stroke: "text-slate-300", bg: "bg-slate-300" } // Fallback for "Others"
+  { stroke: "text-slate-300", bg: "bg-slate-300" } 
 ]);
 
 // ==========================================
-// UTILITY HELPERS
+// 🛡️ DEFENSIVE UTILITIES
 // ==========================================
-/**
- * @description Sanitizes and truncates strings to prevent XSS and layout breaking
- */
 const sanitizeString = (str, maxLen = 30) => {
   if (!str || typeof str !== 'string') return "Unknown";
   return str.replace(/[<>]/g, '').trim().substring(0, maxLen);
 };
 
 // ==========================================
-// MAIN COMPONENT
+// 🧩 ATOMIC COMPONENTS
 // ==========================================
-export default function PopularServices({ range: initialRange }) {
-  // --- STATE & REFS ---
+const PieSkeleton = () => (
+  <div className="flex flex-col items-center justify-center w-full h-full animate-pulse" aria-hidden="true">
+    <div className="w-40 h-40 bg-slate-200 rounded-full mb-6 mt-2"></div>
+    <div className="grid grid-cols-2 gap-4 w-full px-4">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-slate-200 rounded-sm shrink-0"></div>
+          <div className="h-3 bg-slate-200 rounded w-full"></div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// ==========================================
+// 🚀 MAIN COMPONENT
+// ==========================================
+export default function PopularServices() {
   const [showInfo, setShowInfo] = useState(false);
-  const [activeRange, setActiveRange] = useState(initialRange || "7"); 
+  const [selectedFilter, setSelectedFilter] = useState(TIME_FILTERS[0]); 
   const infoRef = useRef(null);
   
-  const getServiceAnalytics = useReportStore(useCallback(state => state.getServiceAnalytics, []));
-  const orders = useReportStore(state => state.orders);
-
-  const selectedRangeOption = useMemo(() => 
-    RANGE_OPTIONS.find(o => o.id === activeRange) || RANGE_OPTIONS[0], 
-  [activeRange]);
+  // Zustand Async Selectors
+  const fetchServiceAnalytics = useReportStore(state => state.fetchServiceAnalytics);
+  const rawServiceData = useReportStore(state => state.serviceAnalyticsData);
+  const isLoading = useReportStore(state => state.isServiceLoading);
+  const error = useReportStore(state => state.serviceError);
 
   // --- EVENT HANDLERS ---
   const toggleInfo = useCallback(() => setShowInfo(prev => !prev), []);
 
+  // ✨ QA RESILIENCE: Server-Side Fetching Trigger with Abort Controller
+  useEffect(() => {
+    const abortController = new AbortController();
+    if (typeof fetchServiceAnalytics === 'function') {
+      fetchServiceAnalytics(selectedFilter.payload, abortController.signal);
+    }
+    return () => abortController.abort();
+  }, [selectedFilter, fetchServiceAnalytics]);
+
   useEffect(() => {
     if (!showInfo) return; 
-
     const handleClickOutside = (event) => {
-      if (infoRef.current && !infoRef.current.contains(event.target)) {
-        setShowInfo(false);
-      }
+      if (infoRef.current && !infoRef.current.contains(event.target)) setShowInfo(false);
     };
-
     const handleEsc = (e) => {
       if (e.key === 'Escape') setShowInfo(false);
     };
-
     document.addEventListener("pointerdown", handleClickOutside);
     window.addEventListener("keydown", handleEsc);
-    
     return () => {
       document.removeEventListener("pointerdown", handleClickOutside);
       window.removeEventListener("keydown", handleEsc);
@@ -76,15 +98,14 @@ export default function PopularServices({ range: initialRange }) {
   }, [showInfo]);
 
   // --- DATA PROCESSING & FLAT PIE GEOMETRY MATH ---
-  const { pieSegments } = useMemo(() => {
-    if (!orders || !Array.isArray(orders)) return { pieSegments: [], totalOrdersProcessed: 0 };
+  const { pieSegments, totalOrdersProcessed } = useMemo(() => {
+    if (!rawServiceData || !Array.isArray(rawServiceData) || rawServiceData.length === 0) {
+      return { pieSegments: [], totalOrdersProcessed: 0 };
+    }
 
     try {
-      const data = getServiceAnalytics(activeRange);
-      if (!Array.isArray(data) || data.length === 0) return { pieSegments: [], totalOrdersProcessed: 0 };
-      
-      // 1. Sort descending and ensure valid numbers
-      const sortedData = [...data]
+      // 1. Sanitize, ensure valid numbers, and sort descending
+      const sortedData = [...rawServiceData]
         .map(s => ({
           ...s,
           name: sanitizeString(s.name, 40),
@@ -93,7 +114,7 @@ export default function PopularServices({ range: initialRange }) {
         .filter(s => s.count > 0)
         .sort((a, b) => b.count - a.count);
 
-      // 2. Group into Top 5 + "Others" (Required for a mathematically sound pie chart)
+      // 2. Group into Top 5 + "Others"
       const top5 = sortedData.slice(0, 5);
       const remaining = sortedData.slice(5);
       const othersCount = remaining.reduce((sum, s) => sum + s.count, 0);
@@ -106,15 +127,13 @@ export default function PopularServices({ range: initialRange }) {
       const totalCount = groupedData.reduce((sum, s) => sum + s.count, 0);
 
       // 3. SVG Solid Pie Math
-      // To make a solid pie chart (no donut hole), r must be 25 and strokeWidth 50 in a 100x100 viewBox.
       const radius = 25;
-      const circumference = 2 * Math.PI * radius; // ~157.08
+      const circumference = 2 * Math.PI * radius; 
       
       let cumulativePercent = 0;
       const segments = groupedData.map((service, index) => {
         const relativePct = totalCount > 0 ? (service.count / totalCount) * 100 : 0;
         
-        // Calculate dash array and offset for SVG rendering
         const dashLength = (relativePct / 100) * circumference;
         const strokeDasharray = `${dashLength} ${circumference}`;
         const strokeDashoffset = -((cumulativePercent / 100) * circumference);
@@ -133,10 +152,10 @@ export default function PopularServices({ range: initialRange }) {
       return { pieSegments: segments, totalOrdersProcessed: totalCount };
 
     } catch (err) {
-      console.error("[PopularServices] Calculation failed:", err);
+      console.error("[PopularServices] Math Error:", err);
       return { pieSegments: [], totalOrdersProcessed: 0 };
     }
-  }, [activeRange, getServiceAnalytics, orders]);
+  }, [rawServiceData]);
 
   return (
     <section 
@@ -147,16 +166,16 @@ export default function PopularServices({ range: initialRange }) {
         
         {/* HEADER SECTION */}
         <header className="flex items-start justify-between mb-4 shrink-0">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 w-full pr-2">
             <div className="flex items-center gap-2">
               <h2 id="popular-services-title" className="text-sm-text mb-1 font-bold text-text-dark/70 truncate uppercase tracking-tight">
-                Service Distribution
+                Popular Services
               </h2>
               
               <div className="relative" ref={infoRef}>
                 <button 
                   onClick={toggleInfo}
-                  className={`transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-app-dark/20 rounded-full ${showInfo ? 'text-app-dark' : 'text-text-dark/30 hover:text-text-dark/50'}`}
+                  className={`transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-app-dark/20 rounded-full ${showInfo ? 'text-app-dark' : 'text-text-dark/30 hover:text-text-dark/50'}`}
                   aria-label="Information about top services"
                   aria-expanded={showInfo}
                 >
@@ -166,10 +185,10 @@ export default function PopularServices({ range: initialRange }) {
                   {showInfo && (
                     <div 
                       role="tooltip"
-                      className="absolute left-[-50px] top-7 w-52 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200"
+                      className="absolute left-[-50px] top-7 w-56 p-3 bg-white border border-app-dark/30 shadow-xl rounded-lg z-[100] animate-in fade-in zoom-in-95 duration-200"
                     > 
                       <p className="text-sm-text font-normal text-text-dark/90 leading-relaxed">
-                        Visualizes the market share of your services. Slices represent the percentage of total orders processed.
+                        Visualizes the market share of your services based on securely fetched historical records.
                       </p>
                     </div>
                   )}
@@ -177,22 +196,23 @@ export default function PopularServices({ range: initialRange }) {
               </div>
             </div>
             
-            {/* HEADLESS UI DROPDOWN */}
-            <div className="relative mt-1 w-[100px] z-[90]">
-              <Listbox value={selectedRangeOption} onChange={(opt) => setActiveRange(opt.id)}>
+            {/* ✨ SECURE DROPDOWN WITH TAILWIND SVG */}
+            <div className="relative mt-1 w-max min-w-[140px] z-[90]">
+              <Listbox value={selectedFilter} onChange={setSelectedFilter} disabled={isLoading}>
                 {({ open }) => (
                   <>
-                    <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-sm-text font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-app-dark/20">
-                      <span className="block truncate  text-sm-text capitalize">{selectedRangeOption.name}</span>
+                    <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-sm-text font-bold text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/20 disabled:opacity-50">
+                      <span className="block truncate text-sm-text">{selectedFilter.label}</span>
                       <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                        <motion.svg 
-                          animate={{ rotate: open ? 180 : 0 }}
-                          className="w-4 h-4 text-text-dark/50" 
-                          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        <svg 
+                          className={`w-4 h-4 text-text-dark/50 transition-transform duration-200 ease-in-out ${open ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
                           aria-hidden="true"
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                        </motion.svg>
+                        </svg>
                       </span>
                     </ListboxButton>
 
@@ -205,23 +225,19 @@ export default function PopularServices({ range: initialRange }) {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -5 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute mt-1.5 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 shadow-xl border border-slate-100 ring-1 ring-black ring-opacity-5 focus:outline-none"
+                          className="absolute z-[100] mt-1.5 max-h-60 w-max min-w-full overflow-auto rounded-xl bg-white py-1 shadow-xl border border-slate-100 ring-1 ring-black/5 focus:outline-none isolate"
                         >
-                          {RANGE_OPTIONS.map((option) => (
+                          {TIME_FILTERS.map((option) => (
                             <ListboxOption
                               key={option.id}
                               value={option}
                               className={({ active }) =>
-                                `relative cursor-pointer select-none py-2.5 pl-3 pr-3 text-sm-text  transition-colors ${
-                                  active ? 'bg-app-dark/5 text-app-dark' : 'text-text-dark/80'
+                                `relative cursor-pointer select-none py-2.5 pl-3 pr-4 text-sm-text transition-colors ${
+                                  active ? 'bg-app-dark/5 text-app-dark font-bold' : 'text-text-dark/80'
                                 }`
                               }
                             >
-                              {({ selected }) => (
-                                <span className={`block truncate ${selected ? 'font-bold text-app-dark' : ''}`}>
-                                  {option.name}
-                                </span>
-                              )}
+                              <span className="block truncate">{option.label}</span>
                             </ListboxOption>
                           ))}
                         </ListboxOptions>
@@ -238,9 +254,19 @@ export default function PopularServices({ range: initialRange }) {
           </div>
         </header>
 
+        {/* ERROR BOUNDARY */}
+        {error && !isLoading && (
+          <div className="mt-2 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg text-center" role="alert">
+            Failed to load service data.
+          </div>
+        )}
+
         {/* ANALYTICS VISUALIZATION */}
-        <div className="flex flex-col items-center justify-start flex-1 py-1 w-full">
-          {pieSegments.length > 0 ? (
+        <div className="flex flex-col items-center justify-start flex-1 py-1 w-full relative" aria-busy={isLoading}>
+          
+          {isLoading && <PieSkeleton />}
+
+          {!isLoading && pieSegments.length > 0 && (
             <>
               {/* FLAT SVG PIE CHART */}
               <div className="relative flex items-center justify-center w-40 h-40 mb-4 mt-2 shrink-0" aria-hidden="true">
@@ -272,7 +298,7 @@ export default function PopularServices({ range: initialRange }) {
                        <span className="text-micro font-bold text-text-dark truncate leading-tight" title={service.name}>
                          {service.name}
                        </span>
-                       <span className="text-micro  text-text-dark/70 shrink-0">
+                       <span className="text-micro text-text-dark/70 shrink-0">
                          {service.share.toFixed(1)}% ({service.count})
                        </span>
                     </div>
@@ -280,7 +306,9 @@ export default function PopularServices({ range: initialRange }) {
                 ))}
               </div>
             </>
-          ) : (
+          )}
+
+          {!isLoading && pieSegments.length === 0 && !error && (
             <div className="py-10 text-center flex flex-col items-center justify-center opacity-30 h-full" role="status">
               <IconPackage className="w-8 h-8 mb-2" aria-hidden="true" />
               <p className="text-nano font-bold uppercase tracking-widest">No data available</p>
@@ -290,11 +318,19 @@ export default function PopularServices({ range: initialRange }) {
 
       </div>
 
-      {/* FOOTER METADATA */}
       <footer className="mx-5 mb-4 mt-auto border-t border-slate-50 pt-3 flex justify-between items-center">
-        <p className="text-nano font-bold text-text-dark/40 uppercase">
-          {activeRange === 'year' ? 'Annual Overview' : `Insights from last ${activeRange} days`}
+        <p className="text-nano font-bold text-text-dark/40 uppercase" aria-live="polite">
+          {selectedFilter.payload.range === 'year' 
+            ? `Insights for ${selectedFilter.payload.value}` 
+            : `Insights from last ${selectedFilter.payload.value} days`}
         </p>
+        
+        {/* ✨ FIX: We are now using the variable to show total volume! */}
+        {!isLoading && totalOrdersProcessed > 0 && (
+          <p className="text-nano font-bold text-app-dark uppercase tracking-tight">
+            {totalOrdersProcessed} Total Units
+          </p>
+        )}
       </footer>
     </section>
   );

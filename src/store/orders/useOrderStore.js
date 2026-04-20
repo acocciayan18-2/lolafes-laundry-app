@@ -9,7 +9,7 @@ import {
 
 const CONFIG = Object.freeze({
   STUCK_THRESHOLD_HOURS: 2,
-  UNCLAIMED_THRESHOLD_HOURS: 48,
+  UNCLAIMED_THRESHOLD_HOURS: 24,
   LOCK_WINDOW_MS: 5 * 60 * 1000, // 5 minutes
 });
 

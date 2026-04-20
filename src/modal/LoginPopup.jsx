@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import "../style/modal-style/LoginPopup.css";
 
 // Configuration Constants
@@ -29,73 +29,67 @@ const POPUP_ICONS = {
 export function LoginPopup({ message, type = "info", onClose }) {
   const [progress, setProgress] = useState(100);
 
-  // Set colors: Green for success, Red for everything else
   const themeColor = type === "success" ? "green" : "red";
 
+ 
+
+  // Reset and start countdown whenever a new message appears
   useEffect(() => {
-  if (!message) return;
+    if (!message) return;
 
-  setProgress(100);
+    setProgress(100);
 
-  const interval = setInterval(() => {
-    // 1. We check the current value by moving logic out of the functional updater
-    setProgress((prevProgress) => {
-      const nextProgress = prevProgress - PROGRESS_DECREMENT_STEP;
-      return nextProgress;
-    });
-  }, PROGRESS_INTERVAL_MS);
+    const interval = setInterval(() => {
+      setProgress((prev) => prev - PROGRESS_DECREMENT_STEP);
+    }, PROGRESS_INTERVAL_MS);
 
-  return () => clearInterval(interval);
-}, [message]); // Removed onClose from here to avoid unnecessary resets
+    return () => clearInterval(interval);
+  }, [message]);
 
-// 2. Separate Effect to handle closing when progress hits 0
+  // Close only once when progress first crosses 0
+const handleClose = useCallback(() => {
+  if (typeof onClose === 'function') onClose();
+}, [onClose]);
+
 useEffect(() => {
-  if (progress <= 0) {
-    onClose();
-  }
-}, [progress, onClose]);
-
+  if (progress <= 0) handleClose();
+}, [progress, handleClose]);
   if (!message) return null;
 
   return (
-  <div
-    /* FIXED POSITIONING: Centers at top-6 and handles its own width */
-    className="fixed top-3 left-1/2 -translate-x-1/2 z-[9999999] w-max max-w-[360px] px-4 pointer-events-none bg-transparent"
-  >
-   <div
-  className={`pointer-events-auto relative bg-white  border rounded-xl overflow-hidden transition-all duration-300 ${
-    type === "success" 
-      ? "border-status-complete" 
-      : "border-rose-600"
-  }`}
-  role="alert"
->
-      
-      {/* --- CLOSE BUTTON: Absolute positioned in the corner --- */}
-      <button
-        className="absolute top-1 right-1 p-1 rounded-lg  focus:outline-none opacity-70 hover:opacity-90 "
-        aria-label="Close"
-        onClick={onClose}
+    <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[9999999] w-max max-w-[360px] px-4 pointer-events-none bg-transparent">
+      <div
+        className={`pointer-events-auto relative bg-white border rounded-xl overflow-hidden transition-all duration-300 ${
+          type === "success"
+            ? "border-status-complete"
+            : "border-rose-600"
+        }`}
+        role="alert"
       >
-        {POPUP_ICONS.close(themeColor)}
-      </button>
 
-      {/* --- MESSAGE CONTENT: Flex centered with padding --- */}
-      <div className="px-6 py-3 flex items-center justify-center gap-3">
-        <div className="shrink-0">
-          {type === "success" ? POPUP_ICONS.success(themeColor) : POPUP_ICONS.error(themeColor)}
-        </div>
-        <span 
-          style={{ color: themeColor }} 
-          className="font-normal text-base-text leading-tight !mr-3"
+        {/* --- CLOSE BUTTON --- */}
+        <button
+          className="absolute top-1 right-1 p-1 rounded-lg focus:outline-none opacity-70 hover:opacity-90"
+          aria-label="Close"
+          onClick={handleClose}
         >
-          {message}
-        </span>
+          {POPUP_ICONS.close(themeColor)}
+        </button>
+
+        {/* --- MESSAGE CONTENT --- */}
+        <div className="px-6 py-3 flex items-center justify-center gap-3">
+          <div className="shrink-0">
+            {type === "success" ? POPUP_ICONS.success(themeColor) : POPUP_ICONS.error(themeColor)}
+          </div>
+          <span
+            style={{ color: themeColor }}
+            className="font-normal text-base-text leading-tight !mr-3"
+          >
+            {message}
+          </span>
+        </div>
+
       </div>
-
-     
-
     </div>
-  </div>
-);
+  );
 }

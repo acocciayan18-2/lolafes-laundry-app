@@ -236,7 +236,7 @@ export default function StoreShiftSettings() {
 
         <button 
           onClick={() => setIsEnabled(!isEnabled)}
-          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:ring-offset-1 ${isEnabled ? 'bg-emerald-600' : 'bg-slate-200'}`}
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:ring-offset-1 ${isEnabled ? 'bg-emerald-600' : 'bg-slate-300'}`}
         >
           <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
         </button>
@@ -327,7 +327,7 @@ export default function StoreShiftSettings() {
           onClick={handleSave}
           disabled={isSaving}
           isLoading={isSaving}
-          className="w-full sm:w-[180px] !py-3 !rounded-2xl !text-sm-text shadow-lg shadow-slate-100 active:scale-95 transition-all"
+          className="w-full sm:w-[180px] !py-3 !rounded-2xl !text-sm-text !font-normal shadow-lg shadow-slate-100 active:scale-95 transition-all"
         >
           {isSaving ? "Syncing..." : "Save Configuration"}
         </Button>

@@ -29,17 +29,15 @@ const formatTime = (hIdx) => {
   return `${h} ${period}`;
 };
 
-// Defensive extractor to prevent "Cannot read properties of undefined"
 const safeGetHourValue = (heatmap, day, hour) => {
   if (!heatmap || !heatmap[day] || isNaN(heatmap[day][hour])) return 0;
-  return Math.max(0, Number(heatmap[day][hour])); // Force non-negative integers
+  return Math.max(0, Number(heatmap[day][hour])); 
 };
 
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
 export default function RushPulse() {
-  // --- STATE & REFS ---
   const [showInfo, setShowInfo] = useState(false);
   const [selectedDay, setSelectedDay] = useState(DAY_OPTIONS[0]);
   const [activeIndex, setActiveIndex] = useState(null); 
@@ -47,21 +45,18 @@ export default function RushPulse() {
   const infoRef = useRef(null);
   const chartRef = useRef(null);
   
-  const getPeakHours = useReportStore(useCallback(state => state.getPeakHours, []));
+  // ✨ FIX: Subscribe directly to orders so the component re-renders when data arrives
 
-  // --- EVENT HANDLERS ---
+  const getPeakHours = useReportStore(state => state.getPeakHours);
+
   const toggleInfo = useCallback(() => setShowInfo(prev => !prev), []);
 
   useEffect(() => {
     if (!showInfo) return;
 
     const handleClickOutside = (event) => {
-      if (infoRef.current && !infoRef.current.contains(event.target)) {
-        setShowInfo(false);
-      }
-      if (chartRef.current && !chartRef.current.contains(event.target)) {
-        setActiveIndex(null);
-      }
+      if (infoRef.current && !infoRef.current.contains(event.target)) setShowInfo(false);
+      if (chartRef.current && !chartRef.current.contains(event.target)) setActiveIndex(null);
     };
 
     const handleEsc = (e) => {
@@ -80,7 +75,6 @@ export default function RushPulse() {
     };
   }, [showInfo]);
 
-  // --- DATA PROCESSING & MEMOIZATION ---
   const { waveData, maxValue, busiestWindow } = useMemo(() => {
     let fullHeatmap = {};
     try {
@@ -114,12 +108,12 @@ export default function RushPulse() {
 
     return { 
       waveData: processed, 
-      maxValue: maxVal > 0 ? maxVal * 1.15 : 10, // 15% top padding for SVG stroke 
+      maxValue: maxVal > 0 ? maxVal * 1.15 : 10, 
       busiestWindow: windowText
     };
-  }, [getPeakHours, selectedDay.value]);
+  // ✨ FIX: Included orders in the dependency array
+  }, [getPeakHours, selectedDay.value]); 
 
-  // --- SVG BEZIER CURVE GENERATION ---
   const CHART_W = 1000;
   const CHART_H = 200;
 
@@ -130,7 +124,6 @@ export default function RushPulse() {
       return { x, y, val };
     });
 
-    // Generate Smooth Cubic Bezier Path
     let pathData = `M ${pts[0].x},${pts[0].y}`;
     for (let i = 1; i < pts.length; i++) {
       const curr = pts[i];
@@ -151,7 +144,6 @@ export default function RushPulse() {
     >
       <div className="p-5 flex-1 flex flex-col overflow-visible">
         
-        {/* HEADER SECTION */}
         <header className="flex items-start justify-between gap-1 mb-2 shrink-0">
           <div className="min-w-0 flex-1 relative" ref={infoRef}>
             <div className="flex items-center gap-1.5 mb-1">
@@ -162,7 +154,7 @@ export default function RushPulse() {
                 onClick={toggleInfo}
                 aria-expanded={showInfo}
                 aria-label="Information about Traffic Pulse"
-                className="text-text-dark/30 hover:text-app-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-app-dark/20 transition-colors rounded-full"
+                className="text-text-dark/30 hover:text-app-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-app-dark/20 transition-colors rounded-full"
               >
                 <IconInfo className="w-4 h-4" aria-hidden="true" />
               </button>
@@ -183,76 +175,68 @@ export default function RushPulse() {
                 )}
               </AnimatePresence>
             </div>
+
+            <div className="relative mt-2 w-max min-w-[140px] z-[90]" aria-label="Select day filter for traffic pulse chart">
+              <Listbox 
+                value={selectedDay} 
+                onChange={(val) => {
+                  setSelectedDay(val);
+                  setActiveIndex(null); 
+                }}
+              >
+                {({ open }) => (
+                  <>
+                    <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-sm-text font-bold text-text-dark text-left hover:bg-slate-50 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/20">
+                      <span className="block truncate text-sm-text">{selectedDay.label}</span>
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                        <svg 
+                          className={`w-4 h-4 text-text-dark/50 transition-transform duration-200 ease-in-out ${open ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </span>
+                    </ListboxButton>
+
+                    <AnimatePresence>
+                      {open && (
+                        <ListboxOptions
+                          static
+                          as={motion.ul}
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -5 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute z-[100] mt-1.5 max-h-60 w-max min-w-full overflow-auto custom-scrollbar rounded-xl bg-white py-1 shadow-xl border border-slate-100 ring-1 ring-black/5 focus:outline-none isolate"
+                        >
+                          {DAY_OPTIONS.map((f) => ( 
+                            <ListboxOption
+                              key={f.value}
+                              value={f}
+                              className={({ active }) =>
+                                `relative cursor-pointer select-none py-2.5 pl-3 pr-4 text-sm-text transition-colors ${
+                                  active ? 'bg-app-dark/5 text-app-dark font-bold' : 'text-text-dark/80'
+                                }`
+                              }
+                            >
+                              <span className="block truncate">{f.label}</span>
+                            </ListboxOption>
+                          ))}
+                        </ListboxOptions>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
+              </Listbox>
+            </div>
           </div>
           <div className="p-2.5 rounded-lg border border-app-dark/10 shadow-hollow shrink-0 bg-transparent" aria-hidden="true">
             <IconZap className="w-4 h-4 text-text-dark stroke-text-dark" />
           </div>
         </header>
-
-        {/* HEADLESS UI DROPDOWN */}
-       {/* HEADLESS UI DROPDOWN */}
-        {/* ✨ FIX 1: Increased wrapper z-index to 50 to beat the chart below it */}
-        <div className="relative w-32 mb-4 z-50" aria-label="Select day filter for traffic pulse chart">
-          <Listbox 
-            value={selectedDay} 
-            onChange={(val) => {
-              setSelectedDay(val);
-              setActiveIndex(null); 
-            }}
-          >
-            {({ open }) => (
-              <>
-                <ListboxButton className="relative w-full cursor-pointer bg-white border border-app-dark/10 shadow-sm rounded-xl py-1.5 pl-3 pr-8 text-sm-text  text-text-dark text-left hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-app-dark/20">
-                  <span className="block truncate">{selectedDay.label}</span>
-                  <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                    <motion.svg 
-                      animate={{ rotate: open ? 180 : 0 }}
-                      className="w-4 h-4 text-text-dark/50" 
-                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                    </motion.svg>
-                  </span>
-                </ListboxButton>
-
-                <AnimatePresence>
-                  {open && (
-                    <ListboxOptions
-                      static
-                      as={motion.ul}
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -5 }}
-                      transition={{ duration: 0.15 }}
-                      // ✨ FIX 2: Added z-[100] and forced bg-white to be totally opaque.
-                      className="absolute z-[100] mt-1.5 max-h-60 w-full overflow-auto custom-scrollbar rounded-xl bg-white py-1 shadow-2xl border border-slate-200 ring-1 ring-black/5 focus:outline-none isolate"
-                    >
-                      {DAY_OPTIONS.map((f) => ( 
-                        <ListboxOption
-                          key={f.value}
-                          value={f}
-                          className={({ active }) =>
-                            // ✨ FIX 3: Removed conflicting background colors in the ternary
-                            `relative cursor-pointer select-none py-2.5 pl-3 pr-3 text-sm-text transition-colors ${
-                              active ? 'bg-slate-100 text-app-dark' : 'bg-white text-text-dark/80'
-                            }`
-                          }
-                        >
-                          {({ selected }) => (
-                            <span className={`block truncate  ${selected ? 'font-bold text-app-dark' : ''}`}>
-                              {f.label}
-                            </span>
-                          )}
-                        </ListboxOption>
-                      ))}
-                    </ListboxOptions>
-                  )}
-                </AnimatePresence>
-              </>
-            )}
-          </Listbox>
-        </div>
 
         {/* CHART AREA */}
         <div 
@@ -262,25 +246,18 @@ export default function RushPulse() {
           aria-label="Line chart showing order traffic per hour"
         >
           
-          {/* Base SVG Rendering */}
           <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full h-full overflow-visible absolute inset-0" preserveAspectRatio="none" aria-hidden="true">
             <defs>
               <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.25" /> {/* Sky-500 */}
+                <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.25" />
                 <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.0" />
               </linearGradient>
             </defs>
             
-            {/* Area Fill */}
             <path d={areaPath} fill="url(#areaGradient)" />
-            
-            {/* Stroke Line */}
             <path d={linePath} fill="none" stroke="#3b82f6" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
-            
-            {/* DOTS HAVE BEEN COMPLETELY REMOVED */}
           </svg>
 
-          {/* Interactive Accessibility Overlay (The Smart Hover Zones) */}
           <div className="absolute inset-0">
             {waveData.map((val, i) => {
               const xPerc = (i / (waveData.length - 1)) * 100;
@@ -301,12 +278,10 @@ export default function RushPulse() {
                   tabIndex={0}
                   aria-label={`${val} orders at ${formatTime(i)}`}
                 >
-                  {/* Vertical Guideline */}
                   <div className={`absolute inset-y-0 left-1/2 w-px bg-blue-400/30 transition-opacity duration-200 pointer-events-none -translate-x-1/2
                     ${activeIndex === i ? 'opacity-100' : 'opacity-0'}`} 
                   />
 
-                  {/* Tooltip Popup (Pinned to Top) */}
                   <div 
                     className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-3 pointer-events-none transition-all duration-200 z-[60]
                       ${activeIndex === i ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
@@ -345,7 +320,6 @@ export default function RushPulse() {
 
       </div>
 
-      {/* FOOTER METADATA */}
       <footer className="mx-5 mb-4 mt-auto border-t border-app-dark/5 pt-3 flex justify-between items-center">
         <div className="flex flex-col">
           <p className="text-nano font-bold text-text-dark/50 mb-0.5 uppercase ">

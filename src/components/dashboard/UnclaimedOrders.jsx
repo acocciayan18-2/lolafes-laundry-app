@@ -25,6 +25,8 @@ const getSafeDate = (ts) => {
 const maskPhone = (phone) => typeof phone === 'string' ? phone.replace(/.(?=.{4})/g, '•') : "No contact information";
 const maskAddress = (address) => address ? "••••• Hidden for privacy" : "No address provided";
 
+const getCleanPhoneForLink = (phone) => typeof phone === 'string' ? phone.replace(/[^\d+]/g, '') : '';
+
 const formatOverdueTime = (readyDate) => {
   const diffMs = Math.max(0, Date.now() - readyDate.getTime()); 
   const diffSecs = Math.floor(diffMs / 1000);
@@ -119,7 +121,6 @@ const UnclaimedOrders = () => {
   const [isPiiRevealed, setIsPiiRevealed] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  // 🛡️ PERFORMANCE FIX: Atomic Selectors prevent massive re-renders
   const orders = useOrderStore(useCallback((state) => state.orders, []));
   const isLoading = useOrderStore(useCallback((state) => state.isLoading, []));
   const togglePaymentStatus = useOrderStore(useCallback((state) => state.togglePaymentStatus, []));
@@ -140,7 +141,6 @@ const UnclaimedOrders = () => {
     return active.length > 0 ? active : [{ id: 'fallback', name: 'Cash' }];
   }, [allPaymentMethods]);
 
-  // Reset PII reveal when selection changes
   useEffect(() => {
     setIsPiiRevealed(false);
   }, [selectedOrder?.id]);
@@ -149,7 +149,6 @@ const UnclaimedOrders = () => {
     if (orders.length > 0) computeUnclaimed(orders);
   }, [orders, computeUnclaimed]);
 
-  // Background Ticker
   useEffect(() => {
     const ticker = setInterval(() => {
       const currentOrders = useOrderStore.getState().orders;
@@ -160,7 +159,6 @@ const UnclaimedOrders = () => {
     return () => clearInterval(ticker);
   }, []);
 
-  // 🛡️ STABILITY FIX: Modal Lifecycle Esc Guard
   const escGuardRef = useRef({ isUpdating, showPaymentModal });
   useEffect(() => {
     escGuardRef.current = { isUpdating, showPaymentModal };
@@ -239,84 +237,101 @@ const UnclaimedOrders = () => {
     }
   }, [selectedOrder, togglePaymentStatus, logActivity, showNotification]);
 
-  if (isLoading || safeUnclaimedOrders.length === 0) return null;
+  // ✨ FIXED: Removed the early return that was hiding the widget entirely
+  // if (isLoading || safeUnclaimedOrders.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border flex flex-col max-h-[450px] overflow-hidden relative mt-4">
+    // ✨ FIXED: Removed mt-4 so it aligns perfectly with the grid in Dashboard.jsx
+    <div className="bg-white rounded-xl shadow-md border border-app-dark/10 flex flex-col  min-h-[200px] max-h-[350px] overflow-hidden relative">
       
-      <div className="px-5 py-3.5 border-b border-rose-50 flex justify-between items-center ">
+      {/* HEADER */}
+      <div className="px-5 py-4 border-b border-app-dark/5 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-3 pl-2">
-          <div className="p-1.5 bg-white border rounded-lg text-text-dark shadow-hollow">
-            <IconAlertCircle className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-base-text font-bold text-text-dark">Overdue Orders</h2>
-          </div>
-        </div>
-        <span className="bg-app-dark/5 text-text-dark text-micro  px-2 py-0.5 rounded-full" aria-label={`${safeUnclaimedOrders.length} overdue orders`}>
-          {safeUnclaimedOrders.length}
-        </span>
+                  <div className="p-1.5 bg-white border border-app-dark/10 rounded-lg text-text-dark shadow-hollow" aria-hidden="true">
+                    <IconAlertCircle className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-base-text font-bold text-text-dark/90">Unclaimed Laundry</h2>
+                </div>
+            {safeUnclaimedOrders.length > 0 && (
+              <span className="bg-app-dark/5 text-text-dark text-micro  px-2 py-0.5 rounded-full" aria-label={`${safeUnclaimedOrders.length} overdue orders`}>
+                {safeUnclaimedOrders.length}
+              </span>
+            )}
       </div>
 
+      {/* BODY / LIST */}
       <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
-        <div className="space-y-1">
-          <AnimatePresence mode="popLayout">
-            {safeUnclaimedOrders.map((order) => {
-              if (!order || !order.id) return null;
-              
-              const readyDate = getSafeDate(order.completed_at || order.updated_at);
-              const overdueLabel = formatOverdueTime(readyDate);
+        {/* ✨ ADDED: Proper Loading & Empty States */}
+        {isLoading ? (
+           <div className="h-full flex flex-col items-center justify-center opacity-70 py-10">
+             <div className="w-6 h-6 border-2 border-slate-200 border-t-rose-500 rounded-full animate-spin mb-3"></div>
+             <p className="text-sm-text text-text-dark/70 font-medium">Loading orders...</p>
+           </div>
+        ) : safeUnclaimedOrders.length === 0 ? (
+           <div className="h-full flex flex-col items-center justify-center opacity-50 py-10">
+             <IconAlertCircle className="w-8 h-8 text-slate-400 mb-2" aria-hidden="true" />
+             <p className="text-base-text text-text-dark ">No overdue orders</p>
+             <p className="text-micro text-text-dark/70 mt-1">All orders are on schedule.</p>
+           </div>
+        ) : (
+          <div className="space-y-2">
+            <AnimatePresence mode="popLayout">
+              {safeUnclaimedOrders.map((order) => {
+                if (!order || !order.id) return null;
+                
+                const readyDate = getSafeDate(order.completed_at || order.updated_at);
+                const overdueLabel = formatOverdueTime(readyDate);
 
-              return (
-                <motion.button
-                  layout
-                  key={order.id}
-                  onClick={() => setSelectedOrder(order)}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  aria-label={`View order ${order.order_number} for ${order.customer_name}`}
-                  className="w-full text-left relative overflow-hidden rounded-xl bg-white border border-rose-100/60 shadow-sm hover:shadow-md hover:border-rose-300 transition-all duration-300 group mb-1 p-3.5 focus:outline-none focus:ring-1 focus:ring-rose-400"
-                >
-                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500 transition-all group-hover:w-2" aria-hidden="true" />
+                return (
+                  <motion.button
+                    layout
+                    key={order.id}
+                    onClick={() => setSelectedOrder(order)}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    aria-label={`View order ${order.order_number} for ${order.customer_name}`}
+                    className="w-full text-left relative overflow-hidden rounded-xl bg-white border border-rose-100/60 shadow-sm hover:shadow-md hover:border-rose-300 transition-all duration-300 group p-3.5 focus:outline-none focus:ring-1 focus:ring-rose-400"
+                  >
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500 transition-all group-hover:bg-rose-400 group-hover:w-1.5" aria-hidden="true" />
 
-                  <div className="flex items-start justify-between mb-1 pl-1.5">
-                    <div className="min-w-0 pr-3 flex items-center gap-1.5">
-                      <h3 className="text-sm-text font-bold text-text-dark truncate">
-                        {order.customer_name || "Unknown Customer"}
-                      </h3>
-                      {/* ✨ FIX: Visual Walk-In Indicator */}
-                      {order.is_walk_in && (
-                        <span className="text-nano text-text-dark/90 bg-gray-100 px-1.5 py-0.5 rounded leading-none align-middle">Walk-In</span>
-                      )}
-                    </div>
-                    <div className="shrink-0 flex items-center px-1">
-                      <span className="text-micro  text-rose-500">
-                        {overdueLabel}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-end justify-between pl-1.5">
-                    <div className="flex flex-col gap-1.5">
-                       <div className="flex items-center gap-2 text-micro  text-text-dark/70">
-                        <span>#{order.order_number || "---"}</span>
-                        <span aria-hidden="true">•</span>
-                        <span className="uppercase">{order.handover_method || "pickup"}</span>
+                    <div className="flex items-start justify-between mb-1 pl-2">
+                      <div className="min-w-0 pr-3 flex items-center gap-1.5">
+                        <h3 className="text-sm-text  text-text-dark truncate">
+                          {order.customer_name || "Unknown Customer"}
+                        </h3>
+                        {order.is_walk_in && (
+                          <span className="text-nano text-text-dark/90 bg-gray-100 px-1.5 py-0.5 rounded leading-none align-middle">Walk-In</span>
+                        )}
+                      </div>
+                      <div className="shrink-0 flex items-center">
+                        <span className="text-micro  text-rose-500">
+                          {overdueLabel}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end">
-                      <span className="text-sm-text font-bold text-text-dark">
-                        ₱{Number(order.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </span>
+                    <div className="flex items-end justify-between pl-2 mt-2">
+                      <div className="flex flex-col gap-1.5">
+                         <div className="flex items-center gap-2 text-micro  text-text-dark/50">
+                          <span>#{order.order_number || "---"}</span>
+                          <span aria-hidden="true">•</span>
+                          <span className="uppercase">{order.handover_method || "pickup"}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end">
+                        <span className="text-sm-text font-bold text-text-dark">
+                          ₱{Number(order.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </motion.button>
-              );
-            })}
-          </AnimatePresence>
-        </div>
+                  </motion.button>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
 
       {/* Selected Order Modal (Popup Card) */}
@@ -351,22 +366,20 @@ const UnclaimedOrders = () => {
                 <div className="text-rose-500 flex items-center justify-center mx-auto mb-2" aria-hidden="true">
                   <IconAlertCircle className="w-8 h-8" />
                 </div>
-                <h3 id="modal-customer-name" className="text-h3 font-bold text-text-dark leading-tight truncate px-8 flex items-center justify-center gap-2">
+                <h3 id="modal-customer-name" className="text-h3  text-text-dark leading-tight truncate px-8 flex items-center justify-center gap-2">
                   {selectedOrder.customer_name || "Unknown"}
-                  {/* ✨ FIX: Header Walk-In Tag */}
                   {selectedOrder.is_walk_in && (
                     <span className="text-nano text-text-dark/90 bg-gray-100 px-1.5 py-0.5 rounded leading-none align-middle">Walk-In</span>
                   )}
                 </h3>
                 <p className="text-micro  text-rose-500 mt-1">
-                  Unclaimed Order
+                  Unclaimed Laundry
                 </p>
               </div>
 
               <div className="overflow-y-auto custom-scrollbar flex-1 p-5 space-y-4">
                 
                 <div className="bg-slate-50 rounded-2xl p-4 space-y-3 border border-slate-100/80 relative group">
-                  {/* ✨ FIX: Only allow PII reveal if it's NOT an anonymous order */}
                   {!selectedOrder.is_walk_in && (
                     <button 
                       onClick={() => setIsPiiRevealed(!isPiiRevealed)}
@@ -383,7 +396,6 @@ const UnclaimedOrders = () => {
                       <IconPhone className="w-4 h-4 text-text-dark/70" aria-hidden="true" />
                       <span className="text-sm-text  text-text-dark/70">Phone</span>
                     </div>
-                    {/* ✨ FIX: Anonymous Masking Logic */}
                     <span className="text-sm-text  text-text-dark">
                       {selectedOrder.is_walk_in ? (
                         <span className="italic opacity-70">Anonymous (No Phone)</span>
@@ -403,6 +415,35 @@ const UnclaimedOrders = () => {
                       {isPiiRevealed ? (selectedOrder.customer_address || "No address provided") : maskAddress(selectedOrder.customer_address)}
                     </span>
                   </div>
+
+                  <AnimatePresence>
+                    {!selectedOrder.is_walk_in && isPiiRevealed && selectedOrder.customer_phone && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="flex gap-2 pt-3 mt-3 border-t border-slate-200/60 overflow-hidden"
+                      >
+                        <a 
+                          href={`tel:${getCleanPhoneForLink(selectedOrder.customer_phone)}`}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border border-slate-200 shadow-sm rounded-xl text-sm-text  text-text-dark hover:bg-slate-50 hover:border-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-app-dark/20"
+                        >
+                          <IconPhone className="w-4 h-4" />
+                          Call
+                        </a>
+                        <a 
+                          href={`sms:${getCleanPhoneForLink(selectedOrder.customer_phone)}`}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-50 border border-blue-100 shadow-sm rounded-xl text-sm-text  text-blue-700 hover:bg-blue-100 hover:border-blue-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                          </svg>
+                          Text
+                        </a>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                 </div>
 
                 <div className="px-2 space-y-3">
@@ -450,7 +491,7 @@ const UnclaimedOrders = () => {
                   {Number(selectedOrder?.delivery_fee) > 0 && (
                     <div className="flex justify-between items-center mb-2 ">
                        <span className="text-micro  text-text-dark/60">Includes Delivery</span>
-                        <span className="text-micro font-bold text-blue-600">
+                        <span className="text-micro  text-blue-600">
                         + ₱{Number(selectedOrder.delivery_fee).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                     </div>
@@ -458,7 +499,7 @@ const UnclaimedOrders = () => {
 
                   {/* Row 1: Total Amount */}
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm  text-slate-500">Total Amount</span>
+                    <span className="text-sm  text-text-dark/70">Total Amount</span>
                     <span className="text-h3 font-bold text-text-dark tracking-tight">
                       ₱{Number(selectedOrder.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
@@ -466,7 +507,7 @@ const UnclaimedOrders = () => {
 
                   {/* Row 2: Status */}
                   <div className="flex justify-between items-center">
-                    <span className="text-sm  text-slate-500">Payment Status</span>
+                    <span className="text-sm  text-text-dark/70">Payment Status</span>
                     <div className="flex items-center gap-1.5">
                       
                       <span className={`text-micro font-bold uppercase tracking-wider ${selectedOrder.is_paid ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -475,7 +516,6 @@ const UnclaimedOrders = () => {
                     </div>
                   </div>
                   
-                  {/* Rows 3 & 4: Tendered & Change (Revealed elegantly on payment) */}
                   <AnimatePresence>
                     {selectedOrder.is_paid && selectedOrder.amount_tendered && (
                       <motion.div 
@@ -514,7 +554,7 @@ const UnclaimedOrders = () => {
                     onOpenPaymentModal={() => setShowPaymentModal(true)} 
                   />
                   {!selectedOrder.is_paid && (
-                    <p className="text-micro text-rose-500 text-center mt-3" aria-live="polite">
+                    <p className="text-micro  text-rose-500 text-center mt-3" aria-live="polite">
                        Collect payment to unlock claim
                     </p>
                   )}

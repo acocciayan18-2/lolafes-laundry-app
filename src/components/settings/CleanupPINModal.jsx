@@ -107,7 +107,7 @@ export default function CleanupPINModal({
             onClick={onClose}
             disabled={isProcessing}
             aria-label="Close security modal"
-            className="absolute top-6 right-6 p-2 rounded-full text-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-all focus:ring-2 focus:ring-slate-200 outline-none"
+            className="absolute top-6 right-6 p-2 rounded-full text-slate-300 hover:text-text-dark/80 hover:bg-slate-50 transition-all focus:ring-2 focus:ring-slate-200 outline-none"
           >
             <IconClose className="w-4 h-4" />
           </button>
@@ -115,7 +115,7 @@ export default function CleanupPINModal({
           {/* Security Icon */}
           <div 
             className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors ${
-              lockout.isLocked ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600'
+              lockout.isLocked ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-text-dark'
             }`}
           >
             <IconLock className="w-6 h-6" aria-hidden="true" />
@@ -124,13 +124,13 @@ export default function CleanupPINModal({
           <h3 id="pin-modal-title" className="text-xl font-bold text-slate-800">
             Security Verification
           </h3>
-          <p className="text-sm-text text-slate-500 mt-2 mb-8">
+          <p className="text-sm-text text-text-dark/80 mt-2 mb-8">
             Please enter PIN to authorize <br />
             <span className="text-rose-500 font-semibold">{title}</span>
           </p>
 
           {lockout.isLocked ? (
-            <div role="alert" className="bg-rose-50 p-4 rounded-2xl border border-rose-100 mb-6">
+            <div role="alert" className="p-4 rounded-2xl  mb-6">
               <p className="text-micro font-bold text-rose-600 uppercase tracking-widest">Locked Out</p>
               <p className="text-sm-text text-rose-500 mt-1">Try again in {lockout.remaining} minutes.</p>
             </div>

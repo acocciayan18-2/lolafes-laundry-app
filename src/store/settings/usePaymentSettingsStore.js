@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { db } from '../../services/firebase';
 import { 
   doc, setDoc, collection, onSnapshot, deleteDoc,
-  query, orderBy, updateDoc, writeBatch // ✨ Added writeBatch
+  query, orderBy, updateDoc, writeBatch 
 } from 'firebase/firestore';
 import { useNotificationStore } from '../ui/useNotificationStore';
 

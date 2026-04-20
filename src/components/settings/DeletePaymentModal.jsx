@@ -112,7 +112,7 @@ const DeletePaymentModal = memo(({
             <button
               onClick={() => closeHandlerRef.current?.()}
               disabled={isLoading}
-              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus:ring-2 focus:ring-rose-500 outline-none disabled:opacity-0"
+              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-text-dark hover:bg-slate-100 transition-colors focus:ring-2 focus:ring-rose-500 outline-none disabled:opacity-0"
               aria-label="Cancel and close"
             >
               <IconClose className="w-5 h-5" aria-hidden="true" />

@@ -1,4 +1,8 @@
-
+/**
+ * @file NewOrder.jsx
+ * @description Enterprise Order Creation Engine with Immutable Financial Snapshotting.
+ * @architecture Calculates and locks in unit costs, gross revenue, and net profit at the exact time of transaction.
+ */
 
 import React, { useEffect, useRef, useState, useMemo, useCallback, forwardRef } from "react";
 import { collection, getDocs, limit, query, where, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
@@ -15,7 +19,6 @@ import StoreGuard from '../components/settings/StoreGuard';
 
 import { db } from '../services/firebase';
 import { silentPrint } from "../services/printerService"; 
-import { useActivityStore } from "../store/activities/useActivityStore";
 import { useCustomerStore } from "../store/customer/useCustomerStore";
 import { useNewOrderStore } from "../store/new-order/useNewOrderStore";
 import { useLoyaltyStore } from "../store/services/useLoyaltyStore";
@@ -24,6 +27,9 @@ import { useNotificationStore } from "../store/ui/useNotificationStore";
 import { useSettingsStore } from "../store/settings/useSettingsStore";
 import { usePaymentSettingsStore } from "../store/settings/usePaymentSettingsStore"; 
 
+// ==========================================
+// 🛡️ SECURITY & PARSING UTILITIES
+// ==========================================
 const sanitizeString = (str, maxLen = 200) => {
   if (typeof str !== 'string') return "";
   return str.replace(/[<>]/g, "").trim().substring(0, maxLen);
@@ -31,7 +37,7 @@ const sanitizeString = (str, maxLen = 200) => {
 
 const parseMoney = (val) => {
   const num = Number(val);
-  return isNaN(num) || num < 0 ? 0 : Math.round(num * 100) / 100;
+  return isNaN(num) ? 0 : Math.round(num * 100) / 100;
 };
 
 const generateUniqueOrderNumber = async (maxRetries = 5) => {
@@ -52,6 +58,9 @@ const generateUniqueOrderNumber = async (maxRetries = 5) => {
   throw new Error("System is currently busy. Please try generating the order again.");
 };
 
+// ==========================================
+// 🧩 ATOMIC UI COMPONENTS
+// ==========================================
 const Button = React.memo(({ children, variant = "primary", size = "md", className = "", disabled, isLoading, ...props }) => {
   const variants = {
     primary: "bg-blue-600 text-white hover:bg-blue-700",
@@ -67,7 +76,7 @@ const Button = React.memo(({ children, variant = "primary", size = "md", classNa
     <button 
       disabled={disabled || isLoading}
       aria-busy={isLoading}
-      className={`rounded-lg  transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${variants[variant]} ${sizes[size]} ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'} ${className}`} 
+      className={`rounded-lg transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-app-dark/50 ${variants[variant]} ${sizes[size]} ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'} ${className}`} 
       {...props}
     >
       {isLoading ? "Processing..." : children}
@@ -79,7 +88,7 @@ Button.displayName = "Button";
 const Input = forwardRef(({ label, id, className = "", disabled, ...props }, ref) => (
   <div className="w-full space-y-1">
     {label && (
-      <label htmlFor={id} className={`text-sm-text  ml-1 ${disabled ? "text-text-dark/40" : "text-text-dark"}`}>
+      <label htmlFor={id} className={`text-sm-text ml-1 ${disabled ? "text-text-dark/40" : "text-text-dark"}`}>
         {label}
       </label>
     )}
@@ -107,9 +116,8 @@ const Badge = React.memo(({ children, className = "" }) => (
 Badge.displayName = "Badge";
 
 // ==========================================
-// 🧩 MAIN COMPONENT
+// 🚀 MAIN COMPONENT
 // ==========================================
-
 export default function NewOrder() {
   const navigate = useNavigate();
   
@@ -122,7 +130,6 @@ export default function NewOrder() {
   const { methods, fetchPaymentMethods } = usePaymentSettingsStore();
   
   const showNotification = useNotificationStore((state) => state.showNotification);
-  const logActivity = useActivityStore((state) => state.logActivity);
   
   // --- LOCAL STATE ---
   const [shouldShowSkeleton, setShouldShowSkeleton] = useState(true);
@@ -179,11 +186,9 @@ export default function NewOrder() {
   const activePaymentMethods = useMemo(() => Array.isArray(methods) ? methods.filter(m => m.isActive) : [], [methods]);
   const selectedCustomerData = useMemo(() => selectedCustomerId ? safeCustomers.find(c => c.id === selectedCustomerId) : null, [selectedCustomerId, safeCustomers]);
 
-  // ✨ SECURITY FIX: Walk-in strictly requires Name. Regular requires Name + Phone.
   const isFormIncomplete = useMemo(() => {
     const isNameValid = (customer?.name || "").trim().length >= 2;
     const isPhoneValid = (customer?.phone || "").replace(/\D/g, '').length >= 11;
-    
     return isWalkInGuest ? !isNameValid : (!isNameValid || !isPhoneValid);
   }, [customer?.name, customer?.phone, isWalkInGuest]);
 
@@ -252,22 +257,30 @@ export default function NewOrder() {
         return;
     }
     
+    // ✨ QA FIX: Find the actual cost of the free service to ensure accurate profit tracking.
+    const matchingService = services.find(s => s.type === loyaltySettings.free_service_type || s.category === loyaltySettings.free_service_type);
+    const rewardCost = matchingService ? parseMoney(matchingService.supply_cost_per_qty) : 0;
+
     const freeService = {
       id: `reward-${Date.now()}`, 
       service_name: `${loyaltySettings.free_service_type} (Reward)`,
       service_type: loyaltySettings.free_service_type,
-      quantity: 1, price_per_kg: 0, subtotal: 0, is_reward: true 
+      quantity: 1, 
+      price_per_kg: 0, 
+      subtotal: 0, 
+      supply_cost_per_qty: rewardCost, // Bind the real cost
+      is_reward: true 
     };
     setSelectedServices(prev => [...prev, freeService]);
     showNotification("Reward applied!", "success");
-  }, [selectedServices, loyaltySettings, selectedCustomerData, customer, showNotification, isProcessing, isWalkInGuest]);
+  }, [selectedServices, loyaltySettings, selectedCustomerData, customer, services, showNotification, isProcessing, isWalkInGuest]);
 
 
-  // --- 🚀 ORCHESTRATOR: ORDER SUBMISSION ---
+  // --- 🚀 ORCHESTRATOR: ORDER SUBMISSION WITH FINANCIAL ENGINE ---
   const handleSubmit = useCallback(async () => {
     if (isProcessing) return;
 
-    // ✨ FRONTEND GATEKEEPERS
+    // FRONTEND GATEKEEPERS
     if (isFormIncomplete) {
       showNotification(isWalkInGuest ? "Please provide a valid Customer Name." : "Please complete Customer Name and a valid 11-digit Contact Number.", "error");
       return;
@@ -295,13 +308,11 @@ export default function NewOrder() {
       const uniqueOrderNumber = await generateUniqueOrderNumber();
       let finalCustomerId = selectedCustomerId;
       
-      // ✨ SANITIZATION: Clean all inputs before DB entry
       const cleanName = sanitizeString(customer.name, 100);
       const cleanPhone = isWalkInGuest ? "" : (customer.phone || "").replace(/\D/g, '').substring(0, 15);
       const cleanAddress = sanitizeString(customer.address, 200);
       const cleanNotes = sanitizeString(notes, 500);
 
-      // Create profile for new regular customers
       if (!isWalkInGuest && !finalCustomerId) {
         const newCust = await createCustomer({
           name: cleanName, 
@@ -313,21 +324,65 @@ export default function NewOrder() {
         finalCustomerId = newCust.id;
       }
       
-      // Calculate Financials securely
-      const subtotal = selectedServices.reduce((sum, s) => sum + parseMoney(s.subtotal), 0);
+      // ==============================================================
+      // 🧮 ENTERPRISE FINANCIAL ENGINE: IMMUTABLE LEDGER SNAPSHOT
+      // ==============================================================
+      let totalOrderCostOfGoods = 0;
+
+      const mappedServices = selectedServices.map(s => {
+        const isReward = Boolean(s.is_reward);
+        let unitCost = parseMoney(s.supply_cost_per_qty); 
+
+        // Always pull the freshest cost from the master DB, unless it's a generated reward
+        if (!isReward) {
+          const masterService = services.find(ms => String(ms.id) === String(s.id));
+          if (masterService) {
+            unitCost = parseMoney(masterService.supply_cost_per_qty);
+          }
+        }
+
+        const quantity = Math.max(1, Number(s.quantity) || 1);
+        const itemSubtotal = parseMoney(s.subtotal);
+        const totalItemCost = parseMoney(unitCost * quantity);
+        
+        // Item Profit (If it's a reward, they paid 0, so profit is negative to accurately log the loss)
+        const itemNetProfit = parseMoney(itemSubtotal - totalItemCost);
+
+        totalOrderCostOfGoods += totalItemCost;
+
+        return {
+          service_id: String(s.id), 
+          service_name: sanitizeString(s.service_name, 100), 
+          quantity: quantity,
+          price_per_kg: parseMoney(s.price_per_kg), 
+          subtotal: itemSubtotal, 
+          supply_cost_per_qty: unitCost,       // Snapshot Base Cost
+          total_cost: totalItemCost,           // Snapshot Total Cost
+          net_profit: itemNetProfit,           // Snapshot Profit Margin
+          is_reward: isReward
+        };
+      });
+
+      // Calculate Root Order Totals
+      const subtotal = mappedServices.reduce((sum, s) => sum + s.subtotal, 0);
       const finalDeliveryFee = handoverMethod === 'delivery' ? parseMoney(deliveryFee) : 0;
       const totalAmount = parseMoney(subtotal + finalDeliveryFee);
       
-      // Calculate Loyalty parameters
-      const rewardItems = selectedServices.filter(s => s.is_reward);
-      const isRewardClaimed = rewardItems.length > 0 && !isWalkInGuest;
-      const pointsRequiredPerReward = Math.max(1, Number(loyaltySettings?.orders_required) || 10);
-      const totalPointsToDeduct = isWalkInGuest ? 0 : rewardItems.length * pointsRequiredPerReward;
+      const finalTotalCost = parseMoney(totalOrderCostOfGoods);
+      const finalNetProfit = parseMoney(totalAmount - finalTotalCost); // Delivery fee is treated as revenue
 
+      // Cash Handling
       const isCashPayment = paymentMethod && paymentMethod.toLowerCase().includes('cash');
       const finalAmountTendered = isPaid && isCashPayment ? parseMoney(amountTendered) : totalAmount;
       const finalChangeDue = isPaid && isCashPayment ? Math.max(0, parseMoney(finalAmountTendered - totalAmount)) : 0;
 
+      // Loyalty Deductions
+      const rewardItems = mappedServices.filter(s => s.is_reward);
+      const isRewardClaimed = rewardItems.length > 0 && !isWalkInGuest;
+      const pointsRequiredPerReward = Math.max(1, Number(loyaltySettings?.orders_required) || 10);
+      const totalPointsToDeduct = isWalkInGuest ? 0 : rewardItems.length * pointsRequiredPerReward;
+
+      // Final Payload Generation
       const orderPayload = {
         customer_id: isWalkInGuest ? null : finalCustomerId, 
         customer_name: cleanName,
@@ -335,7 +390,6 @@ export default function NewOrder() {
         customer_address: cleanAddress,
         is_walk_in: isWalkInGuest, 
         order_number: uniqueOrderNumber, 
-        total_amount: totalAmount,
         handover_method: handoverMethod === 'delivery' ? 'delivery' : 'pickup', 
         delivery_fee: finalDeliveryFee,
         notes: cleanNotes, 
@@ -344,14 +398,13 @@ export default function NewOrder() {
         loyalty_points_to_deduct: totalPointsToDeduct,
         amount_tendered: finalAmountTendered,
         change_due: finalChangeDue,
-        services: selectedServices.map(s => ({
-          service_id: String(s.id), 
-          service_name: sanitizeString(s.service_name, 100), 
-          quantity: Math.max(1, Number(s.quantity) || 1),
-          price_per_kg: parseMoney(s.price_per_kg), 
-          subtotal: parseMoney(s.subtotal), 
-          is_reward: Boolean(s.is_reward)
-        })),
+        
+        // ✨ IMMUTABLE FINANCIALS
+        total_amount: totalAmount,
+        total_cost: finalTotalCost,
+        net_profit: finalNetProfit,
+        services: mappedServices,
+
         created_at: serverTimestamp(),
         updated_at: serverTimestamp(), 
         status: 'pending'
@@ -383,19 +436,14 @@ export default function NewOrder() {
         console.error("[Post-Order Sync Error]: Backend synchronization failed.", secondaryErr);
       }
 
-      
-
       // Hardware execution
       if (systemConfig?.autoPrint === true) {
         try {
           const printableOrder = { ...orderPayload, created_at: new Date() };
-         
-
-        await silentPrint(printableOrder, systemConfig?.printerType || 'browser', {
-          ...receiptConfig,
-          enableTracking: systemConfig?.enableOrderTracking 
-        });
-          
+          await silentPrint(printableOrder, systemConfig?.printerType || 'browser', {
+            ...receiptConfig,
+            enableTracking: systemConfig?.enableOrderTracking 
+          });
         } catch (printErr) {
           showNotification("Order saved, but printer failed to connect.", "info");
         }
@@ -412,27 +460,11 @@ export default function NewOrder() {
       }
     }
   }, [
-    isProcessing, 
-    isFormIncomplete, 
-    isPaid, 
-    paymentMethod, 
-    selectedServices, 
-    isPhoneDuplicate, 
-    customer, 
-    selectedCustomerId, 
-    handoverMethod, 
-    deliveryFee, 
-    notes, 
-    loyaltySettings?.orders_required, 
-    amountTendered, 
-    isWalkInGuest, 
-    submitOrder, 
-    createCustomer, 
-    systemConfig, 
-    receiptConfig, 
-    navigate, 
-    showNotification
-    
+    isProcessing, isFormIncomplete, isPaid, paymentMethod, selectedServices, 
+    isPhoneDuplicate, customer, selectedCustomerId, handoverMethod, deliveryFee, 
+    notes, loyaltySettings?.orders_required, 
+    amountTendered, isWalkInGuest, submitOrder, createCustomer, systemConfig, 
+    receiptConfig, navigate, showNotification, services
   ]);
 
   // --- RENDER ---

@@ -1,14 +1,20 @@
+/**
+ * @file MainApp.jsx
+ * @description Core Application Shell with Single-Source-of-Truth RBAC.
+ */
+
 import { useRef, useState, useEffect, useCallback } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
-// --- IMPORTS ---
 import Sidebar from "../components/Sidebar";
 import { NetworkToast } from "../components/NetworkToast";
 import ProtectedRoute from "../security/ProtectedRoute"; 
+import { useAuthStore } from "../store/auth/useAuthStore";
+
 import "../style/index.css";
 import "../style/main-app.css";
 
-// --- PAGES ---
+// PAGES
 import Customers from "./Customers";
 import Dashboard from "./Dashboard";
 import NewOrder from "./NewOrder";
@@ -18,13 +24,15 @@ import Services from "./Services";
 import Settings from "./Settings";
 
 export default function MainApp() {
+  // 🛡️ SINGLE SOURCE OF TRUTH: Role fetched directly from the unified store
+  const userRole = useAuthStore((state) => state.userRole);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   
   const scrollContainerRef = useRef(null);
   const scrollTimeoutRef = useRef(null);
-  
   const location = useLocation();
 
   // ==========================================
@@ -88,28 +96,24 @@ export default function MainApp() {
       className="flex w-full bg-app-light mainapp-con relative overflow-hidden"
       style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
     >
-      
-      {/* GLOBAL NOTIFICATIONS */}
       <NetworkToast />
 
-      {/* SIDEBAR NAVIGATION */}
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      {/* 🛡️ SIDEBAR FIX: Pass the role to the sidebar so it can hide links */}
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        setIsOpen={setIsSidebarOpen} 
+        userRole={userRole} 
+      />
 
-      {/* MOBILE OVERLAY */}
       <div 
         className={`fixed inset-0 z-[45] transition-all duration-300 lg:hidden ${
-          isSidebarOpen 
-            ? "bg-slate-900/20 backdrop-blur-sm visible opacity-100" 
-            : "bg-transparent backdrop-blur-0 invisible opacity-0"
+          isSidebarOpen ? "bg-slate-900/20 backdrop-blur-sm visible opacity-100" : "invisible opacity-0"
         }`}
         onClick={() => setIsSidebarOpen(false)}
-        aria-hidden="true"
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-         
-         {/* MOBILE APP HEADER */}
-         <header 
+        <header 
           className={`lg:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-app-light border-b border-gray-100 shadow-sm z-40 transition-transform duration-300 ${
             showHeader ? "translate-y-0" : "-translate-y-full"
           }`}
@@ -139,28 +143,28 @@ export default function MainApp() {
           </button>
         </header>
 
-        {/* MAIN CONTENT ROUTER */}
-        <main 
-          ref={scrollContainerRef}
-          onScroll={handleScroll}
-          className={`flex-1 overflow-y-auto no-scrollbar bg-app-light pt-16 lg:pt-0 h-full transition-transform duration-300 ${
-            isSidebarOpen && "scale-[0.98] origin-right opacity-90"
-          }`}
-        >
+        {/* ✨ ADDED onScroll={handleScroll} here so the header hides dynamically */}
+        <main ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto no-scrollbar pt-16 lg:pt-0 h-full">
           <Routes>
             <Route path="/" element={<Navigate to="/main/dashboard" replace />} />
             
-            {/* 🟢 Accessible to both Staff & Owner */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/neworder" element={<NewOrder />} />
-            <Route path="/reports" element={<Reports />} />
             <Route path="/customers" element={<Customers />} />
-            
-            {/* 🟢 Removed ProtectedRoute from Services so Staff can view it */}
             <Route path="/services" element={<Services />} />
+            
+            {/* 🔴 RESTRICTED: Reports */}
+            <Route 
+              path="/reports" 
+              element={
+                <ProtectedRoute allowedRoles={["OWNER", "ADMIN"]}>
+                  <Reports />
+                </ProtectedRoute>
+              } 
+            />
 
-            {/* 🔴 Settings remain restricted to Owner Only */}
+            {/* 🔴 RESTRICTED: Settings */}
             <Route 
               path="/settings" 
               element={
@@ -170,7 +174,6 @@ export default function MainApp() {
               } 
             />
 
-            {/* Fallback Route */}
             <Route path="*" element={<Navigate to="/main/dashboard" replace />} />
           </Routes>
         </main>
